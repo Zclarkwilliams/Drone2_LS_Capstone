@@ -1,0 +1,22 @@
+So here's a transcript of some of the conversation I had with Casey from the previous team:
+
+"Our only google doc that I am aware of is the final report and the weekly reports that are linked on the wiki section of the github. As far as 
+projects go, we gave Rahul a copy of our last working project folder, and the project has all of the pins mapped already... if Rahul didn't give it 
+to you, that is absurd. I have it on my computer at home, so you will need to wait until later tonight. I can send you the working folder with the 
+lattice diamond project. I assumed that Rahul already gave that to you!
+
+If you are trying to grasp the basics, the most important things to look at on the github are the motor signal characterization .zip, the radio 
+receiver signals characterization .pdf, and the system design and modeling entry under the wiki tab.
+
+My suggestions for continuing on:
+- Have your coder look through the verilog code until they understand how we convert PWM inputs to the FPGA into digital values in our PWM_reader module
+- Find an accelerometer with PWM outputs
+- Instantiate another copy of the PWM_reader within the flight controller program that takes as input the pwm outputs of the accelerometer
+- Use that parsed digital accelerometer data to do a bit of rudimentary stabilization in parallel with the manual flight controls
+- Fly!
+
+The biggest flaw in our design was the fact that it is fully manual and it is a huge pain in the ass to keep it in the air... it is REALLY squirrely. 
+
+Also, you will notice (if you haven't already) that lattice doesn't allow multiplication or division in synthesisable verilog... that is why we had to 
+use the rather ugly method of "if value <= this, then do this" for literally hundreds of lines... the lattice diamond software isn't particularly 
+robust in that respect. It is better than vivado design suite, though!"
