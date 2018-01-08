@@ -17,8 +17,9 @@
    2015/MAR/03  - First release (KTOWN)
 */
 
-/* Set the delay between fresh samples */
-#define BNO055_SAMPLERATE_DELAY_MS (200)
+//Set the delay between fresh samples
+#define SAMPLERATE_DELAY_MS (200)
+#define SAMPLERATE_DELAY (SAMPLERATE_DELAY_MS/1000)
 #define ACCEL_ZERO_LIMIT 0.5
 
 Adafruit_BNO055 bno = Adafruit_BNO055();
@@ -55,18 +56,6 @@ void setup(void)
 
   bno.setExtCrystalUse(true);
   
-  delay(1000);
-  adafruit_bno055_offsets_t SensorOffsets;
-  bno.getSensorOffsets(SensorOffsets);
-  Serial.print("Initial Sensor Offsets:");
-  Serial.print(" Accel X=");
-  Serial.print(SensorOffsets.accel_offset_x, DEC);
-  Serial.print(" Accel Y=");
-  Serial.print(SensorOffsets.accel_offset_y, DEC);
-  Serial.print(" Accel Z=");
-  Serial.println(SensorOffsets.accel_offset_z, DEC);
-  delay(1000);
-
 /*
 
    System Status (see section 4.3.58)
@@ -118,6 +107,25 @@ void setup(void)
   Serial.print(", System Error");
   Serial.print(system_error, HEX);
   Serial.println(" ");
+
+  imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
+  // Display the floating point accelerations
+  Serial.print("Accelerometer m/s^2: ");
+  Serial.print("X: ");
+  Serial.print(accel.x(), DEC);
+  Serial.print(" Y: ");
+  Serial.print(accel.y(), DEC);
+  Serial.print(" Z: ");
+  Serial.print(accel.z(), DEC);
+
+//Store initial sensor offset values prior to calibration
+  delay(1000);
+  adafruit_bno055_offsets_t SensorOffsets;
+  bno.getSensorOffsets(SensorOffsets);
+  uint16_t init_accel_x_offset = SensorOffsets.accel_offset_x;
+  uint16_t init_accel_y_offset = SensorOffsets.accel_offset_y;
+  uint16_t init_accel_z_offset = SensorOffsets.accel_offset_z;
+
   
   Serial.println("Calibration status values: 0=uncalibrated, 3=fully calibrated");
   uint8_t system, gyro, accelerometer, mag = 0;
@@ -148,7 +156,7 @@ void setup(void)
     Serial.print(euler.z());
     Serial.println("    ");
   
-    delay(BNO055_SAMPLERATE_DELAY_MS);
+    delay(SAMPLERATE_DELAY_MS);
   }
   
 
@@ -157,6 +165,15 @@ void setup(void)
   delay(1000);
 
   bno.getSensorOffsets(SensorOffsets);
+
+  Serial.print("Initial Sensor Offsets:");
+  Serial.print(" Accel X=");
+  Serial.print(init_accel_x_offset, DEC);
+  Serial.print(" Accel Y=");
+  Serial.print(init_accel_y_offset, DEC);
+  Serial.print(" Accel Z=");
+  Serial.println(init_accel_z_offset, DEC);
+
   Serial.print("Final Sensor Offsets:");
   Serial.print(" Accel X=");
   Serial.print(SensorOffsets.accel_offset_x, DEC);
@@ -169,7 +186,7 @@ void setup(void)
   
   Serial.println("Place sensor flat on surface and stop movement");
   delay(1000);
-  imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
+  accel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
   float accelX = accel.x();
   float accelY = accel.y();
   float accelZ = accel.z();
@@ -208,6 +225,17 @@ void setup(void)
   delay(1000);
   
   Serial.println("Set 0 Velocity");
+
+  accel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
+  // Display the floating point accelerations
+  Serial.print("Accelerometer m/s^2: ");
+  Serial.print("X: ");
+  Serial.print(accel.x(), DEC);
+  Serial.print(" Y: ");
+  Serial.print(accel.y(), DEC);
+  Serial.print(" Z: ");
+  Serial.print(accel.z(), DEC);
+
 }
 
 void updateVelocity(float * xVel, float * yVel, float * zVel, imu::Vector<3> accel) {
@@ -215,12 +243,12 @@ void updateVelocity(float * xVel, float * yVel, float * zVel, imu::Vector<3> acc
   float xAccel = 0;
   float yAccel = 0;
   float zAccel = 0;
-  if ( abs(accel.x()) > ACCEL_ZERO_LIMIT ) xAccel = accel.x();
-  if ( abs(accel.y()) > ACCEL_ZERO_LIMIT ) yAccel = accel.y();
-  if ( abs(accel.z()) > ACCEL_ZERO_LIMIT ) zAccel = accel.z();
-  *xVel = *xVel + xAccel*(float(BNO055_SAMPLERATE_DELAY_MS)/float(1000));
-  *yVel = *yVel + yAccel*(float(BNO055_SAMPLERATE_DELAY_MS)/float(1000));
-  *zVel = *zVel + zAccel*(float(BNO055_SAMPLERATE_DELAY_MS)/float(1000));
+  if ( abs( accel.x() ) > ACCEL_ZERO_LIMIT ) xAccel = accel.x();
+  if ( abs( accel.y() ) > ACCEL_ZERO_LIMIT ) yAccel = accel.y();
+  if ( abs( accel.z() ) > ACCEL_ZERO_LIMIT ) zAccel = accel.z();
+  *xVel = *xVel + xAccel*float(SAMPLERATE_DELAY);
+  *yVel = *yVel + yAccel*float(SAMPLERATE_DELAY);
+  *zVel = *zVel + zAccel*float(SAMPLERATE_DELAY);
 }
 
 /**************************************************************************/
@@ -239,7 +267,7 @@ void loop(void)
   // - VECTOR_LINEARACCEL   - m/s^2
   // - VECTOR_GRAVITY       - m/s^2
   imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-
+/*
   //Display the floating point angles
   Serial.print("Euler Angles: ");
   Serial.print("X: ");
@@ -250,7 +278,7 @@ void loop(void)
   Serial.print(euler.z());
   Serial.print("    ");
 
- /*
+
   // Quaternion data
   imu::Quaternion quat = bno.getQuat();
   Serial.print("qW: ");
@@ -261,9 +289,9 @@ void loop(void)
   Serial.print(quat.x(), 4);
   Serial.print(" qZ: ");
   Serial.print(quat.z(), 4);
-  Serial.print("    ");*/
+  Serial.print("    ");
+  
   imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
-
   // Display the floating point accelerations
   Serial.print("Accelerometer m/s^2: ");
   Serial.print("X: ");
@@ -301,6 +329,6 @@ void loop(void)
   Serial.print(mag);
 
   Serial.println("");
-
-  delay(BNO055_SAMPLERATE_DELAY_MS);
+*/
+  delay(SAMPLERATE_DELAY_MS);
 }
