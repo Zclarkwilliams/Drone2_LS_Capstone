@@ -2,6 +2,7 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+#include <EEPROM.h>
 
 /* This driver reads raw data from the BNO055
 
@@ -18,14 +19,67 @@
 */
 
 //Set the delay between fresh samples
-#define SAMPLERATE_DELAY_MS (200)
-#define SAMPLERATE_DELAY (SAMPLERATE_DELAY_MS/1000)
-#define ACCEL_ZERO_LIMIT 0.5
+#define SAMPLERATE_DELAY_MS (100)
+#define SAMPLERATE_DELAY (0.001)
+#define ACCEL_ZERO_LIMIT (0.2)
 
-Adafruit_BNO055 bno = Adafruit_BNO055();
-float X_Velocity;
-float Y_Velocity;
-float Z_Velocity;
+Adafruit_BNO055 bno = Adafruit_BNO055(55); //New BNO sensor and set ID to 55
+
+float xVel = 0;
+float yVel = 0;
+float zVel = 0;
+
+
+/**************************************************************************/
+/*
+    Display the raw calibration offset and radius data
+
+    From Adafruit BNO055 example: restore_offsets.ino
+*/
+/**************************************************************************/
+void displaySensorOffsets(const adafruit_bno055_offsets_t &calibData)
+{
+    Serial.print("Accelerometer: ");
+    Serial.print(calibData.accel_offset_x); Serial.print(" ");
+    Serial.print(calibData.accel_offset_y); Serial.print(" ");
+    Serial.print(calibData.accel_offset_z); Serial.print(" ");
+
+    Serial.print("\nGyro: ");
+    Serial.print(calibData.gyro_offset_x); Serial.print(" ");
+    Serial.print(calibData.gyro_offset_y); Serial.print(" ");
+    Serial.print(calibData.gyro_offset_z); Serial.print(" ");
+
+    Serial.print("\nMag: ");
+    Serial.print(calibData.mag_offset_x); Serial.print(" ");
+    Serial.print(calibData.mag_offset_y); Serial.print(" ");
+    Serial.print(calibData.mag_offset_z); Serial.print(" ");
+
+    Serial.print("\nAccel Radius: ");
+    Serial.print(calibData.accel_radius);
+
+    Serial.print("\nMag Radius: ");
+    Serial.println(calibData.mag_radius);
+}
+
+
+
+void updateVelocity(float * xVel, float * yVel, float * zVel, imu::Vector<3> accel) {
+  float xAccel = 0;
+  float yAccel = 0;
+  float zAccel = 0;
+  if ( abs( accel.x() ) > ACCEL_ZERO_LIMIT ) xAccel = accel.x();
+  if ( abs( accel.y() ) > ACCEL_ZERO_LIMIT ) yAccel = accel.y();
+  if ( abs( accel.z() ) > ACCEL_ZERO_LIMIT ) zAccel = accel.z();
+
+  //Zero velocity of acceleration is zero, if acceleration is really small its probably not moving,
+  //although this isn't technically true, it could be moving at a constant rate
+  if(xAccel) *xVel = *xVel + xAccel*float(SAMPLERATE_DELAY);
+  else *xVel = 0;
+  if(yAccel) *yVel = *yVel + yAccel*float(SAMPLERATE_DELAY);
+  else *yVel = 0;
+  if(zAccel) *zVel = *zVel + zAccel*float(SAMPLERATE_DELAY);
+  else *zVel = 0;
+}
 
 /**************************************************************************/
 /*
@@ -34,8 +88,15 @@ float Z_Velocity;
 /**************************************************************************/
 void setup(void)
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
+  delay(1000);
   Serial.println("Orientation Sensor Raw Data Test"); Serial.println("");
+
+  //Read sensor calibration sensor ID stored in EEPROM
+  int eeAddress = 0;
+  long bnoID;
+  bool foundCalib = false;
+  EEPROM.get(eeAddress, bnoID);
 
   /* Initialise the sensor */
   if(!bno.begin())
@@ -44,8 +105,54 @@ void setup(void)
     Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
     while(1);
   }
+  bno.setExtCrystalUse(true);
+  adafruit_bno055_offsets_t calibrationData;
+  sensor_t sensor;
+  
+ /*
+  *  Look for the sensor's unique ID at the beginning oF EEPROM.
+  *  This isn't foolproof, but it's better than nothing.
+  */
+  //Delay a touch and wait for sensor to initialize
+  delay(50);
+  bno.getSensor(&sensor);
+  Serial.println("\nEEPROM Sensor ID: ");
+  Serial.println(bnoID);
+  Serial.println("Current Sensor ID: ");
+  Serial.println(sensor.sensor_id);
+  //Restore BNO055 calibration, if it exists
+  if (bnoID != sensor.sensor_id)
+  {
+      Serial.println("\nNo Calibration Data for this sensor exists in EEPROM");
+      delay(500);
+  }
+  else
+  {
+    Serial.println("\nFound Calibration for this sensor in EEPROM.");
+    eeAddress += sizeof(long);
+    EEPROM.get(eeAddress, calibrationData);
+    displaySensorOffsets(calibrationData);
+    Serial.println("\n\nRestoring Calibration data to the BNO055...");
+    bno.setSensorOffsets(calibrationData);
+    Serial.println("\n\nCalibration data loaded into BNO055");
+    delay(1000);
+    bno.getSensorOffsets(calibrationData);
+    Serial.println("\n\nDisplaying actual calibrated offsets");
+    displaySensorOffsets(calibrationData);
+    foundCalib = true;
+  } 
 
   delay(1000);
+  uint8_t system, gyro, accelerometer, mag = 0;
+  bno.getCalibration(&system, &gyro, &accelerometer, &mag);
+  Serial.print("    CALIBRATION: Sys=");
+  Serial.print(system, DEC);
+  Serial.print(" Gyro=");
+  Serial.print(gyro, DEC);
+  Serial.print(" Accel=");
+  Serial.print(accelerometer, DEC);
+  Serial.print(" Mag=");
+  Serial.println(mag, DEC);
 
   /* Display the current temperature */
   int8_t temp = bno.getTemp();
@@ -54,7 +161,7 @@ void setup(void)
   Serial.println(" C");
   Serial.println("");
 
-  bno.setExtCrystalUse(true);
+
   
 /*
 
@@ -116,53 +223,53 @@ void setup(void)
   Serial.print(" Y: ");
   Serial.print(accel.y(), DEC);
   Serial.print(" Z: ");
-  Serial.print(accel.z(), DEC);
-
-//Store initial sensor offset values prior to calibration
-  delay(1000);
+  Serial.println(accel.z(), DEC);
   adafruit_bno055_offsets_t SensorOffsets;
-  bno.getSensorOffsets(SensorOffsets);
-  uint16_t init_accel_x_offset = SensorOffsets.accel_offset_x;
-  uint16_t init_accel_y_offset = SensorOffsets.accel_offset_y;
-  uint16_t init_accel_z_offset = SensorOffsets.accel_offset_z;
+  int16_t init_accel_x_offset = SensorOffsets.accel_offset_x;
+  int16_t init_accel_y_offset = SensorOffsets.accel_offset_y;
+  int16_t init_accel_z_offset = SensorOffsets.accel_offset_z;
+    
+  if( !foundCalib ) { // If there wasn't a prior calibration stored
+    //Store initial sensor offset values prior to calibration
+    delay(1000);
 
+    bno.getSensorOffsets(SensorOffsets);
   
-  Serial.println("Calibration status values: 0=uncalibrated, 3=fully calibrated");
-  uint8_t system, gyro, accelerometer, mag = 0;
-  delay(1000);
+    Serial.println("Calibration status values: 0=uncalibrated, 3=fully calibrated");
+    delay(1000);
 
-  Serial.println("Start sensor calibration");
-  bno.getCalibration(&system, &gyro, &accelerometer, &mag);
+    Serial.println("Start sensor calibration");
 
-  while(!bno.isFullyCalibrated()) {
-    bno.getCalibration(&system, &gyro, &accelerometer, &mag);
-    Serial.print("    CALIBRATION: Sys=");
-    Serial.print(system, DEC);
-    Serial.print(" Gyro=");
-    Serial.print(gyro, DEC);
-    Serial.print(" Accel=");
-    Serial.print(accelerometer, DEC);
-    Serial.print(" Mag=");
-    Serial.print(mag, DEC);
+    while(!bno.isFullyCalibrated()) {
+      bno.getCalibration(&system, &gyro, &accelerometer, &mag);
+      Serial.print("    CALIBRATION: Sys=");
+      Serial.print(system, DEC);
+      Serial.print(" Gyro=");
+      Serial.print(gyro, DEC);
+      Serial.print(" Accel=");
+      Serial.print(accelerometer, DEC);
+      Serial.print(" Mag=");
+      Serial.print(mag, DEC);
   
-    //Display the floating point angles
-    imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-    Serial.print("    Euler Angles: ");
-    Serial.print("X: ");
-    Serial.print(euler.x());
-    Serial.print(" Y: ");
-    Serial.print(euler.y());
-    Serial.print(" Z: ");
-    Serial.print(euler.z());
-    Serial.println("    ");
+      //Display the floating point angles
+      imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
+      Serial.print("    Euler Angles: ");
+      Serial.print("X: ");
+      Serial.print(euler.x());
+      Serial.print(" Y: ");
+      Serial.print(euler.y());
+      Serial.print(" Z: ");
+      Serial.print(euler.z());
+      Serial.println("    ");
+     
+      delay(SAMPLERATE_DELAY_MS);
+    }
   
-    delay(SAMPLERATE_DELAY_MS);
+
+    delay(1000);
+    Serial.println("Sensor calibration completed");
+    delay(1000);
   }
-  
-
-  delay(1000);
-  Serial.println("Sensor calibration completed");
-  delay(1000);
 
   bno.getSensorOffsets(SensorOffsets);
 
@@ -215,12 +322,12 @@ void setup(void)
     Serial.print(" Z: ");
     Serial.print(accelZ, DEC);
     Serial.println(" ");
-    delay(1000);    
+    delay(1000);
   }
 
-  X_Velocity = 0;
-  Y_Velocity = 0;
-  Z_Velocity = 0;
+  xVel = 0;
+  yVel = 0;
+  zVel = 0;
 
   delay(1000);
   
@@ -235,20 +342,8 @@ void setup(void)
   Serial.print(accel.y(), DEC);
   Serial.print(" Z: ");
   Serial.print(accel.z(), DEC);
+ 
 
-}
-
-void updateVelocity(float * xVel, float * yVel, float * zVel, imu::Vector<3> accel) {
-  #define ACCEL_ZERO_LIMIT 0.5
-  float xAccel = 0;
-  float yAccel = 0;
-  float zAccel = 0;
-  if ( abs( accel.x() ) > ACCEL_ZERO_LIMIT ) xAccel = accel.x();
-  if ( abs( accel.y() ) > ACCEL_ZERO_LIMIT ) yAccel = accel.y();
-  if ( abs( accel.z() ) > ACCEL_ZERO_LIMIT ) zAccel = accel.z();
-  *xVel = *xVel + xAccel*float(SAMPLERATE_DELAY);
-  *yVel = *yVel + yAccel*float(SAMPLERATE_DELAY);
-  *zVel = *zVel + zAccel*float(SAMPLERATE_DELAY);
 }
 
 /**************************************************************************/
@@ -267,18 +362,6 @@ void loop(void)
   // - VECTOR_LINEARACCEL   - m/s^2
   // - VECTOR_GRAVITY       - m/s^2
   imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-/*
-  //Display the floating point angles
-  Serial.print("Euler Angles: ");
-  Serial.print("X: ");
-  Serial.print(euler.x());
-  Serial.print(" Y: ");
-  Serial.print(euler.y());
-  Serial.print(" Z: ");
-  Serial.print(euler.z());
-  Serial.print("    ");
-
-
   // Quaternion data
   imu::Quaternion quat = bno.getQuat();
   Serial.print("qW: ");
@@ -290,6 +373,21 @@ void loop(void)
   Serial.print(" qZ: ");
   Serial.print(quat.z(), 4);
   Serial.print("    ");
+
+  euler = quat.toEuler();
+  euler.toDegrees();
+
+  //Display the calculated floating point angles from the quaternion
+  Serial.print("Euler Angles: ");
+  Serial.print("X: ");
+  Serial.print(euler.x());
+  Serial.print(" Y: ");
+  Serial.print(euler.y());
+  Serial.print(" Z: ");
+  Serial.print(euler.z());
+  Serial.print("    ");
+
+
   
   imu::Vector<3> accel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL);
   // Display the floating point accelerations
@@ -301,13 +399,8 @@ void loop(void)
   Serial.print(" Z: ");
   Serial.print(accel.z(), DEC);
 
-  //Display the floating point velocities
-  float xVel = 0;
-  float yVel = 0;
-  float zVel = 0;
+  //Update and display the floating point velocities
   updateVelocity(&xVel, &yVel, &zVel, accel);  
-
-
   Serial.print("    Velocity m/s: ");
   Serial.print("X: ");
   Serial.print(xVel);
@@ -315,8 +408,8 @@ void loop(void)
   Serial.print(yVel);
   Serial.print(" Z: ");
   Serial.print(zVel);
+  
   //Display calibration status for each sensor.
-
   uint8_t system, gyro, accelerometer, mag = 0;
   bno.getCalibration(&system, &gyro, &accelerometer, &mag);
   Serial.print("    CALIBRATION: Sys=");
@@ -329,6 +422,6 @@ void loop(void)
   Serial.print(mag);
 
   Serial.println("");
-*/
+
   delay(SAMPLERATE_DELAY_MS);
 }
