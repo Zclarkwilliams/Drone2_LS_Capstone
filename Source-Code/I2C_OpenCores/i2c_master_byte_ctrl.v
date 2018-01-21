@@ -34,9 +34,19 @@
 //// POSSIBILITY OF SUCH DAMAGE.                                 ////
 ////                                                             ////
 /////////////////////////////////////////////////////////////////////
+
+//  CVS Log
+//
+//  $Id: i2c_master_byte_ctrl.v,v 1.8 2009-01-19 20:29:26 rherveille Exp $
+//
+//  $Date: 2009-01-19 20:29:26 $
+//  $Revision: 1.8 $
+//  $Author: rherveille $
+//  $Locker:  $
+//  $State: Exp $
 //
 // Change History:
-//
+//               $Log: not supported by cvs2svn $
 //               Revision 1.7  2004/02/18 11:40:46  rherveille
 //               Fixed a potential bug in the statemachine. During a 'stop' 2 cmd_ack signals were generated. Possibly canceling a new start command.
 //
@@ -56,17 +66,15 @@
 //               Added headers.
 //
 
+// synopsys translate_off
+`include "timescale.v"
 // synopsys translate_on
 
 `include "i2c_master_defines.v"
 
 module i2c_master_byte_ctrl (
-	clk, rst, nReset, //ena, 
-	clk_cnt, start, stop, read, write, ack_in, din,
-	cmd_ack, ack_out, dout, //i2c_busy, 
-	i2c_al, 
-	//scl_i, scl_o, scl_oen, sda_i, sda_o, sda_oen, 
-	core_cmd, core_txd, core_rxd, core_ack );
+	clk, rst, nReset, ena, clk_cnt, start, stop, read, write, ack_in, din,
+	cmd_ack, ack_out, dout, i2c_busy, i2c_al, scl_i, scl_o, scl_oen, sda_i, sda_o, sda_oen );
 
 	//
 	// inputs & outputs
@@ -74,7 +82,7 @@ module i2c_master_byte_ctrl (
 	input clk;     // master clock
 	input rst;     // synchronous active high reset
 	input nReset;  // asynchronous active low reset
-	//input ena;     // core enable signal
+	input ena;     // core enable signal
 
 	input [15:0] clk_cnt; // 4x SCL
 
@@ -91,22 +99,18 @@ module i2c_master_byte_ctrl (
 	reg cmd_ack;
 	output       ack_out;
 	reg ack_out;
-	//output       i2c_busy;
-	input       i2c_al;  // i2c_al is output from bit cntrl, but input to byte cntrl now
+	output       i2c_busy;
+	output       i2c_al;
 	output [7:0] dout;
 
 	// I2C signals
-	/*input  scl_i;
+	input  scl_i;
 	output scl_o;
 	output scl_oen;
 	input  sda_i;
 	output sda_o;
-	output sda_oen;*/
+	output sda_oen;
 
-	// signals for bit_controller
-	output  [3:0] core_cmd;
-	output        core_txd;
-	input         core_ack, core_rxd;
 
 	//
 	// Variable declarations
@@ -123,7 +127,7 @@ module i2c_master_byte_ctrl (
 	// signals for bit_controller
 	reg  [3:0] core_cmd;
 	reg        core_txd;
-	////wire       core_ack, core_rxd;
+	wire       core_ack, core_rxd;
 
 	// signals for shift register
 	reg [7:0] sr; //8bit shift register
@@ -138,7 +142,7 @@ module i2c_master_byte_ctrl (
 	// Module body
 	//
 
-/*	// hookup bit_controller
+	// hookup bit_controller
 	i2c_master_bit_ctrl bit_controller (
 		.clk     ( clk      ),
 		.rst     ( rst      ),
@@ -157,7 +161,7 @@ module i2c_master_byte_ctrl (
 		.sda_i   ( sda_i    ),
 		.sda_o   ( sda_o    ),
 		.sda_oen ( sda_oen  )
-	); */
+	);
 
 	// generate go-signal
 	assign go = (read | write | stop) & ~cmd_ack;
@@ -192,7 +196,7 @@ module i2c_master_byte_ctrl (
 	//
 	// state machine
 	//
-	reg [4:0] c_state; // synopsis enum_state
+	reg [4:0] c_state; // synopsys enum_state
 
 	always @(posedge clk or negedge nReset)
 	  if (!nReset)

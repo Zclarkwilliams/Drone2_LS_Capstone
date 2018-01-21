@@ -35,6 +35,19 @@
 ////                                                             ////
 /////////////////////////////////////////////////////////////////////
 
+//  CVS Log
+//
+//  $Id: i2c_master_defines.v,v 1.3 2001-11-05 11:59:25 rherveille Exp $
+//
+//  $Date: 2001-11-05 11:59:25 $
+//  $Revision: 1.3 $
+//  $Author: rherveille $
+//  $Locker:  $
+//  $State: Exp $
+//
+// Change History:
+//               $Log: not supported by cvs2svn $
+
 
 // I2C registers wishbone addresses
 

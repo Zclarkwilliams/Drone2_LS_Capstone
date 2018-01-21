@@ -23,7 +23,7 @@
 //// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED   ////
 //// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS   ////
 //// FOR A PARTICULAR PURPOSE. IN NO EVENT SHALL THE AUTHOR      ////
-//// OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,         ////
+//// OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,    ////
 //// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES    ////
 //// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE   ////
 //// GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR        ////
@@ -72,6 +72,8 @@
 //	                                |replace q, qq with check_SR, data_rxr
 //-------------------------------------------------------------------------
 
+`include "timescale.v";
+
 module i2c_module(scl, sda, rstn, DATA_OUT, DATA_IN, clk);
 	//
 	// wires && regs
@@ -84,8 +86,8 @@ module i2c_module(scl, sda, rstn, DATA_OUT, DATA_IN, clk);
 	//wire clk;  // master clock from wb
 	input wire clk;  // master clock from wb
 	reg [31:0] adr;
-	reg  [7:0] dat_o;
-	wire [7:0] dat0_i;
+	reg  [7:0] datTX;
+	wire [7:0] datRX;
 	reg we;
 	reg stb;
 	reg cyc;
@@ -94,20 +96,28 @@ module i2c_module(scl, sda, rstn, DATA_OUT, DATA_IN, clk);
 	
 	localparam awidth = 4'h7;
 	localparam dwidth = 4'h8;
+	localparam stateBits = 6;
 	
 	reg READ_CMD;
 	reg WRITE_CMD;
 	reg delay;
 	reg [awidth -1:0]	cmd_addr;
 	reg [dwidth -1:0]	cmd_data;
-	reg [6:0]CSRcaller_next_state, WRcaller_next_state, RDcaller_next_state;
+	reg [stateBits:0]CSRcaller_next_state, WRcaller_next_state, RDcaller_next_state;
 	reg [7:0]check_SR, data_rxr;
-	reg [6:0]I2C_CMD_State, I2C_CMD_NextState;
+	reg [stateBits:0]I2C_CMD_State, I2C_CMD_NextState;
 	reg I2C_clk;
-	reg [15:0]count;
+	reg [7:0]count;
+	wire scl_pad_i;
+	wire scl_pad_o;
+	wire scl_padoen_o;
+	wire sda_pad_i;
+	wire sda_pad_o;
+	wire sda_padoen_o;
+	
+	localparam BNO055_CHIP_ID_REG = 8'h00;
 	
 	localparam I2C_DIVIDER = 67; // Divider to provide a clock posedge every 2.5 uS 1/(400kHz)
-	//localparam I2C_DIVIDER = 6; // Divider to provide a clock posedge every 2.5 uS 1/(400kHz)
 	
 	localparam PRER_LO = 3'b000;
 	localparam PRER_HI = 3'b001;
@@ -120,90 +130,97 @@ module i2c_module(scl, sda, rstn, DATA_OUT, DATA_IN, clk);
 	localparam CR_R    = 3'b110; // undocumented / reserved output
 	localparam RD      = 1'b1;
 	localparam WR      = 1'b0;
-	localparam SADR    = 7'b01010_01;
+	localparam SADR    = 7'b01010_01; //Slave address of the BNO055 = 0x29
 
 	//Initial default state
-	localparam I2C_CMD_STATE_INIT_CLK1     = 0;
-	localparam I2C_CMD_STATE_INIT_CLK2     = 1;
-	localparam I2C_CMD_STATE_INIT_ENA      = 2;
-	localparam I2C_CMD_STATE_WAIT          = 3;
+	localparam I2C_CMD_STATE_RESET       = 0;
+	localparam I2C_CMD_STATE_INIT_CLK1     = 1;
+	localparam I2C_CMD_STATE_INIT_CLK2     = 2;
+	localparam I2C_CMD_STATE_INIT_ENA      = 3;
+	localparam I2C_CMD_STATE_WAIT          = 4;
 	//Write states
-	localparam I2C_CMD_STATE_W_SET_SLAVE   = 4;
-	localparam I2C_CMD_STATE_W_SET_START   = 5;
-	localparam I2C_CMD_STATE_W_READ_CH_SR1 = 6;
-	localparam I2C_CMD_STATE_W_SET_S_REG   = 7;
-    localparam I2C_CMD_STATE_W_CMD_WRITE1  = 8;
-	localparam I2C_CMD_STATE_W_READ_CH_SR2 = 9;
-	localparam I2C_CMD_STATE_W_SET_TX_REG  = 10;
-    localparam I2C_CMD_STATE_W_CMD_WRITE2  = 11;
-	localparam I2C_CMD_STATE_W_SET_STOP    = 12;
-	localparam I2C_CMD_STATE_W_READ_CH_SR3 = 13;
+	localparam I2C_CMD_STATE_W_SET_SLAVE   = 5;
+	localparam I2C_CMD_STATE_W_SET_START   = 6;
+	localparam I2C_CMD_STATE_W_READ_CH_SR1 = 7;
+	localparam I2C_CMD_STATE_W_SET_S_REG   = 8;
+    localparam I2C_CMD_STATE_W_CMD_WRITE1  = 9;
+	localparam I2C_CMD_STATE_W_READ_CH_SR2 = 10;
+	localparam I2C_CMD_STATE_W_SET_TX_REG  = 11;
+    localparam I2C_CMD_STATE_W_CMD_WRITE2  = 12;
+	localparam I2C_CMD_STATE_W_SET_STOP    = 13;
+	localparam I2C_CMD_STATE_W_READ_CH_SR3 = 14;
 	//Read states
-	localparam I2C_CMD_STATE_R_SET_SLAVE      = 14;
-	localparam I2C_CMD_STATE_R_SET_START      = 15;
-	localparam I2C_CMD_STATE_R_READ_CH_SR1    = 16;
-	localparam I2C_CMD_STATE_R_SET_S_REG      = 17;
-    localparam I2C_CMD_STATE_R_CMD_WRITE1     = 18;
-	localparam I2C_CMD_STATE_R_READ_CH_SR2    = 19;
-	localparam I2C_CMD_STATE_R_SET_SLAVE_RD   = 20;
-    localparam I2C_CMD_STATE_R_CMD_READ_START = 21;
-	localparam I2C_CMD_STATE_R_READ_CH_SR3    = 22;
-    localparam I2C_CMD_STATE_R_CMD_READ_ACKM  = 23;
-	localparam I2C_CMD_STATE_R_READ_CH_SR4    = 24;
-	localparam I2C_CMD_STATE_R_READ_STR_RX    = 25;
-	localparam I2C_CMD_STATE_R_SET_STOP       = 26;
-	localparam I2C_CMD_STATE_R_READ_CH_SR5    = 27;
+	localparam I2C_CMD_STATE_R_SET_SLAVE      = 15;
+	localparam I2C_CMD_STATE_R_SET_START      = 16;
+	localparam I2C_CMD_STATE_R_READ_CH_SR1    = 17;
+	localparam I2C_CMD_STATE_R_SET_S_REG      = 18;
+    localparam I2C_CMD_STATE_R_CMD_WRITE1     = 19;
+	localparam I2C_CMD_STATE_R_READ_CH_SR2    = 20;
+	localparam I2C_CMD_STATE_R_SET_SLAVE_RD   = 21;
+    localparam I2C_CMD_STATE_R_CMD_READ_START = 22;
+	localparam I2C_CMD_STATE_R_READ_CH_SR3    = 23;
+    localparam I2C_CMD_STATE_R_CMD_READ_ACKM  = 24;
+	localparam I2C_CMD_STATE_R_READ_CH_SR4    = 25;
+	localparam I2C_CMD_STATE_R_READ_STR_RX    = 26;
+	localparam I2C_CMD_STATE_R_SET_STOP       = 27;
+	localparam I2C_CMD_STATE_R_READ_CH_SR5    = 28;
 
 	//States for checking status register
-	localparam CSR_STATE_READ_SR  = 28;
-	localparam CSR_STATE_CHECK_SR = 29;
+	localparam CSR_STATE_READ_SR  = 29;
+	localparam CSR_STATE_CHECK_SR = 30;
 
 	//States for writing to a register
-	localparam WR_STATE_DELAY1a = 30;
-	localparam WR_STATE_DELAY1b = 31;
-	localparam WR_STATE_SET_REG = 32;
-	localparam WR_STATE_W_ACKS  = 33;
-    localparam WR_STATE_DELAY2a = 34;
-    localparam WR_STATE_DELAY2b = 35;
-	localparam WR_STATE_DIS_WB  = 36;
+	localparam WR_STATE_DELAY1a = 31;
+	localparam WR_STATE_DELAY1b = 32;
+	localparam WR_STATE_SET_REG = 33;
+	localparam WR_STATE_W_ACKS  = 34;
+    localparam WR_STATE_DELAY2a = 35;
+    localparam WR_STATE_DELAY2b = 36;
+	localparam WR_STATE_DIS_WB  = 37;
 	
 	//States for reading from a register
-	localparam RD_STATE_DELAY1a = 37;
-	localparam RD_STATE_DELAY1b = 38;
-	localparam RD_STATE_SET_REG = 39;
-	localparam RD_STATE_W_ACKS  = 40;
-	localparam RD_STATE_DELAY2a = 41;
-    localparam RD_STATE_DELAY2b = 42;
-	localparam RD_STATE_READ    = 43;
-	
-	
+	localparam RD_STATE_DELAY1a = 38;
+	localparam RD_STATE_DELAY1b = 39;
+	localparam RD_STATE_SET_REG = 40;
+	localparam RD_STATE_W_ACKS  = 41;
+	localparam RD_STATE_DELAY2a = 42;
+    localparam RD_STATE_DELAY2b = 43;
+	localparam RD_STATE_READ    = 44;
+
 	//
 	// Module body
 	//
 
 	wire stb0 = stb & ~adr[3];
-    assign dat_i = ({{8'd8}{stb0}} & dat0_i);
+    assign dat_i = ({{8'd8}{stb0}} & datRX);
 
 	//clock CLK (clk);
-	i2c_master_wb_top i2c_top (
+	i2c_master i2c_top (
 		// wishbone interface
 		.wb_clk_i(clk),
 		.wb_rst_i(1'b0),
 		.arst_i(rstn),
 		.wb_adr_i(adr[2:0]),
-		.wb_dat_i(dat_o),
-		.wb_dat_o(dat0_i),
+		.wb_dat_i(datTX),
+		.wb_dat_o(datRX),
 		.wb_we_i(we),
 		.wb_stb_i(stb0),
 		.wb_cyc_i(cyc),
 		.wb_ack_o(ack),
 		.wb_inta_o(inta),
-		.scl(scl),
-		.sda(sda)
+		.scl_pad_i(scl_pad_i),
+		.scl_pad_o(scl_pad_o),
+		.scl_padoen_o(scl_padoen_o),
+		.sda_pad_i(sda_pad_i),
+		.sda_pad_o(sda_pad_o),
+		.sda_padoen_o(sda_padoen_o)
 	);
 	
-	//Generate I2C interval timer for 400kHz I2C clock rate down from 53.20MHz clock
-	always@(negedge clk, negedge rstn) begin
+	assign scl = scl_padoen_o ? scl_pad_o : scl_pad_i;
+	assign scl = sda_padoen_o ? sda_pad_o : sda_pad_i;
+	
+	//Generate I2C interval clk for 400kHz I2C clock rate down from 53.20MHz clock
+	always@(posedge clk, negedge rstn) begin
 		if(~rstn) begin
 			count <= 0;
 			I2C_clk <= 0;
@@ -217,9 +234,9 @@ module i2c_module(scl, sda, rstn, DATA_OUT, DATA_IN, clk);
 			end
 		end
 
-	always@(negedge I2C_clk, negedge rstn) begin
+	always@(posedge I2C_clk, negedge rstn) begin
 		if(~rstn) begin
-			I2C_CMD_State <= I2C_CMD_STATE_INIT_CLK1;
+			I2C_CMD_State <= I2C_CMD_STATE_RESET;
 			end
 		else begin
 			I2C_CMD_State <= I2C_CMD_NextState;
@@ -231,14 +248,13 @@ module i2c_module(scl, sda, rstn, DATA_OUT, DATA_IN, clk);
 		input TASKWR_delay;
 		input [awidth-1:0] TASKWR_cmd_addr;
 		input [dwidth-1:0] TASKWR_cmd_data;
-		input [6:0] TASKWR_WRcaller_next_state;
-		output [6:0] WRcaller_next_state;
+		input [stateBits:0] CallerNextState;
 		begin
 			delay = TASKWR_delay;
 			cmd_addr = TASKWR_cmd_addr;
 			cmd_data = TASKWR_cmd_data;
 			I2C_CMD_NextState = WR_STATE_DELAY1a;
-			WRcaller_next_state = TASKWR_WRcaller_next_state;
+			WRcaller_next_state = CallerNextState;
 		end
 	endtask
 	
@@ -247,41 +263,56 @@ module i2c_module(scl, sda, rstn, DATA_OUT, DATA_IN, clk);
 		input TASKRD_delay;
 		input [awidth-1:0] TASKRD_cmd_addr;
 		output [dwidth-1:0] TASKRD_cmd_data;
-		input [6:0] TASKRD_RDcaller_next_state;
-		output [6:0] RDcaller_next_state;
+		input [stateBits:0] CallerNextState;
 		begin
 			delay = TASKRD_delay;
 			cmd_addr = TASKRD_cmd_addr;
 			cmd_data = TASKRD_cmd_data;
 			I2C_CMD_NextState = RD_STATE_DELAY1a;
-			RDcaller_next_state = TASKRD_RDcaller_next_state;
+			RDcaller_next_state = CallerNextState;
 		end
 	endtask
 	
 	task wb_check_SR;
-		input [6:0] TASKCSR_CSRcaller_next_state;
-		output [6:0] CSRcaller_next_state;
+		input [stateBits:0] CallerNextState;
 		begin
 			I2C_CMD_NextState = CSR_STATE_READ_SR;
-			CSRcaller_next_state = TASKCSR_CSRcaller_next_state;
+			CSRcaller_next_state = CallerNextState;
 		end
 	endtask
 
 
-	always@(posedge I2C_clk) begin
+	always@(I2C_CMD_State, rstn) begin
+		//Defaults to maintain state, may be overridden in lower steps
+		cyc   = cyc;
+		stb   = stb;
+		we    = we;
 		case(I2C_CMD_State)
+			I2C_CMD_STATE_RESET: begin
+				READ_CMD  = 0;
+				WRITE_CMD = 0;
+				we        = 0;
+				cyc       = 0;
+				stb       = 0;
+				if(~rstn)
+					I2C_CMD_NextState = I2C_CMD_STATE_RESET;
+				else
+					I2C_CMD_NextState = I2C_CMD_STATE_INIT_CLK1;
+				end
 			I2C_CMD_STATE_INIT_CLK1: begin
-				wb_write_reg(1, PRER_LO, 8'h64, I2C_CMD_STATE_INIT_CLK2, WRcaller_next_state); // load prescaler lo-byte
-				//wb_write_reg(1, PRER_LO, 8'h06, I2C_CMD_STATE_INIT_CLK2, WRcaller_next_state); // load prescaler lo-byte
-				READ_CMD          = 0;
-				WRITE_CMD         = 0;
+				wb_write_reg(1, PRER_LO, 8'h64, I2C_CMD_STATE_INIT_CLK2); // load prescaler lo-byte
+				READ_CMD  = 0;
+				WRITE_CMD = 0;
+				we        = 0;
+				cyc       = 0;
+				stb       = 0;
 				end
 			I2C_CMD_STATE_INIT_CLK2:
-				wb_write_reg(1, PRER_HI, 8'h00, I2C_CMD_STATE_INIT_ENA, WRcaller_next_state); // load prescaler hi-byte
+				wb_write_reg(1, PRER_HI, 8'h00, I2C_CMD_STATE_INIT_ENA); // load prescaler hi-byte
 			I2C_CMD_STATE_INIT_ENA:
-				wb_write_reg(1, CTR,     8'h80, I2C_CMD_STATE_WAIT, WRcaller_next_state); // enable core
+				wb_write_reg(1, CTR, 8'h80, I2C_CMD_STATE_WAIT);         // enable core
 			I2C_CMD_STATE_WAIT: begin
-				//Just for testing, get rid of this soon!
+				//Just for testing, force to read, get rid of this soon!
 				READ_CMD          = 1;
 				if(WRITE_CMD == 1'b1)
 					I2C_CMD_NextState = I2C_CMD_STATE_W_SET_SLAVE;
@@ -293,25 +324,25 @@ module i2c_module(scl, sda, rstn, DATA_OUT, DATA_IN, clk);
 				
 			//Start of WRITE sequence
 			I2C_CMD_STATE_W_SET_SLAVE:
-				wb_write_reg(1, TXR, {SADR,WR}, I2C_CMD_STATE_W_SET_START,WRcaller_next_state);// present slave address, set write-bit
+				wb_write_reg(1, TXR, {SADR,WR}, I2C_CMD_STATE_W_SET_START);// present slave address, set write-bit
 			I2C_CMD_STATE_W_SET_START:
-				wb_write_reg(0, CR,      8'h90, I2C_CMD_STATE_W_READ_CH_SR1, WRcaller_next_state); // set command (start, write)
-			I2C_CMD_STATE_W_READ_CH_SR1: // check tip bit (Transfer In Progress)
-				wb_check_SR(I2C_CMD_STATE_W_SET_S_REG, CSRcaller_next_state);
+				wb_write_reg(0, CR, 8'h90, I2C_CMD_STATE_W_READ_CH_SR1);   // set command (start, write)
+			I2C_CMD_STATE_W_READ_CH_SR1: 
+				wb_check_SR(I2C_CMD_STATE_W_SET_S_REG);                    // check tip bit (Transfer In Progress)
 			I2C_CMD_STATE_W_SET_S_REG:
-				wb_write_reg(1, TXR,     8'h00, I2C_CMD_STATE_W_CMD_WRITE1, WRcaller_next_state); // present slave's memory address - NEED TO SET THIS to something
+				wb_write_reg(1, TXR, BNO055_CHIP_ID_REG, I2C_CMD_STATE_W_CMD_WRITE1); // present slave's memory address - NEED TO SET THIS to something
 			I2C_CMD_STATE_W_CMD_WRITE1:
-				wb_write_reg(0, CR,      8'h10, I2C_CMD_STATE_W_READ_CH_SR2, WRcaller_next_state); // set command (write)
-			I2C_CMD_STATE_W_READ_CH_SR2: // check tip bit (Transfer In Progress)
-				wb_check_SR(I2C_CMD_STATE_W_SET_TX_REG, CSRcaller_next_state);
+				wb_write_reg(0, CR, 8'h10, I2C_CMD_STATE_W_READ_CH_SR2);   // set command (write)
+			I2C_CMD_STATE_W_READ_CH_SR2: 
+				wb_check_SR(I2C_CMD_STATE_W_SET_TX_REG);                   // check tip bit (Transfer In Progress)
 			I2C_CMD_STATE_W_SET_TX_REG:
-				wb_write_reg(1, TXR,     8'ha5, I2C_CMD_STATE_W_CMD_WRITE2, WRcaller_next_state); // present data - NEED TO SET THIS to something
+				wb_write_reg(1, TXR, 8'ha5, I2C_CMD_STATE_W_CMD_WRITE2);   // present data - NEED TO SET THIS to something
 			I2C_CMD_STATE_W_CMD_WRITE2:
-				wb_write_reg(0, CR,      8'h10, I2C_CMD_STATE_W_SET_STOP, WRcaller_next_state); // set command (write)
+				wb_write_reg(0, CR, 8'h10, I2C_CMD_STATE_W_SET_STOP);      // set command (write)
 			I2C_CMD_STATE_W_SET_STOP:
-				wb_write_reg(0, CR,      8'h50, I2C_CMD_STATE_W_READ_CH_SR3, WRcaller_next_state); // set command (stop, write)
-			I2C_CMD_STATE_W_READ_CH_SR3: begin// check tip bit (Transfer In Progress)
-				wb_check_SR(I2C_CMD_STATE_WAIT, CSRcaller_next_state);
+				wb_write_reg(0, CR, 8'h50, I2C_CMD_STATE_W_READ_CH_SR3);   // set command (stop, write)
+			I2C_CMD_STATE_W_READ_CH_SR3: begin
+				wb_check_SR(I2C_CMD_STATE_WAIT);                           // check tip bit (Transfer In Progress)
 				if(check_SR == 1'b0) begin
 					WRITE_CMD = 1'b0;
 					READ_CMD  = 1'b0;
@@ -320,33 +351,33 @@ module i2c_module(scl, sda, rstn, DATA_OUT, DATA_IN, clk);
 				
 			//Start of READ sequence
 			I2C_CMD_STATE_R_SET_SLAVE:
-				wb_write_reg(1, TXR,{SADR,WR}, I2C_CMD_STATE_R_SET_START, WRcaller_next_state); // present slave address, set write-bit
+				wb_write_reg(1, TXR,{SADR,WR}, I2C_CMD_STATE_R_SET_START); // present slave address, set write-bit
 			I2C_CMD_STATE_R_SET_START:
-				wb_write_reg(0, CR,     8'h90, I2C_CMD_STATE_R_READ_CH_SR1, WRcaller_next_state); // set command (start, write)
-			I2C_CMD_STATE_R_READ_CH_SR1: // check tip bit (Transfer In Progress)
-				wb_check_SR(I2C_CMD_STATE_R_SET_S_REG, CSRcaller_next_state);			
+				wb_write_reg(0, CR, 8'h90, I2C_CMD_STATE_R_READ_CH_SR1);   // set command (start, write)
+			I2C_CMD_STATE_R_READ_CH_SR1: 
+				wb_check_SR(I2C_CMD_STATE_R_SET_S_REG);                    // check tip bit (Transfer In Progress)	
 			I2C_CMD_STATE_R_SET_S_REG:
-				wb_write_reg(1, TXR,     8'h00, I2C_CMD_STATE_R_CMD_WRITE1, WRcaller_next_state); // present slave's memory address
+				wb_write_reg(1, TXR, 8'h00, I2C_CMD_STATE_R_CMD_WRITE1);   // present slave's memory address
 			I2C_CMD_STATE_R_CMD_WRITE1:
-				wb_write_reg(0, CR,      8'h10, I2C_CMD_STATE_R_READ_CH_SR2, WRcaller_next_state); // set command (write)
-			I2C_CMD_STATE_R_READ_CH_SR2: // check tip bit (Transfer In Progress)
-				wb_check_SR(I2C_CMD_STATE_R_SET_SLAVE_RD, CSRcaller_next_state);
+				wb_write_reg(0, CR, 8'h10, I2C_CMD_STATE_R_READ_CH_SR2);   // set command (write)
+			I2C_CMD_STATE_R_READ_CH_SR2: 
+				wb_check_SR(I2C_CMD_STATE_R_SET_SLAVE_RD);                 // check tip bit (Transfer In Progress)
 			I2C_CMD_STATE_R_SET_SLAVE_RD:
-				wb_write_reg(1, TXR, {SADR,RD}, I2C_CMD_STATE_R_CMD_READ_START, WRcaller_next_state); // present slave's address, set read-bit
+				wb_write_reg(1, TXR, {SADR,RD}, I2C_CMD_STATE_R_CMD_READ_START);// present slave's address, set read-bit
 			I2C_CMD_STATE_R_CMD_READ_START:
-				wb_write_reg(0, CR,      8'h90, I2C_CMD_STATE_R_READ_CH_SR3, WRcaller_next_state); // set command (start, write)
-			I2C_CMD_STATE_R_READ_CH_SR3: // check tip bit (Transfer In Progress)
-				wb_check_SR(I2C_CMD_STATE_R_CMD_READ_ACKM, CSRcaller_next_state);
+				wb_write_reg(0, CR, 8'h90, I2C_CMD_STATE_R_READ_CH_SR3);   // set command (start, write)
+			I2C_CMD_STATE_R_READ_CH_SR3: 
+				wb_check_SR(I2C_CMD_STATE_R_CMD_READ_ACKM);                // check tip bit (Transfer In Progress)
 			I2C_CMD_STATE_R_CMD_READ_ACKM:
-				wb_write_reg(1, CR,      8'h20, I2C_CMD_STATE_R_READ_CH_SR4, WRcaller_next_state); // set command (read, ack_read)
-			I2C_CMD_STATE_R_READ_CH_SR4: // check tip bit (Transfer In Progress)
-				wb_check_SR(I2C_CMD_STATE_R_READ_STR_RX, CSRcaller_next_state);
+				wb_write_reg(1, CR, 8'h20, I2C_CMD_STATE_R_READ_CH_SR4);   // set command (read, ack_read)
+			I2C_CMD_STATE_R_READ_CH_SR4: 
+				wb_check_SR(I2C_CMD_STATE_R_READ_STR_RX);                  // check tip bit (Transfer In Progress)
 			I2C_CMD_STATE_R_READ_STR_RX:
-				wb_read_reg(1, RXR, DATA_OUT, I2C_CMD_STATE_R_SET_STOP, RDcaller_next_state); //Store read data
+				wb_read_reg(1, RXR, DATA_OUT, I2C_CMD_STATE_R_SET_STOP);   //Store read data
 			I2C_CMD_STATE_R_SET_STOP:
-				wb_write_reg(1, CR,      8'h40, I2C_CMD_STATE_R_READ_CH_SR5, WRcaller_next_state); // set command (stop)
-			I2C_CMD_STATE_R_READ_CH_SR5: begin// check tip bit (Transfer In Progress)
-				wb_check_SR(I2C_CMD_STATE_WAIT, CSRcaller_next_state);
+				wb_write_reg(1, CR, 8'h40, I2C_CMD_STATE_R_READ_CH_SR5);   // set command (stop)
+			I2C_CMD_STATE_R_READ_CH_SR5: begin
+				wb_check_SR(I2C_CMD_STATE_WAIT);                                // check tip bit (Transfer In Progress)
 				if(check_SR == 1'b0) begin
 					WRITE_CMD = 1'b0;
 					READ_CMD  = 1'b0;
@@ -356,40 +387,55 @@ module i2c_module(scl, sda, rstn, DATA_OUT, DATA_IN, clk);
 				
 			//FSM portion for writing to a register
 			WR_STATE_DELAY1a: begin
-				if(delay) //If delay (Either 1 or 0)
+				we     = 1'b0;
+				cyc    = 1'b0;
+				stb    = 1'b0;
+				if(delay) //If a next delay (Can be either 1 or 0), this delay is mandatory
 					I2C_CMD_NextState = WR_STATE_DELAY1b;
 				else
 					I2C_CMD_NextState = WR_STATE_SET_REG;
 				end
 			WR_STATE_DELAY1b: begin
+				we    = 1'b0;
+				cyc   = 1'b0;
+				stb   = 1'b0;
 				I2C_CMD_NextState = WR_STATE_SET_REG;
 				end
 			WR_STATE_SET_REG: begin
 				adr   = cmd_addr;
-				dat_o = cmd_data;
+				datTX = cmd_data;
 				cyc   = 1'b1;
 				stb   = 1'b1;
 				we    = 1'b1;
 				I2C_CMD_NextState = WR_STATE_W_ACKS;
 				end
 			WR_STATE_W_ACKS: begin
+				we    = 1'b1;
+				cyc   = 1'b1;
+				stb   = 1'b1;
 				if(ack)
 					I2C_CMD_NextState = WR_STATE_DELAY2a;
 				else
 					I2C_CMD_NextState = WR_STATE_W_ACKS;
 				end
 			WR_STATE_DELAY2a: begin
+				we    = 1'b1;
+				cyc   = 1'b1;
+				stb   = 1'b1;
 				I2C_CMD_NextState = WR_STATE_DELAY2b;
 				end
 			WR_STATE_DELAY2b: begin
+				we    = 1'b1;
+				cyc   = 1'b1;
+				stb   = 1'b1;
 				I2C_CMD_NextState = WR_STATE_DIS_WB;
 				end
 			WR_STATE_DIS_WB: begin
 				cyc   = 1'b0;
-				stb   = 1'b0; //1'bx; cm - change to inactive state
+				stb   = 1'b0;
 				adr   = {awidth{1'bx}};
-				dat_o = {dwidth{1'bx}};
-				we    = 1'b0; //1'hx; cm - change to inactive state
+				datTX = {dwidth{1'bx}};
+				we    = 1'b0;
 				I2C_CMD_NextState = WRcaller_next_state;
 				end
 			
@@ -397,41 +443,56 @@ module i2c_module(scl, sda, rstn, DATA_OUT, DATA_IN, clk);
 			
 			//FSM portion for reading from a register
 			RD_STATE_DELAY1a: begin
-				if(delay) //If delay (Either 1 or 0)
+				we    = 1'b0;
+				cyc   = 1'b0;
+				stb   = 1'b0;
+				if(delay) //If a next delay (Can be either 1 or 0), this delay is mandatory
 					I2C_CMD_NextState = RD_STATE_DELAY1b;
 				else
 					I2C_CMD_NextState = RD_STATE_SET_REG;
 				end
 			RD_STATE_DELAY1b: begin
+				we    = 1'b0;
+				cyc   = 1'b0;
+				stb   = 1'b0;
 				I2C_CMD_NextState = RD_STATE_SET_REG;
 				end
 			RD_STATE_SET_REG: begin
 				adr   = cmd_addr;
-				dat_o = {dwidth{1'bx}};
+				datTX = {dwidth{1'bx}};
 				cyc   = 1'b1;
 				stb   = 1'b1;
 				we    = 1'b0;
 				I2C_CMD_NextState = RD_STATE_W_ACKS;
 				end
 			RD_STATE_W_ACKS: begin
+				cyc   = 1'b1;
+				stb   = 1'b1;
+				we    = 1'b0;
 				if(ack)
 					I2C_CMD_NextState = RD_STATE_DELAY2a;
 				else
 					I2C_CMD_NextState = RD_STATE_W_ACKS;
 				end
 			RD_STATE_DELAY2a: begin
+				cyc   = 1'b1;
+				stb   = 1'b1;
+				we    = 1'b0;
 				I2C_CMD_NextState = RD_STATE_DELAY2b;
 				end
 			RD_STATE_DELAY2b: begin
+				cyc   = 1'b1;
+				stb   = 1'b1;
+				we    = 1'b0;
 				I2C_CMD_NextState = RD_STATE_READ;
 				end
 			RD_STATE_READ: begin
 				cyc   = 1'b0;
 				stb   = 1'b0; //1'bx; cm - change to inactive state
 				adr   = {awidth{1'bx}};
-				dat_o = {dwidth{1'bx}};
-				we   = 1'b0; //1'hx; cm - change to inactive state
-				cmd_data    = dat0_i;
+				datTX = {dwidth{1'bx}};
+				we    = 1'b0; //1'hx; cm - change to inactive state
+				cmd_data = datRX;
 				I2C_CMD_NextState = RDcaller_next_state;
 				end
 
@@ -440,7 +501,7 @@ module i2c_module(scl, sda, rstn, DATA_OUT, DATA_IN, clk);
 			//FSM portion for checking status register
 			CSR_STATE_READ_SR: begin
 				check_SR = 1'b1;
-				wb_read_reg(1, SR, check_SR, CSR_STATE_CHECK_SR, RDcaller_next_state);
+				wb_read_reg(1, SR, check_SR, CSR_STATE_CHECK_SR);
 				end
 			CSR_STATE_CHECK_SR: begin
 				if(check_SR == 0)

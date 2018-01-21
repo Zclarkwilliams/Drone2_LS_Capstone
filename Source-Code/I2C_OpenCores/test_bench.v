@@ -1,4 +1,7 @@
-`timescale 1us / 100nsmodule i2c_module_tb();
+
+`include "timescale.v";
+
+module i2c_module_tb();
 	wire scl ;
 	wire sda ;
 	reg rstn;

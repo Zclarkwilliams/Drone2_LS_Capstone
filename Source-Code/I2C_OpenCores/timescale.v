@@ -1,3 +1,1 @@
-`timescale 1ns / 10ps
-//`timescale 1us / 100ns
-
+`timescale 1ns / 1ns
