@@ -26,8 +26,9 @@ File downloaded from: https://github.com/lucas709/drone_soc/blob/master/verilog_
 // Clock for all modules.
 module clock (clk);
    output wire clk;
-   // Instantiate the internal oscillator.
-   defparam OSCH_inst.NOM_FREQ = "53.20";
+   // Instantiate the internal oscillator.2.08 
+   defparam OSCH_inst.NOM_FREQ = "2.08";
+   //defparam OSCH_inst.NOM_FREQ = "53.20";
    OSCH OSCH_inst
      ( 
        .STDBY(1'b0), 		// 0=Enabled, 1=Disabled also Disabled with Bandgap=OFF.
