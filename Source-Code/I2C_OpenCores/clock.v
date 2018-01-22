@@ -1,6 +1,3 @@
-
-`include "timescale.v";
-
 /*
 
 Code from ECE412/3 Capstone team from 2017, Lucas Myers,  Svyatoslav Zhuchenya, Casey Montgomery, Charley  Hill
@@ -29,8 +26,8 @@ File downloaded from: https://github.com/lucas709/drone_soc/blob/master/verilog_
 module clock (clk);
    output wire clk;
    // Instantiate the internal oscillator.2.08 
-   defparam OSCH_inst.NOM_FREQ = "2.08";
-   //defparam OSCH_inst.NOM_FREQ = "53.20";
+   //defparam OSCH_inst.NOM_FREQ = "2.08";
+   defparam OSCH_inst.NOM_FREQ = "53.20";
    OSCH OSCH_inst
      ( 
        .STDBY(1'b0), 		// 0=Enabled, 1=Disabled also Disabled with Bandgap=OFF.
