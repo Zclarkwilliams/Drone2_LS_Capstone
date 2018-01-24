@@ -1,25 +1,28 @@
-So here's a transcript of some of the conversation I had with Casey from the previous team:
+Transcript of conversation with Casey from the previous team regarding several subjects:
 
-"Our only google doc that I am aware of is the final report and the weekly reports that are linked on the wiki section of the github. As far as 
-projects go, we gave Rahul a copy of our last working project folder, and the project has all of the pins mapped already... if Rahul didn't give it 
-to you, that is absurd. I have it on my computer at home, so you will need to wait until later tonight. I can send you the working folder with the 
-lattice diamond project. I assumed that Rahul already gave that to you!
+PRIOR TEAM DOCUMENTATION:
+"Our only google doc that I am aware of is the final report and the weekly reports that are linked on the wiki section of the github. 
+As far as projects go, we gave Rahul a copy of our last working project folder, and the project has all of the pins mapped already... 
+if Rahul didn't give it to you, that is absurd. I have it on my computer at home, so you will need to wait until later tonight. I can
+send you the working folder with the lattice diamond project. I assumed that Rahul already gave that to you!
 
-If you are trying to grasp the basics, the most important things to look at on the github are the motor signal characterization .zip, the radio 
-receiver signals characterization .pdf, and the system design and modeling entry under the wiki tab.
+If you are trying to grasp the basics, the most important things to look at on the github are the motor signal characterization .zip,
+the radio receiver signals characterization .pdf, and the system design and modeling entry under the wiki tab.
 
-My suggestions for continuing on:
-- Have your coder look through the verilog code until they understand how we convert PWM inputs to the FPGA into digital values in our PWM_reader module
+SUGGESTIONS FOR CONTINUING ON:
+- Have your coder look through the verilog code until they understand how we convert PWM inputs to the FPGA into digital values in our
+  PWM_reader module
 - Find an accelerometer with PWM outputs
-- Instantiate another copy of the PWM_reader within the flight controller program that takes as input the pwm outputs of the accelerometer
+- Instantiate another copy of the PWM_reader within the flight controller program that takes as input the pwm outputs of the
+  accelerometer
 - Use that parsed digital accelerometer data to do a bit of rudimentary stabilization in parallel with the manual flight controls
 - Fly!
 
 The biggest flaw in our design was the fact that it is fully manual and it is a huge pain in the ass to keep it in the air... it is REALLY squirrely. 
 
-Also, you will notice (if you haven't already) that lattice doesn't allow multiplication or division in synthesisable verilog... that is why we had to 
-use the rather ugly method of "if value <= this, then do this" for literally hundreds of lines... the lattice diamond software isn't particularly 
-robust in that respect. It is better than vivado design suite, though!"
+Also, you will notice (if you haven't already) that lattice doesn't allow multiplication or division in synthesisable verilog... that is
+why we had to use the rather ugly method of "if value <= this, then do this" for literally hundreds of lines... the lattice diamond
+software isn't particularly robust in that respect. It is better than vivado design suite, though!"
 
 PRIOR TEAM WORKING FOLDER
 "Alright, the first zip( drone project.zip) has the working folder and all of the lattice diamond project folder files. I think you can
@@ -34,3 +37,13 @@ PRIOR TEAM VERILOG BACKUPS
 of our flight control software without all of the ugly if then statements, go back to one of the early folders (like 4/6) and replace
 the verliog files in the working folder inside the project directory (/DESKTOP/LATTICE/PROJECT1A/BLINKY/SOURCE/) with the files from
 that directory. Make sure to move the files currently in there somewhere else first, and don't do it with lattice diamond open."
+
+ESC'S
+You should definitely pick up extra CW and CCW ESCs and motors, because i guarantee you that at least a few will burn out over the
+course of the next couple of terms. That was out biggest gripe with the Cheerson. The ESCs and motors are a bit finicky.
+However, the only reason that the one looks different is that it is a slightly different era of ESC... the firmware and function are
+identical.
+IIRC, one of them has the wrong color LEDs as well. We ran out of one color and had to replace with the other. The red and green are
+used for telling which side is the front and which side is the rear of the quadcopter from underneath.
+We did the initial calibration sequence with the stock light controller when we first got the drone, but never calibrated the ESCs
+manually or anything like that.
