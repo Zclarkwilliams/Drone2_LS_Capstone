@@ -1,5 +1,7 @@
 
-`include "timescale.v";
+//`include "timescale.v"
+`timescale 1ns / 1ns
+
 
 module i2c_module_tb();
 	wire scl ;

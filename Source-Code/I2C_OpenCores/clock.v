@@ -1,3 +1,6 @@
+
+//`include "timescale.v"
+`timescale 1ns / 1ns
 /*
 
 Code from ECE412/3 Capstone team from 2017, Lucas Myers,  Svyatoslav Zhuchenya, Casey Montgomery, Charley  Hill
