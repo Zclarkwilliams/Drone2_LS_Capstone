@@ -23,21 +23,21 @@
  * @scl: i2c serial clock
  * @sys_clk: system clock
  */
- module imu #(parameter N_VELOCITY = 36,
- 			  parameter N_ROTATION = 36,
- 			  parameter N_ACCEL = 36)
- 			 (output reg [N_VELOCITY-1:0] x_velocity,
- 			  output reg [N_VELOCITY-1:0] y_velocity,
- 			  output reg [N_VELOCITY-1:0] z_velocity,
- 			  output reg [N_ROTATION-1:0] x_rotation,
- 			  output reg [N_ROTATION-1:0] y_rotation,
- 			  output reg [N_ROTATION-1:0] z_rotation,
- 			  output reg [N_ACCEL-1:0] x_accel,
- 			  output reg [N_ACCEL-1:0] y_accel,
- 			  output reg [N_ACCEL-1:0] z_accel,
- 			  input sda,
- 			  input scl,
- 			  input sys_clk);
+module imu #(parameter N_VELOCITY = 36,
+ 			 parameter N_ROTATION = 36,
+			 parameter N_ACCEL = 36)
+			(output reg [N_VELOCITY-1:0] x_velocity,
+			 output reg [N_VELOCITY-1:0] y_velocity,
+			 output reg [N_VELOCITY-1:0] z_velocity,
+			 output reg [N_ROTATION-1:0] x_rotation,
+			 output reg [N_ROTATION-1:0] y_rotation,
+			 output reg [N_ROTATION-1:0] z_rotation,
+			 output reg [N_ACCEL-1:0] x_accel,
+			 output reg [N_ACCEL-1:0] y_accel,
+			 output reg [N_ACCEL-1:0] z_accel,
+			 input sda,
+			 input scl,
+			 input sys_clk);
 
  	always @(posedge sys_clk) begin
  		if (sda || scl) begin
@@ -52,4 +52,5 @@
  			z_accel <= ~z_accel;
  		end
  	end
+
 endmodule

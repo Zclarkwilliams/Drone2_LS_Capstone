@@ -26,20 +26,20 @@ module test_receiver;
 
 	// line up the parameters here to the ones internal to the receiver module
 	receiver #(N_VAL, N_AUX, N_MODE) DUT (.aux1_val(aux1_val),
-				 						 .aux2_val(aux2_val),
-				 						 .mode_val(mode_val),
-				 						 .throttle_val(throttle_val),
-				 						 .yaw_val(yaw_val),
-				 						 .roll_val(roll_val),
-				 						 .pitch_val(pitch_val),
-				 						 .aux1_pwm(aux1_pwm),
-				 						 .aux2_pwm(aux2_pwm),
-				 						 .mode_pwm(mode_pwm),
-				 						 .throttle_pwm(throttle_pwm),
-				 						 .yaw_pwm(yaw_pwm),
-				 						 .roll_pwm(roll_pwm),
-				 						 .pitch_pwm(pitch_pwm),
-				 						 .sys_clk(sys_clk));
+										  .aux2_val(aux2_val),
+										  .mode_val(mode_val),
+										  .throttle_val(throttle_val),
+										  .yaw_val(yaw_val),
+										  .roll_val(roll_val),
+										  .pitch_val(pitch_val),
+										  .aux1_pwm(aux1_pwm),
+										  .aux2_pwm(aux2_pwm),
+										  .mode_pwm(mode_pwm),
+										  .throttle_pwm(throttle_pwm),
+										  .yaw_pwm(yaw_pwm),
+										  .roll_pwm(roll_pwm),
+										  .pitch_pwm(pitch_pwm),
+										  .sys_clk(sys_clk));
 
 	initial begin
 		$display("%m successful");

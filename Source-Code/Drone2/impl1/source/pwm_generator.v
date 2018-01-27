@@ -16,16 +16,16 @@
  * @motor_3_rate: rate to run motor 3 at (units?)
  * @motor_4_rate: rate to run motor 4 at (units?)
  */
- module pwm_generator #(parameter N_RATE = 36)
-					   (output reg motor_1_pwm,
-					   	output reg motor_2_pwm,
-					   	output reg motor_3_pwm,
-					   	output reg motor_4_pwm,
-					   	input [N_RATE-1:0] motor_1_rate,
-					    input [N_RATE-1:0] motor_2_rate,
-					    input [N_RATE-1:0] motor_3_rate,
-					    input [N_RATE-1:0] motor_4_rate,
-					    input sys_clk);
+module pwm_generator #(parameter N_RATE = 36)
+					  (output reg motor_1_pwm,
+					   output reg motor_2_pwm,
+					   output reg motor_3_pwm,
+					   output reg motor_4_pwm,
+					   input [N_RATE-1:0] motor_1_rate,
+					   input [N_RATE-1:0] motor_2_rate,
+					   input [N_RATE-1:0] motor_3_rate,
+					   input [N_RATE-1:0] motor_4_rate,
+					   input sys_clk);
 
 	always @(posedge sys_clk) begin
 		if (motor_1_rate || motor_2_rate || motor_3_rate || motor_4_rate) begin
