@@ -1,0 +1,26 @@
+# Ignore all files under impl* except verilog source files
+impl*/*
+!impl/source
+
+*.html
+*.xml
+.recovery
+.build_status
+*.sty
+simulation*/
+*.log
+*test_impl*
+*xxx*
+*prim.v
+*.twr
+*.synproj
+*.ngd
+*.lsedata
+*.arearep
+.vdbs*/
+*.mrp
+*.prf
+*.hrr
+*.cam
+*.asd
+*.ncd
