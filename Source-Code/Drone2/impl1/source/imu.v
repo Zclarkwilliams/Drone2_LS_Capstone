@@ -24,7 +24,7 @@
  * @sys_clk: system clock
  */
 module imu #(parameter N_VELOCITY = 36,
-			 parameter N_ROTATION = 36,
+ 			 parameter N_ROTATION = 36,
 			 parameter N_ACCEL = 36)
 			(output reg [N_VELOCITY-1:0] x_velocity,
 			 output reg [N_VELOCITY-1:0] y_velocity,

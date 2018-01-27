@@ -17,7 +17,7 @@
  * @motor_4_rate: rate to run motor 4 at (units?)
  */
 module pwm_generator #(parameter N_RATE = 36)
-					   output reg motor_1_pwm,
+					  (output reg motor_1_pwm,
 					   output reg motor_2_pwm,
 					   output reg motor_3_pwm,
 					   output reg motor_4_pwm,

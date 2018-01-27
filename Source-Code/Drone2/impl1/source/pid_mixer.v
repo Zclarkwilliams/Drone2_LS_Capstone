@@ -19,8 +19,8 @@
  * @sys_clk: system clock
  */
 module pid_mixer #(parameter N_RATE = 36,
-				   parameter N_MOTOR_RATE = 36)
-				   output reg [N_MOTOR_RATE-1:0] motor_1_rate,
+			  	   parameter N_MOTOR_RATE = 36)
+				  (output reg [N_MOTOR_RATE-1:0] motor_1_rate,
 				   output reg [N_MOTOR_RATE-1:0] motor_2_rate,
 				   output reg [N_MOTOR_RATE-1:0] motor_3_rate,
 				   output reg [N_MOTOR_RATE-1:0] motor_4_rate,
