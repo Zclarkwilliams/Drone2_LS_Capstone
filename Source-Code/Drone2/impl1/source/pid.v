@@ -25,22 +25,23 @@
  * @z_rotation: rotation vector in the z-direction
  * @sys_clk: system clock
  */
- module pid #(parameter N_RATE = 36,
-			  parameter N_VELOCITY = 36,
-			  parameter N_ROTATION = 36)
-			 (output reg [N_RATE-1:0] yaw_rate_out,
-			  output reg [N_RATE-1:0] roll_rate_out,
-			  output reg [N_RATE-1:0] pitch_rate_out,
-			  input [N_RATE-1:0] yaw_rate_in,
-			  input [N_RATE-1:0] roll_rate_in,
-			  input [N_RATE-1:0] pitch_rate_in,
-			  input [N_VELOCITY-1:0] x_velocity,
-	 		  input [N_VELOCITY-1:0] y_velocity,
-	 		  input [N_VELOCITY-1:0] z_velocity,
-	 		  input [N_ROTATION-1:0] x_rotation,
-	 		  input [N_ROTATION-1:0] y_rotation,
-	 		  input [N_ROTATION-1:0] z_rotation,
-			  input sys_clk);
+module pid #(parameter N_RATE = 36,
+			 parameter N_VELOCITY = 36,
+			 parameter N_ROTATION = 36)
+			(output reg [N_RATE-1:0] yaw_rate_out,
+			 output reg [N_RATE-1:0] roll_rate_out,
+			 output reg [N_RATE-1:0] pitch_rate_out,
+			 input [N_RATE-1:0] yaw_rate_in,
+			 input [N_RATE-1:0] roll_rate_in,
+			 input [N_RATE-1:0] pitch_rate_in,
+			 input [N_VELOCITY-1:0] x_velocity,
+			 input [N_VELOCITY-1:0] y_velocity,
+			 input [N_VELOCITY-1:0] z_velocity,
+			 input [N_ROTATION-1:0] x_rotation,
+			 input [N_ROTATION-1:0] y_rotation,
+			 input [N_ROTATION-1:0] z_rotation,
+			 input sys_clk);
+
 	always @(posedge sys_clk) begin
 		if (yaw_rate_in || roll_rate_in || pitch_rate_in || x_velocity || y_velocity || z_velocity || x_rotation || y_rotation || z_rotation) begin
 			yaw_rate_out <= ~yaw_rate_out;

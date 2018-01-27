@@ -21,17 +21,17 @@
  * @pitch_val: pitch value from -9000 to 9000
  * @sys_clk: system clock
  */
- module value_to_rate #(parameter N_RATE = 36,
-					    parameter N_VAL = 14)
-					   (output reg [N_RATE-1:0] throttle_rate,
-					    output reg [N_RATE-1:0] yaw_rate,
-					    output reg [N_RATE-1:0] roll_rate,
-					    output reg [N_RATE-1:0] pitch_rate,
-					    input [N_VAL-1:0] throttle_val,
-					    input [N_VAL-1:0] yaw_val,
-					    input [N_VAL-1:0] roll_val,
-					    input [N_VAL-1:0] pitch_val,
-					    input sys_clk);
+module value_to_rate #(parameter N_RATE = 36,
+					   parameter N_VAL = 14)
+					  (output reg [N_RATE-1:0] throttle_rate,
+					   output reg [N_RATE-1:0] yaw_rate,
+					   output reg [N_RATE-1:0] roll_rate,
+					   output reg [N_RATE-1:0] pitch_rate,
+					   input [N_VAL-1:0] throttle_val,
+					   input [N_VAL-1:0] yaw_val,
+					   input [N_VAL-1:0] roll_val,
+					   input [N_VAL-1:0] pitch_val,
+					   input sys_clk);
 
 	always @(posedge sys_clk) begin
 		if (throttle_val || yaw_val || roll_val || pitch_val) begin

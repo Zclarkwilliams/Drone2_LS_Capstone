@@ -19,14 +19,14 @@ module test_value_to_rate;
 
 	// line up the parameters here to the ones internal to the receiver module
 	value_to_rate #(N_RATE, N_VAL) DUT (.throttle_rate(throttle_rate),
-				    					.yaw_rate(yaw_rate),
-				    					.roll_rate(roll_rate),
-				    					.pitch_rate(pitch_rate),
-				    					.throttle_val(throttle_val),
-				    					.yaw_val(yaw_val),
-				    					.roll_val(roll_val),
-				    					.pitch_val(pitch_val),
-				    					.sys_clk(sys_clk));
+										.yaw_rate(yaw_rate),
+										.roll_rate(roll_rate),
+										.pitch_rate(pitch_rate),
+										.throttle_val(throttle_val),
+										.yaw_val(yaw_val),
+										.roll_val(roll_val),
+										.pitch_val(pitch_val),
+										.sys_clk(sys_clk));
 
 	initial begin
 		$display("%m successful");

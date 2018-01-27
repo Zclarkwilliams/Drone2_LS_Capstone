@@ -18,17 +18,17 @@
  * @pitch_rate: pitch rate (rad/s) in fixed point 2's complement
  * @sys_clk: system clock
  */
- module pid_mixer #(parameter N_RATE = 36,
-			  		parameter N_MOTOR_RATE = 36)
-				   (output reg [N_MOTOR_RATE-1:0] motor_1_rate,
-				    output reg [N_MOTOR_RATE-1:0] motor_2_rate,
-				    output reg [N_MOTOR_RATE-1:0] motor_3_rate,
-				    output reg [N_MOTOR_RATE-1:0] motor_4_rate,
-				    input [N_RATE-1:0] throttle_rate,
-				    input [N_RATE-1:0] yaw_rate,
-				    input [N_RATE-1:0] roll_rate,
-				    input [N_RATE-1:0] pitch_rate,
-				    input sys_clk);
+module pid_mixer #(parameter N_RATE = 36,
+				   parameter N_MOTOR_RATE = 36)
+				   output reg [N_MOTOR_RATE-1:0] motor_1_rate,
+				   output reg [N_MOTOR_RATE-1:0] motor_2_rate,
+				   output reg [N_MOTOR_RATE-1:0] motor_3_rate,
+				   output reg [N_MOTOR_RATE-1:0] motor_4_rate,
+				   input [N_RATE-1:0] throttle_rate,
+				   input [N_RATE-1:0] yaw_rate,
+				   input [N_RATE-1:0] roll_rate,
+				   input [N_RATE-1:0] pitch_rate,
+				   input sys_clk);
 
 	always @(posedge sys_clk) begin
 		if (throttle_rate || yaw_rate || roll_rate || pitch_rate) begin
@@ -38,4 +38,5 @@
 			motor_4_rate <= ~motor_1_rate;
 		end
 	end
+
 endmodule
