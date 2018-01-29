@@ -29,8 +29,8 @@ module drone2 (output wire motor_1_pwm,
 			   input yaw_pwm,
 			   input roll_pwm,
 			   input pitch_pwm,
-			   input sda,
-			   input scl);
+			   inout sda,
+			   inout scl);
 
 	localparam REC_VAL_BIT_WIDTH = 14;
 	localparam AUX_VAL_BIT_WIDTH = 4;
