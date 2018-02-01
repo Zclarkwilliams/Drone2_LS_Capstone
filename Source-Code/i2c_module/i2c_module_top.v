@@ -215,11 +215,21 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 					nextStb         = `STOP;
 					nextAddr        = `ALL_ZERO;
 					nextDataTX      = `ALL_ZERO;
-					clearWaiting1us = `START_1US_TIMER;
-					i2cCmdNextState = `I2C_CMD_STATE_INIT1_BOOT_WAIT1;
+					//////////////////
+					// debug test
+					//  Force wait here until readWrteIn is 0, which is a manual start trigger
+					//////////////////
+					if(readWriteIn == 1'b0) begin
+						clearWaiting1us = `START_1US_TIMER;
+						i2cCmdNextState = `I2C_CMD_STATE_INIT1_BOOT_WAIT1;
+					end
+					else begin
+						clearWaiting1us = `START_1US_TIMER;
+						i2cCmdNextState = `I2C_CMD_STATE_RESET;
+					end
+					//////////////////
 				end
 				`I2C_CMD_STATE_INIT1_BOOT_WAIT1: begin///  Wait first 1us i2c boot-up delay after reset
-					
 					rstn_local          = 1'b1;
 					if(waiting1us == 1'b1) begin
 						nextWe          = `I2C_1_WE_READ;
@@ -265,13 +275,29 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
 						clearWaiting1us = `STOP_1US_TIMER;
-						i2cCmdNextState = `I2C_CMD_STATE_PRESCALE_HI;
+						i2cCmdNextState = `I2C_CMD_STATE_WAIT_NO_ACK1;
 					end
 					else begin
 						nextWe          = `I2C_1_WE_WRITE;
 						nextStb         = `START;
 						nextAddr        = `I2C_1_BR0;
 						nextDataTX      = 8'd84; //Prescaler low = WB_freq/(I2C_prescale*4) should = 400kHz, WB_freq = 133 MHz at the moment
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
+				`I2C_CMD_STATE_WAIT_NO_ACK1: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_PRESCALE_HI;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
@@ -282,33 +308,69 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
 						clearWaiting1us = `START_1US_TIMER;
-						i2cCmdNextState = `I2C_CMD_STATE_INIT2_BOOT_WAIT;
+						i2cCmdNextState = `I2C_CMD_STATE_WAIT_NO_ACK2;
 					end
 					else begin
 						nextWe          = `I2C_1_WE_WRITE;
 						nextStb         = `START;
 						nextAddr        = `I2C_1_BR1;
-						nextDataTX      = 8'h00;// Don't need these bits for this small of a pre-scaler value
+						nextDataTX      = 8'h00;
 						clearWaiting1us = `START_1US_TIMER;
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
-				`I2C_CMD_STATE_INIT2_BOOT_WAIT: begin//  Wait second 1us i2c boot-up delay after this reset
+				`I2C_CMD_STATE_WAIT_NO_ACK2: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						clearWaiting1us = `START_1US_TIMER;
+						i2cCmdNextState = `I2C_CMD_STATE_INIT2_BOOT_WAIT1;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						clearWaiting1us = `START_1US_TIMER;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
+				`I2C_CMD_STATE_INIT2_BOOT_WAIT1: begin//  Start second 1us i2c boot-up delay after this reset
+					if(waiting1us == 1) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						clearWaiting1us = `START_1US_TIMER;
+						i2cCmdNextState = `I2C_CMD_STATE_INIT2_BOOT_WAIT2;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						clearWaiting1us = `START_1US_TIMER;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
+				`I2C_CMD_STATE_INIT2_BOOT_WAIT2: begin//  Complete 1us i2c boot-up delay
 					if(waiting1us == 0) begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
 						clearWaiting1us = `STOP_1US_TIMER;
-						i2cCmdNextState = `I2C_CMD_STATE_WAIT;
+						i2cCmdNextState = `I2C_CMD_STATE_INIT_ENA;
 					end
 					else begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						clearWaiting1us = 1'b1;
-						i2cCmdNextState = `I2C_CMD_STATE_INIT_ENA;
+						clearWaiting1us = `START_1US_TIMER;
+						i2cCmdNextState = i2cCmdState;
 					end
 				end
 				`I2C_CMD_STATE_INIT_ENA: begin //   enable I2C core
@@ -334,7 +396,7 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						i2cCmdNextState = `I2C_CMD_STATE_WAIT_NOT_BUSY;
+						i2cCmdNextState = `I2C_CMD_STATE_WAIT_NO_ACK3;
 					end
 					else begin
 						//////////////////
@@ -343,14 +405,30 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						$stop; //Halt test bench, does not synthesize
 						//////////////////
 						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `START;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
+				`I2C_CMD_STATE_WAIT_NO_ACK3: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_WAIT_NOT_BUSY;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
-				`I2C_CMD_STATE_WAIT_NOT_BUSY: begin //Wait for next step, check TRRDY bit before leaving
-					if( (ack == 1'b1) && (dataRX[`I2C_1_SR_TRRDY] == 1'b1) ) begin
+				`I2C_CMD_STATE_WAIT_NOT_BUSY: begin //Wait for next step, check BUSY bit before leaving
+					if( (ack == 1'b1) && (dataRX[`I2C_1_SR_BUSY] == `NOT_BUSY) ) begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
@@ -382,7 +460,7 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						i2cCmdNextState = `I2C_CMD_STATE_W_SET_WRITE;
+						i2cCmdNextState = `I2C_CMD_STATE_W_WAIT_NO_ACK1;
 					end
 					else begin
 						nextWe          = `I2C_1_WE_WRITE;
@@ -392,13 +470,29 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
+				`I2C_CMD_STATE_W_WAIT_NO_ACK1: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_W_SET_WRITE;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
 				`I2C_CMD_STATE_W_SET_WRITE: begin //   Send I2C command STA and WR
 					if(ack == 1'b1) begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						i2cCmdNextState = `I2C_CMD_STATE_W_READ_CHK_SR1;
+						i2cCmdNextState = `I2C_CMD_STATE_W_WAIT_NO_ACK2;
 					end
 					else begin
 						nextWe          = `I2C_1_WE_WRITE;
@@ -408,8 +502,40 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
+				`I2C_CMD_STATE_W_WAIT_NO_ACK2: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_W_READ_CHK_SR1;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
 				`I2C_CMD_STATE_W_READ_CHK_SR1: begin//   Check BUSY bit
 					if( (ack == 1'b1) &&(dataRX[`I2C_1_SR_TRRDY] == 1'b1) ) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_W_WAIT_NO_ACK3;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `START;
+						nextAddr        = `I2C_1_SR;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
+				`I2C_CMD_STATE_W_WAIT_NO_ACK3: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
@@ -418,8 +544,8 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 					end
 					else begin
 						nextWe          = `I2C_1_WE_READ;
-						nextStb         = `START;
-						nextAddr        = `I2C_1_SR;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
 						i2cCmdNextState = i2cCmdState;
 					end
@@ -430,7 +556,7 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						i2cCmdNextState = `I2C_CMD_STATE_W_WRITE_REG;
+						i2cCmdNextState = `I2C_CMD_STATE_W_WAIT_NO_ACK4;
 					end
 					else begin
 						nextWe          = `I2C_1_WE_WRITE;
@@ -440,20 +566,51 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
-				`I2C_CMD_STATE_W_WRITE_REG: begin //  Send I2C command WR to write the register address to the slave
-					if(ack == 1'b1) begin
+				`I2C_CMD_STATE_W_WAIT_NO_ACK4: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_W_WRITE_REG;
+					end
+					else begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
 						i2cCmdNextState = i2cCmdState;
 					end
+				end
+				`I2C_CMD_STATE_W_WRITE_REG: begin //  Send I2C command WR to write the register address to the slave
+					if(ack == 1'b1) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_W_WAIT_NO_ACK5;
+					end
 					else begin
 						nextWe          = `I2C_1_WE_WRITE;
 						nextStb         = `START;
 						nextAddr        = `I2C_1_CMDR;
 						nextDataTX      = (`I2C_1_CMDR_WR);
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
+				`I2C_CMD_STATE_W_WAIT_NO_ACK5: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
 						i2cCmdNextState = `I2C_CMD_STATE_W_READ_CHK_SR2;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
@@ -463,12 +620,28 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						i2cCmdNextState = `I2C_CMD_STATE_W_SET_REG_VAL;
+						i2cCmdNextState = `I2C_CMD_STATE_W_WAIT_NO_ACK6;
 					end
 					else begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `START;
 						nextAddr        = `I2C_1_SR;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
+				`I2C_CMD_STATE_W_WAIT_NO_ACK6: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_W_SET_REG_VAL;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
 						i2cCmdNextState = i2cCmdState;
 					end
@@ -479,7 +652,7 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						i2cCmdNextState = `I2C_CMD_STATE_W_WRITE_REG_VAL;
+						i2cCmdNextState = `I2C_CMD_STATE_W_WAIT_NO_ACK7;
 					end
 					else begin
 						nextWe          = `I2C_1_WE_WRITE;
@@ -489,8 +662,40 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
+				`I2C_CMD_STATE_W_WAIT_NO_ACK7: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_W_WRITE_REG_VAL;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
 				`I2C_CMD_STATE_W_WRITE_REG_VAL: begin //  Send I2C commands WR and STO to write to the slave's register and stop I2C, this is the last write transaction
 					if(ack == 1'b1) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_W_WAIT_NO_ACK8;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_WRITE;
+						nextStb         = `START;
+						nextAddr        = `I2C_1_CMDR;
+						nextDataTX      = (`I2C_1_CMDR_STO || `I2C_1_CMDR_WR);
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
+				`I2C_CMD_STATE_W_WAIT_NO_ACK8: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
@@ -498,10 +703,10 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						i2cCmdNextState = `I2C_CMD_STATE_W_READ_CHK_SR3;
 					end
 					else begin
-						nextWe          = `I2C_1_WE_WRITE;
-						nextStb         = `START;
-						nextAddr        = `I2C_1_CMDR;
-						nextDataTX      = (`I2C_1_CMDR_STO || `I2C_1_CMDR_WR);
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
@@ -531,7 +736,7 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						i2cCmdNextState = `I2C_CMD_STATE_R_SET_WRITE1;
+						i2cCmdNextState = `I2C_CMD_STATE_R_WAIT_NO_ACK1;
 					end
 					else begin
 						nextWe          = `I2C_1_WE_WRITE;
@@ -541,13 +746,29 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
+				`I2C_CMD_STATE_R_WAIT_NO_ACK1: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_R_SET_WRITE1;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
 				`I2C_CMD_STATE_R_SET_WRITE1: begin //   Send I2C command STA and WR
 					if(ack == 1'b1) begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						i2cCmdNextState = `I2C_CMD_STATE_R_READ_CHK_SR1;
+						i2cCmdNextState = `I2C_CMD_STATE_R_WAIT_NO_ACK2;
 					end
 					else begin
 						nextWe          = `I2C_1_WE_WRITE;
@@ -557,8 +778,40 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
+				`I2C_CMD_STATE_R_WAIT_NO_ACK2: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_R_READ_CHK_SR1;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
 				`I2C_CMD_STATE_R_READ_CHK_SR1: begin//   Check TRRDY bit
 					if( (ack == 1'b1) && (dataRX[`I2C_1_SR_TRRDY] == 1'b1) ) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_R_WAIT_NO_ACK3;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `START;
+						nextAddr        = `I2C_1_SR;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
+				`I2C_CMD_STATE_R_WAIT_NO_ACK3: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
@@ -567,8 +820,8 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 					end
 					else begin
 						nextWe          = `I2C_1_WE_READ;
-						nextStb         = `START;
-						nextAddr        = `I2C_1_SR;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
 						i2cCmdNextState = i2cCmdState;
 					end
@@ -579,7 +832,7 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						i2cCmdNextState = `I2C_CMD_STATE_R_WRITE_REG;
+						i2cCmdNextState = `I2C_CMD_STATE_R_WAIT_NO_ACK4;
 					end
 					else begin
 						nextWe          = `I2C_1_WE_WRITE;
@@ -589,13 +842,29 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
+				`I2C_CMD_STATE_R_WAIT_NO_ACK4: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_R_WRITE_REG;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
 				`I2C_CMD_STATE_R_WRITE_REG: begin //  Send I2C command WR to write the register address to the slave
 					if(ack == 1'b1) begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						i2cCmdNextState = `I2C_CMD_STATE_R_READ_CHK_SR2;
+						i2cCmdNextState = `I2C_CMD_STATE_R_WAIT_NO_ACK5;
 					end
 					else begin
 						nextWe          = `I2C_1_WE_WRITE;
@@ -605,8 +874,40 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
+				`I2C_CMD_STATE_R_WAIT_NO_ACK5: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_R_READ_CHK_SR2;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
 				`I2C_CMD_STATE_R_READ_CHK_SR2: begin //  Check TRRDY bit
 					if( (ack == 1'b1) && (dataRX[`I2C_1_SR_TRRDY] == 1'b1) ) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_R_WAIT_NO_ACK6;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `START;
+						nextAddr        = `I2C_1_SR;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
+				`I2C_CMD_STATE_R_WAIT_NO_ACK6: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
@@ -615,8 +916,8 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 					end
 					else begin
 						nextWe          = `I2C_1_WE_READ;
-						nextStb         = `START;
-						nextAddr        = `I2C_1_SR;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
 						i2cCmdNextState = i2cCmdState;
 					end
@@ -627,7 +928,7 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						i2cCmdNextState = `I2C_CMD_STATE_R_SET_WRITE2;
+						i2cCmdNextState = `I2C_CMD_STATE_R_WAIT_NO_ACK7;
 					end
 					else begin
 						nextWe          = `I2C_1_WE_WRITE;
@@ -637,13 +938,29 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
+				`I2C_CMD_STATE_R_WAIT_NO_ACK7: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_R_SET_WRITE2;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
 				`I2C_CMD_STATE_R_SET_WRITE2: begin //  Send I2C commands WR and STA (Second STA) to write to the slave's register, this restarts I2C in read mode
 					if(ack == 1'b1) begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						i2cCmdNextState = `I2C_CMD_STATE_R_WAIT_SRW;
+						i2cCmdNextState = `I2C_CMD_STATE_R_WAIT_NO_ACK8;
 					end
 					else begin
 						nextWe          = `I2C_1_WE_WRITE;
@@ -653,8 +970,40 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
+				`I2C_CMD_STATE_R_WAIT_NO_ACK8: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_R_WAIT_SRW;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
 				`I2C_CMD_STATE_R_WAIT_SRW: begin //  Check SRW bit (Slave Read/Write, 1 = Master read mode)
 					if( (ack == 1'b1) && (dataRX[`I2C_1_SR_SRW] == `SRW_MODE) ) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_R_WAIT_NO_ACK9;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `START;
+						nextAddr        = `I2C_1_SR;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
+				`I2C_CMD_STATE_R_WAIT_NO_ACK9: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
@@ -663,8 +1012,8 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 					end
 					else begin
 						nextWe          = `I2C_1_WE_READ;
-						nextStb         = `START;
-						nextAddr        = `I2C_1_SR;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
 						i2cCmdNextState = i2cCmdState;
 					end
@@ -681,7 +1030,7 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						i2cCmdNextState = `I2C_CMD_STATE_R_READ_CHK_SR3;
+						i2cCmdNextState = `I2C_CMD_STATE_R_WAIT_NO_ACK10;
 					end
 						else begin
 						nextWe          = `I2C_1_WE_READ;
@@ -691,16 +1040,32 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						i2cCmdNextState = i2cCmdState;
 					end
 				end
+				`I2C_CMD_STATE_R_WAIT_NO_ACK10: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_R_READ_CHK_SR3;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
+					end
+				end
 				`I2C_CMD_STATE_R_READ_CHK_SR3: begin //   Check TRRDY
 					if( (ack == 1'b1) && (dataRX[`I2C_1_SR_TRRDY] == 1'b1) ) begin //
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `STOP;
 						nextAddr        = `ALL_ZERO;
 						nextDataTX      = `ALL_ZERO;
-						i2cCmdNextState = `I2C_CMD_STATE_R_READ_DATA;
+						i2cCmdNextState = `I2C_CMD_STATE_R_WAIT_NO_ACK11;
 						$display("Done: Received an ACK, SR=%b", dataRX);
 					end
-					else if(ack) begin
+					else if( (ack == 1'b1) && (dataRX[`I2C_1_SR_TRRDY] == 1'b0) ) begin
 						nextWe          = `I2C_1_WE_READ;
 						nextStb         = `START;
 						nextAddr        = `I2C_1_SR;
@@ -715,6 +1080,22 @@ module i2c_module(sda, scl, rstn, moduleDataOut, moduleDataIn, moduleRegIn, read
 						nextDataTX      = `ALL_ZERO;
 						i2cCmdNextState = i2cCmdState;
 						$display("Waiting for ACK");
+					end
+				end
+				`I2C_CMD_STATE_R_WAIT_NO_ACK11: begin //  Wait for ack to go to 0
+					if(ack == 1'b0) begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = `I2C_CMD_STATE_R_READ_DATA;
+					end
+					else begin
+						nextWe          = `I2C_1_WE_READ;
+						nextStb         = `STOP;
+						nextAddr        = `ALL_ZERO;
+						nextDataTX      = `ALL_ZERO;
+						i2cCmdNextState = i2cCmdState;
 					end
 				end
 				`I2C_CMD_STATE_R_READ_DATA: begin // Read the byte
