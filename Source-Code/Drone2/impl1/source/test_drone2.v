@@ -7,9 +7,6 @@ module test_drone2;
 	wire motor_4_pwm;
 
 	// Inputs from the rc/receiver
-	wire aux1_pwm;
-	wire aux2_pwm;
-	wire mode_pwm;
 	wire throttle_pwm;
 	wire yaw_pwm;
 	wire roll_pwm;
@@ -23,9 +20,6 @@ module test_drone2;
 			   .motor_2_pwm(motor_2_pwm),
 			   .motor_3_pwm(motor_3_pwm),
 			   .motor_4_pwm(motor_4_pwm),
-			   .aux1_pwm(aux1_pwm),
-			   .aux2_pwm(aux2_pwm),
-			   .mode_pwm(mode_pwm),
 			   .throttle_pwm(throttle_pwm),
 			   .yaw_pwm(yaw_pwm),
 			   .roll_pwm(roll_pwm),

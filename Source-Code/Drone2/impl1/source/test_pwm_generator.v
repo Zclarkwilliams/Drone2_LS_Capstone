@@ -1,33 +1,66 @@
 module test_pwm_generator;
+// pwm_generator module testbench
 
-	localparam RATE_BIT_WIDTH = 36;
+`timescale 1ns/1ns
 
-	// motor pwm signals
-	wire motor_1_pwm = 0;
-	wire motor_2_pwm = 0;
-	wire motor_3_pwm = 0;
-	wire motor_4_pwm = 0;
+/*
+ * Tested:
+ * Basic functionality
+ *
+ * To test:
+ * Mid-period input value change
+ * 0 input value
+ * >250 input value
+ */
 
-	// motor rates
-	wire [RATE_BIT_WIDTH-1:0] motor_1_rate = 0;
-	wire [RATE_BIT_WIDTH-1:0] motor_2_rate = 0;
-	wire [RATE_BIT_WIDTH-1:0] motor_3_rate = 0;
-	wire [RATE_BIT_WIDTH-1:0] motor_4_rate = 0;
 
-	wire sys_clk;
 
-	pwm_generator #(RATE_BIT_WIDTH) DUT (.motor_1_pwm(motor_1_pwm),
-										 .motor_2_pwm(motor_2_pwm),
-										 .motor_3_pwm(motor_3_pwm),
-										 .motor_4_pwm(motor_4_pwm),
-										 .motor_1_rate(motor_1_rate),
-										 .motor_2_rate(motor_2_rate),
-										 .motor_3_rate(motor_3_rate),
-										 .motor_4_rate(motor_4_rate),
-										 .sys_clk(sys_clk));
+reg [7:0] m_1_rate, m_2_rate, m_3_rate, m_4_rate;
+wire m_1_pwm, m_2_pwm, m_3_pwm, m_4_pwm;
+reg rst, clk;
 
-	initial begin
-		$display("%m successful");
+// TODO: Fix these tests because the parameters don't match up
+pwm_generator
+	#(.INPUT_WIDTH(8),
+	.CLK_CONVERSION_HIGH(2),
+	.CLK_CONVERSION_LOW(4))
+	pwm_dut
+	(.motor_1_pwm(m_1_pwm),
+	.motor_2_pwm(m_2_pwm),
+	.motor_3_pwm(m_3_pwm),
+	.motor_4_pwm(m_4_pwm),
+	.motor_1_rate(m_1_rate),
+	.motor_2_rate(m_2_rate),
+	.motor_3_rate(m_3_rate),
+	.motor_4_rate(m_4_rate),
+	.rst(rst),
+	.sys_clk(clk));
+
+initial begin
+	m_1_rate <= 0;
+	m_2_rate <= 0;
+	m_3_rate <= 0;
+	m_4_rate <= 0;
+end
+
+initial begin
+	clk <= 0;
+	forever begin
+		#1 clk <= ~clk;
 	end
+end
+
+initial begin
+	repeat (2) @(posedge clk);
+	rst <= 1'b0;
+	m_1_rate <= 8'b00011110;
+	repeat (2) @(posedge clk);
+	rst <= 1'b1;
+	repeat (100) @(posedge clk);
+	m_2_rate <= 8'b01010101;
+	repeat (160000) @(posedge clk);
+	$finish;
+end
+
 
 endmodule
