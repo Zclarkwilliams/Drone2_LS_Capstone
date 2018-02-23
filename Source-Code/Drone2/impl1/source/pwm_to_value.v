@@ -15,7 +15,7 @@
  *
  * Inputs:
  * @pwm_time_high_us: value between MIN_PWM_TIME_HIGH_US and MAX_PWM_TIME_HIGH_US
- * @clk: output is updated on every positive edge of the input clock
+ * @us_clk: output is updated on every positive edge of the input clock
  */
 
 `include "common_defines.v"
@@ -27,7 +27,7 @@ module pwm_to_value (output wire [`PWM_VALUE_BIT_WIDTH - 1:0] value_out,
 			// Ranges from 0 to MIN_PWM_TIME_HIGH_US
 			reg [9:0] adjusted_value;
 
-			always @(posedge clk) begin
+			always @(posedge us_clk) begin
 				// Slide the pwm_time_high_us to a value between 0 and MIN_PWM_TIME_HIGH_US
 				adjusted_value <= pwm_time_high_us - `MIN_PWM_TIME_HIGH_US;
 			end

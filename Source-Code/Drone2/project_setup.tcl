@@ -25,12 +25,18 @@ if { [catch {set src_files [glob $src_dir/*.v]}] } {
 }
 
 # We don't want to include any test benches in synthesis
-set condition "*test*.v"
+set condition "*source/*test*.v"
 foreach file $src_files {
-	if {[string match $condition $file]} {
-		prj_src syn_sim -src $file SimulateOnly
+	if { [string match $condition $file] } {
+		if { [catch {prj_src syn_sim -src $file SimulateOnly}] } {
+			prj_src add -impl impl1 $file
+			prj_src syn_sim -src $file SimulateOnly
+		}
 	} else {
-		prj_src syn_sim -src $file SynthesisAndSimulate
+		if { [catch {prj_src syn_sim -src $file SynthesisAndSimulate}] } {
+			prj_src add -impl impl1 $file
+			prj_src syn_sim -src $file SynthesisAndSimulate
+		}
 	}
 }
 

@@ -39,11 +39,11 @@ module pwm_generator #(parameter INPUT_BIT_WIDTH = 8)
 	// Internal counters
 
 	reg [15:0] period_counter;
-	reg [INPUT_WIDTH+1:0] high_counter;
+	reg [INPUT_BIT_WIDTH + 1:0] high_counter;
 	reg high_counter_en;
 
 	// Latched PWM values
-	reg [INPUT_WIDTH+1:0] m1_rate, m2_rate, m3_rate, m4_rate;
+	reg [INPUT_BIT_WIDTH + 1:0] m1_rate, m2_rate, m3_rate, m4_rate;
 
 	// PWM gen blocks
 	pwm_generator_block pwm1 (

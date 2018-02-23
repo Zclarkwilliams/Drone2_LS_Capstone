@@ -31,9 +31,9 @@ module pwm_generator_block #(parameter INPUT_BIT_WIDTH = 10)
 							 input wire us_clk);
 
 	localparam // State names
-		MIN_COUNT = 3'b000,
-		PWM_COUNT = 3'b001,
-		LOW_COUNT = 3'b010;
+		STATE_MIN_COUNT = 3'b000,
+		STATE_PWM_COUNT = 3'b001,
+		STATE_LOW_COUNT = 3'b010;
 
 	// State variables
 	reg [2:0] state, next_state;
@@ -41,7 +41,7 @@ module pwm_generator_block #(parameter INPUT_BIT_WIDTH = 10)
 	// Update state
 	always @(posedge us_clk or negedge resetn) begin
 		if (!resetn)
-			state <= MIN_COUNT;
+			state <= STATE_MIN_COUNT;
 		else
 			state <= next_state;
 	end
@@ -49,32 +49,32 @@ module pwm_generator_block #(parameter INPUT_BIT_WIDTH = 10)
 	// Next state logic
 	always @(*) begin
 		case (state)
-			MIN_COUNT: begin
+			STATE_MIN_COUNT: begin
 				if (!resetn)
-					next_state = MIN_COUNT;
+					next_state = STATE_MIN_COUNT;
 				else if (period_counter == `MIN_PWM_TIME_HIGH_US)
-					next_state = PWM_COUNT;
+					next_state = STATE_PWM_COUNT;
 				else
-					next_state = MIN_COUNT;
+					next_state = STATE_MIN_COUNT;
 			end
-			PWM_COUNT: begin
+			STATE_PWM_COUNT: begin
 				if (!resetn)
-					next_state = MIN_COUNT;
-				else if ((high_counter == motor_val) || (period_counter == MAX_CNT))
-					next_state = LOW_COUNT;
-				else next_state = PWM_COUNT;
+					next_state = STATE_MIN_COUNT;
+				else if ((high_counter == motor_val) || (period_counter == `MAX_PWM_TIME_HIGH_US))
+					next_state = STATE_LOW_COUNT;
+				else next_state = STATE_PWM_COUNT;
 			end
-			LOW_COUNT: begin
-				if (!resetn || (period_counter == PWM_PERIOD_US))
-					next_state = MIN_COUNT;
-				else next_state = LOW_COUNT;
+			STATE_LOW_COUNT: begin
+				if (!resetn || (period_counter == `PWM_PERIOD_US))
+					next_state = STATE_MIN_COUNT;
+				else next_state = STATE_LOW_COUNT;
 			end
 			default:
-				next_state = MIN_COUNT;
+				next_state = STATE_MIN_COUNT;
 		endcase
 	end
 
 	// Output logic
-	assign motor_pwm = ((state == MIN_COUNT) || (state == PWM_COUNT));
+	assign motor_pwm = ((state == STATE_MIN_COUNT) || (state == STATE_PWM_COUNT));
 
 endmodule
