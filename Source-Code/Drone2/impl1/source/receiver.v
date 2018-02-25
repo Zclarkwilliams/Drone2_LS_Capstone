@@ -1,61 +1,96 @@
+`timescale 1ns / 1ns
+
 /**
- * module receiver - receive pwm input from the hardware receiver and output values.
- *					 The pwm inputs have a period of 20ms and a duty cycle rangeing
- *					 between ~5% to ~10% which equals ~1ms to ~2ms.
+ * ECE 412-413 Capstone Winter/Spring 2018
+ * Team 32 Drone2 SOC
+ * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ */
+
+/**
+ * receiver - Receive pwm input from the hardware receiver and output values.  The pwm inputs have a
+ *			  period of 20ms and a duty cycle rangeing between ~5% to ~10% which equals ~1ms to ~2ms.
  *
- * Parameters
- * @VAL_BIT_WIDTH: Number of bits for throttle/yaw/roll/pitch val outputs
- * @AUX_BIT_WIDTH: Number of bits for aux1/aux2 val outputs
- * @MODE_BIT_WIDTH: Number of bits for the mode output
+ * Outputs:
+ * @throttle_val: Value between 0 and 2^(PWM_VALUE_BIT_WIDTH-1 that corresponds to between 1ms and 2ms pwm
+ * @yaw_val: Value between 0 and 2^(PWM_VALUE_BIT_WIDTH-1 that corresponds to between 1ms and 2ms pwm
+ * @roll_val: Value between 0 and 2^(PWM_VALUE_BIT_WIDTH-1 that corresponds to between 1ms and 2ms pwm
+ * @pitch_val: Value between 0 and 2^(PWM_VALUE_BIT_WIDTH-1 that corresponds to between 1ms and 2ms pwm
  *
- * Outputs
- * @aux1_val: 2's complement value for aux1 (only valid for -5 to 5)
- * @aux2_val: 2's complement value for aux2 (only valid for -5 to 5)
- * @mode_val: value for the mode (only valid for 0 thru 6)
- * @throttle_val: 2's complement for the throttle value (only valid for -9000 to 9000)
- * @yaw_val: 2's complement for the yaw value (only valid for -9000 to 9000)
- * @roll_val: 2's complement for the roll value (only valid for -9000 to 9000)
- * @pitch_val: 2's complementfor the pitch value (only valid for -9000 to 9000)
- *
- * Inputs
- * @aux1_pwm: from the hardware receiver (duty cycle between ~5% and 10%)
- * @aux2_pwm: from the hardware receiver (duty cycle between ~5% and 10%)
- * @mode_pwm: from the hardware receiver (duty cycle between ~5% and 10%)
+ * Inputs:
  * @throttle_pwm: from the hardware receiver (duty cycle between ~5% and 10%)
  * @yaw_pwm: from the hardware receiver (duty cycle between ~5% and 10%)
  * @roll_pwm: from the hardware receiver (duty cycle between ~5% and 10%)
  * @pitch_pwm: from the hardware receiver (duty cycle between ~5% and 10%)
  * @sys_clk: system clock
  */
-module receiver #(parameter VAL_BIT_WIDTH = 14,
-				  parameter AUX_BIT_WIDTH = 4,
-				  parameter MODE_BIT_WIDTH = 3)
-				 (output reg [AUX_BIT_WIDTH-1:0] aux1_val,
-				  output reg [AUX_BIT_WIDTH-1:0] aux2_val,
-				  output reg [MODE_BIT_WIDTH-1:0] mode_val,
-				  output reg [VAL_BIT_WIDTH-1:0] throttle_val,
-				  output reg [VAL_BIT_WIDTH-1:0] yaw_val,
-				  output reg [VAL_BIT_WIDTH-1:0] roll_val,
-				  output reg [VAL_BIT_WIDTH-1:0] pitch_val,
-				  input aux1_pwm,
-				  input aux2_pwm,
-				  input mode_pwm,
-				  input throttle_pwm,
-				  input yaw_pwm,
-				  input roll_pwm,
-				  input pitch_pwm,
-				  input sys_clk);
 
-	always @(posedge sys_clk) begin
-		if (aux1_pwm || aux2_pwm || mode_pwm || throttle_pwm || yaw_pwm || roll_pwm || pitch_pwm) begin
-			aux1_val <= ~aux1_val;
-			aux2_val <= ~aux2_val;
-			mode_val <= ~mode_val;
-			throttle_val <= ~throttle_val;
-			yaw_val <= ~yaw_val;
-			roll_val <= ~roll_val;
-			pitch_val <= ~pitch_val;
-		end
-	end
+`include "common_defines.v"
+
+module receiver (output wire [`PWM_VALUE_BIT_WIDTH - 1:0] throttle_val,
+				 output wire [`PWM_VALUE_BIT_WIDTH - 1:0] yaw_val,
+				 output wire [`PWM_VALUE_BIT_WIDTH - 1:0] roll_val,
+				 output wire [`PWM_VALUE_BIT_WIDTH - 1:0] pitch_val,
+				 input wire throttle_pwm,
+				 input wire yaw_pwm,
+				 input wire roll_pwm,
+				 input wire pitch_pwm,
+				 input wire us_clk,
+				 input wire resetn);
+
+
+	wire [`PWM_TIME_BIT_WIDTH - 1:0] throttle_pwm_pulse_length_us,
+									 yaw_pwm_pulse_length_us,
+									 roll_pwm_pulse_length_us,
+									 pitch_pwm_pulse_length_us;
+
+	// THROTTLE input/output module instances
+	pwm_reader #(`THROTTLE_DEFAULT_PULSE_TIME_HIGH_US) throttle_reader (
+		.pwm(throttle_pwm),
+		.pwm_pulse_length_us(throttle_pwm_pulse_length_us),
+		.us_clk(us_clk),
+		.resetn(resetn));
+
+	pwm_to_value throttle_pwm_to_value (
+		.pwm_time_high_us(throttle_pwm_pulse_length_us),
+		.value_out(throttle_val),
+		.us_clk(us_clk));
+
+	// YAW input/output module instances
+	pwm_reader #(`YAW_DEFAULT_PULSE_TIME_HIGH_US) yaw_reader (
+		.pwm(yaw_pwm),
+		.pwm_pulse_length_us(yaw_pwm_pulse_length_us),
+		.us_clk(us_clk),
+		.resetn(resetn));
+
+	pwm_to_value yaw_pwm_to_value (
+		.pwm_time_high_us(yaw_pwm_pulse_length_us),
+		.value_out(yaw_val),
+		.us_clk(us_clk));
+
+	// ROLL input/output module instances
+	pwm_reader #(`ROLL_DEFAULT_PULSE_TIME_HIGH_US) roll_reader (
+		.pwm(roll_pwm),
+		.pwm_pulse_length_us(roll_pwm_pulse_length_us),
+		.us_clk(us_clk),
+		.resetn(resetn));
+
+	pwm_to_value roll_pwm_to_value (
+		.pwm_time_high_us(roll_pwm_pulse_length_us),
+		.value_out(roll_val),
+		.us_clk(us_clk));
+
+	// PITCH input/output module instances
+	pwm_reader #(`PITCH_DEFAULT_PULSE_TIME_HIGH_US) pitch_reader (
+		.pwm(pitch_pwm),
+		.pwm_pulse_length_us(pitch_pwm_pulse_length_us),
+		.us_clk(us_clk),
+		.resetn(resetn));
+
+	pwm_to_value pitch_pwm_to_value (
+		.pwm_time_high_us(pitch_pwm_pulse_length_us),
+		.value_out(pitch_val),
+		.us_clk(us_clk));
 
 endmodule
+
+
