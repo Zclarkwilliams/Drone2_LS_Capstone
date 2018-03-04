@@ -36,6 +36,8 @@ module drone2 (output wire motor_1_pwm,
 			   input wire roll_pwm,
 			   input wire pitch_pwm,
 			   input wire resetn,
+			   output wire rstn_imu,
+			   output wire [7:0]led_data_out,
 			   inout wire sda,
 			   inout wire scl);
 
@@ -45,7 +47,7 @@ module drone2 (output wire motor_1_pwm,
 	localparam REC_VAL_BIT_WIDTH = 8;
 	localparam PID_RATE_BIT_WIDTH = 36;
 	localparam RATE_BIT_WIDTH = 36;
-	localparam IMU_VAL_BIT_WIDTH = 36;
+	localparam IMU_VAL_BIT_WIDTH = 16;
 
 	wire [REC_VAL_BIT_WIDTH-1:0] throttle_val;
 	wire [REC_VAL_BIT_WIDTH-1:0] yaw_val;
@@ -66,6 +68,9 @@ module drone2 (output wire motor_1_pwm,
 	wire [IMU_VAL_BIT_WIDTH-1:0] x_accel;
 	wire [IMU_VAL_BIT_WIDTH-1:0] y_accel;
 	wire [IMU_VAL_BIT_WIDTH-1:0] z_accel;
+	wire [IMU_VAL_BIT_WIDTH-1:0] x_linear_accel;
+	wire [IMU_VAL_BIT_WIDTH-1:0] y_linear_accel;
+	wire [IMU_VAL_BIT_WIDTH-1:0] z_linear_accel;
 
 	wire [PID_RATE_BIT_WIDTH-1:0] yaw_rate;
 	wire [PID_RATE_BIT_WIDTH-1:0] roll_rate;
@@ -75,6 +80,9 @@ module drone2 (output wire motor_1_pwm,
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_2_rate;
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_3_rate;
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_4_rate;
+	
+	wire imu_good;
+	wire valid_strobe;
 
 	// TODO: Replace modules using this with the top level reset_n later on
 	wire temp_reset_n;
@@ -127,19 +135,29 @@ module drone2 (output wire motor_1_pwm,
 		.pitch_val(pitch_val),
 		.sys_clk(sys_clk));
 
-	imu #(IMU_VAL_BIT_WIDTH, IMU_VAL_BIT_WIDTH, IMU_VAL_BIT_WIDTH) imu (
-		.x_velocity(x_velocity),
-		.y_velocity(y_velocity),
-		.z_velocity(z_velocity),
-		.x_rotation(x_rotation),
-		.y_rotation(y_rotation),
-		.z_rotation(z_rotation),
-		.x_accel(x_accel),
-		.y_accel(y_accel),
-		.z_accel(z_accel),
-		.sda(sda),
-		.scl(scl),
-		.sys_clk(sys_clk));
+	bno055_driver	i(
+		.scl1(scl),                      //  I2C EFB SDA wires
+		.sda1(sda),                      //  I2C EFB SDA wires
+		.rstn(resetn),                   //  async negative reset signal 0 = reset, 1 = not resete
+		.led_data_out(led_data_out),     //  Module LED Status output
+		.sys_clk(sys_clk),               //  master clock
+		.rstn_imu(rstn_imu),             //  Low active reset signal to IMU hardware to trigger reset
+		.imu_good(imu_good),             //  The IMU is either in an error or initial bootup states, measurements not yet active
+		.valid_strobe(valid_strobe),     //  Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
+		.accel_rate_x(x_accel),          //  Accelerometer X-Axis                Precision: 1 m/s^2 = 100 LSB
+		.accel_rate_y(y_accel),          //  Accelerometer Y-Axis                Precision: 1 m/s^2 = 100 LSB
+		.accel_rate_z(z_accel),          //  Accelerometer Z-Axis                Precision: 1 m/s^2 = 100 LSB
+		.euler_angle_x(x_rotation),      //  Euler angle X-Axis                  Precision: Deg = 16 LSB
+		.euler_angle_y(y_rotation),      //  Euler angle Y-Axis                  Precision: Deg = 16 LSB
+		.euler_angle_z(z_rotation),      //  Euler angle Z-Axis                  Precision: Deg = 16 LSB
+		.linear_accel_x(x_linear_accel), //  Linear Acceleration X-Axis          Precision: 1 m/s^2 = 100 LSB      
+		.linear_accel_y(y_linear_accel), //  Linear Acceleration Y-Axis          Precision: 1 m/s^2 = 100 LSB           
+		.linear_accel_z(z_linear_accel), //  Linear Acceleration Z-Axis          Precision: 1 m/s^2 = 100 LSB   
+		.x_velocity(x_velocity),          
+		.y_velocity(y_velocity),          
+		.z_velocity(z_velocity)
+		);
+
 
 	// TODO: Name this block more appropriately (more descriptive)
 	pid #(PID_RATE_BIT_WIDTH, IMU_VAL_BIT_WIDTH, IMU_VAL_BIT_WIDTH) pid (

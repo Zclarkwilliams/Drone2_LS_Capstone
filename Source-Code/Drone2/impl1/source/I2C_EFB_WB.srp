@@ -1,0 +1,28 @@
+SCUBA, Version Diamond (64-bit) 3.10.1.112
+Fri Mar 02 21:56:17 2018
+
+Copyright (c) 1991-1994 by NeoCAD Inc. All rights reserved.
+Copyright (c) 1995 AT&T Corp.   All rights reserved.
+Copyright (c) 1995-2001 Lucent Technologies Inc.  All rights reserved.
+Copyright (c) 2001 Agere Systems   All rights reserved.
+Copyright (c) 2002-2017 Lattice Semiconductor Corporation,  All rights reserved.
+
+    Issued command   : C:\lscc\diamond\3.10_x64\ispfpga\bin\nt64\scuba.exe -w -n I2C_EFB_WB -lang verilog -synth lse -bus_exp 7 -bb -type efb -arch xo3c00f -freq 38 -i2c1 -i2c1_freq 400 -i2c1_sa 1000001 -i2c1_addr 7 -wb -dev 6900 
+    Circuit name     : I2C_EFB_WB
+    Module type      : efb
+    Module Version   : 1.2
+    Ports            : 
+	Inputs       : wb_clk_i, wb_rst_i, wb_cyc_i, wb_stb_i, wb_we_i, wb_adr_i[7:0], wb_dat_i[7:0]
+	Outputs      : wb_dat_o[7:0], wb_ack_o, i2c1_irqo
+	Inouts       : i2c1_scl, i2c1_sda
+    I/O buffer       : not inserted
+    EDIF output      : I2C_EFB_WB.edn
+    Verilog output   : I2C_EFB_WB.v
+    Verilog template : I2C_EFB_WB_tmpl.v
+    Verilog purpose  : for synthesis and simulation
+    Bus notation     : big endian
+    Report output    : I2C_EFB_WB.srp
+    Element Usage    :
+             BB : 2
+            EFB : 1
+    Estimated Resource Usage:
