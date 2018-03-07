@@ -14,14 +14,14 @@ module bno055_driver #(
 	parameter INIT_TIME = 12'd650
 )
 (
-	inout scl1,                           //  I2C EFB #1 SDA wire
-	inout scl2,                           //  I2C EFB #2 SDA wire
-	inout sda1,                           //  I2C EFB #1 SDA wire
-	inout sda2,                           //  I2C EFB #2 SDA wire
+	inout wire scl1,                      //  I2C EFB #1 SDA wire
+	inout wire scl2,                      //  I2C EFB #2 SDA wire
+	inout wire sda1,                      //  I2C EFB #1 SDA wire
+	inout wire sda2,                      //  I2C EFB #2 SDA wire
 	input wire rstn,                      //  async negative reset signal 0 = reset, 1 = not reset
 	//input wire SDA_DEBUG_IN, SCL_DEBUG_IN /* synthesis syn_force_pads=1 syn_noprune=1*/, //For capturing SDA and SCL in Reveal, no connections inside module
 	output wire [7:0]led_data_out,        //  Module LED Status output
-	input wire sys_clk,                       //  master clock
+	input  wire sys_clk,                  //  master clock
 	output wire rstn_imu,                 //  Low active reset signal to IMU hardware to trigger reset
 	output reg  imu_good,                 //  The IMU is either in an error or initial bootup states, measurements not yet active
 	output reg  valid_strobe,             //  Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
