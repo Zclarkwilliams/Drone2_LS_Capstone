@@ -261,6 +261,8 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_REMAP_SIGN_P6                 8'h07
 `define BNO055_REMAP_SIGN_P7                 8'h05
 
+
+//Indices of measurement data in rx_data_reg
 `define ACC_DATA_X_LSB_INDEX                 0
 `define ACC_DATA_X_MSB_INDEX                 1
 `define ACC_DATA_Y_LSB_INDEX                 2
@@ -394,8 +396,34 @@ Total: 46 bytes
 
 */
 
-`define BNO055_STATE_BITS      4             //  The number of bits used to represent the current state
-`define DATA_RX_BYTE_REG_CNT   46            //  The number of byte registers to used receive all measurement data
+//Indices of calibration data in cal_data_reg
+`define ACCEL_OFFSET_X_LSB_INDEX 0
+`define ACCEL_OFFSET_X_MSB_INDEX 1
+`define ACCEL_OFFSET_Y_LSB_INDEX 2
+`define ACCEL_OFFSET_Y_MSB_INDEX 3
+`define ACCEL_OFFSET_Z_LSB_INDEX 4
+`define ACCEL_OFFSET_Z_MSB_INDEX 5
+`define MAG_OFFSET_X_LSB_INDEX   6
+`define MAG_OFFSET_X_MSB_INDEX   7
+`define MAG_OFFSET_Y_LSB_INDEX   8
+`define MAG_OFFSET_Y_MSB_INDEX   9
+`define MAG_OFFSET_Z_LSB_INDEX   10
+`define MAG_OFFSET_Z_MSB_INDEX   11
+`define GYRO_OFFSET_X_LSB_INDEX  12
+`define GYRO_OFFSET_X_MSB_INDEX  13
+`define GYRO_OFFSET_Y_LSB_INDEX  14
+`define GYRO_OFFSET_Y_MSB_INDEX  15
+`define GYRO_OFFSET_Z_LSB_INDEX  16
+`define GYRO_OFFSET_Z_MSB_INDEX  17
+`define ACCEL_RADIUS_LSB_INDEX   18
+`define ACCEL_RADIUS_MSB_INDEX   19
+`define MAG_RADIUS_LSB_INDEX     20
+`define MAG_RADIUS_MSB_INDEX     21
+
+
+`define BNO055_STATE_BITS      5             //  The number of bits used to represent the current state
+`define DATA_RX_BYTE_REG_CNT   46            //  The number of byte registers used to receive all measurement data
+`define CAL_DATA_REG_CNT       22            //  The number of byte registers used to store calibration data
 
 // Value aliases
 `define GO                      1'b1         //  Go signal to i2c driver is logic high
@@ -421,16 +449,22 @@ Total: 46 bytes
 `define BNO055_STATE_BOOT                1
 `define BNO055_STATE_BOOT_WAIT           2
 
-`define BNO055_SUB_STATE_START           3
-`define BNO055_SUB_STATE_WAIT_I2C        4
-`define BNO055_SUB_STATE_STOP            5
+`define BNO055_STATE_READ_CHIP_ID        3
+`define BNO055_STATE_SET_EXT_CRYSTAL     4
+`define BNO055_STATE_SET_UNITS           5
+`define BNO055_STATE_SET_POWER_MODE      6
+`define BNO055_STATE_CAL_RESTORE_DATA    7
+`define BNO055_STATE_CAL_RESTORE_START   8
+`define BNO055_STATE_CAL_RESTORE_WAIT    9
+`define BNO055_STATE_CAL_RESTORE_STOP    10
+`define BNO055_STATE_CAL_RESTORE_AGAIN   11
+`define BNO055_STATE_SET_RUN_MODE        12
+`define BNO055_STATE_WAIT_20MS           13
+`define BNO055_STATE_READ_IMU_DATA_BURST 14
+`define BNO055_STATE_WAIT_10MS           15
 
-`define BNO055_STATE_READ_CHIP_ID        6
-`define BNO055_STATE_SET_EXT_CRYSTAL     7
-`define BNO055_STATE_SET_UNITS           8
-`define BNO055_STATE_SET_POWER_MODE      9
-`define BNO055_STATE_SET_RUN_MODE        10
-`define BNO055_STATE_WAIT_20MS           11
-`define BNO055_STATE_READ_IMU_DATA_BURST 12
-`define BNO055_STATE_WAIT_10MS           13
+
+`define BNO055_SUB_STATE_START           16
+`define BNO055_SUB_STATE_WAIT_I2C        17
+`define BNO055_SUB_STATE_STOP            18
 
