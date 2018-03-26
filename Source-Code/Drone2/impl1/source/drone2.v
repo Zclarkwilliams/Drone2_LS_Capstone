@@ -92,7 +92,6 @@ module drone2 (
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_3_rate;
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_4_rate;
 
-	// status signals from IMU
 	wire imu_good;
 	wire imu_valid_strobe;
 
