@@ -84,6 +84,7 @@ module bno055_driver #(
 	reg  rstn_buffer;                                 //  Negedge clears received measurement buffer
 	reg  rx_data_latch_strobe;                        //  Strobe data output register, latch onto current data in rx buffer
 	reg  next_imu_good;                               //  Next value of module imu_good bit
+	reg  i2c_number;								  //  The i2c module to call, 0 = i2c EFB #1, 1 = i2c EFB #2
 
 	//
 	//  Module body
@@ -108,6 +109,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 					.go(go),
 					.busy(busy),
 					.one_byte_ready(one_byte_ready),
+					.i2c_number(i2c_number),
 					.sys_clk(sys_clk)
 	);
 
@@ -260,6 +262,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 			rstn_buffer            = `LOW;
 			next_target_read_count = 1'b1;
 			rx_data_latch_strobe   = `LOW;
+			i2c_number 			   = 1'b0;
 		end
 		else begin
 			// Default to preserve these values, can be altered in lower steps
@@ -276,6 +279,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 			rstn_buffer            = `HIGH;
 			next_target_read_count = target_read_count;
 			rx_data_latch_strobe   = `LOW;
+			i2c_number 			   = 1'b0;
 			case(bno055_state)
 				`BNO055_STATE_RESET: begin
 					next_imu_good     = `FALSE;
@@ -411,8 +415,19 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 					next_go_flag           = `NOT_GO;
 					if( (read_write_in == `I2C_READ)) //  Only latch data if this was a read
 						rx_data_latch_strobe  = `HIGH;
-					next_bno055_state      = return_state;
+					//next_bno055_state      = return_state;
+					next_bno055_state      = `BNO055_SUB_STATE_SEND_2_SECONDARY_I2C;
 				end
+				
+				
+				`BNO055_SUB_STATE_SEND_2_SECONDARY_I2C: begin // Send measurements to Arduino
+					next_go_flag           = `NOT_GO;
+					i2c_number 			   = 1'b1; //Switch to secondary i2c
+					if(~busy && rstn_imu)
+						next_bno055_state = return_state;
+					else
+						next_bno055_state = `BNO055_SUB_STATE_WAIT_I2C;
+				end //  Set output data latch strobe and return to major FSM state
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 				// Default case, shouldn't be triggered

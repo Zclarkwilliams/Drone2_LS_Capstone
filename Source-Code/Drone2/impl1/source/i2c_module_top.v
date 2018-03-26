@@ -11,8 +11,8 @@ Ethan Grinnell, Brett Creely, Daniel Christiansen, Kirk Hooper, Zachary Clark-Wi
 
 
 module i2c_module(
-	inout  scl_1, scl_2,                     //  I2C EFB #1 and #2 SCL wires
-	inout  sda_1, sda_2,                     //  I2C EFB #1 and #2 SDA wires
+	inout  scl_1, scl_2,                   //  I2C EFB #1 and #2 SCL wires
+	inout  sda_1, sda_2,                   //  I2C EFB #1 and #2 SDA wires
 	input  wire rstn,                      //  Async negative global reset signal 0 = reset, 1 = not reset
 	input  wire [5:0] target_read_count,   //  The number of bytes to for the continuous read burst - Max value is 31 bytes
 	output reg  [7:0] module_data_out,     //  Received data byte for i2c read cycles
@@ -22,7 +22,8 @@ module i2c_module(
 	input  wire read_write_in,             //  Input bit that indicates whether transaction is a read or a write, should be set before "go" is asserted
 	input  wire go,                        //  Input signal to i2c module to begin transaction, needs to be asserted until busy output signal is returned
 	output reg  one_byte_ready,            //  Strobed when a data byte is read, signals that data has been latched
-	input  wire sys_clk,                       //  master clock for module, efb, and output to higher level modules
+	input  wire sys_clk,                   //  master clock for module, efb, and output to higher level modules
+	input  wire i2c_number,                //  I2C EFB module to use 0 = EFB1, , 1= EFB2
 	output reg  busy,                      //  Busy signal out from module while running an i2c transaction
 	output reg  rstn_imu                   //  Low active reset signal to IMU hardware to trigger reset
 );
@@ -56,6 +57,31 @@ module i2c_module(
 	reg  next_one_byte_ready;                       //  Next value of one_byte_ready at following sys_clk posedge
 	reg  [7:0]wd_event_count;                       //  Count of the number of times that the watchdog timer rest the system, only counts to 128 and freezes to prevent wrap around hiding events
 	reg  [7:0]next_wd_event_count;                  //  Next value of watchdog timer event count
+	reg [7:0]REGS[9:0][1:0];
+	
+	// Assign register values
+	initial begin
+		REGS[`I2C_CR_INDEX]    [`I2C_1_INDEX] = `I2C_1_CR   ;
+		REGS[`I2C_CMDR_INDEX]  [`I2C_1_INDEX] = `I2C_1_CMDR ;
+		REGS[`I2C_BR0_INDEX]   [`I2C_1_INDEX] = `I2C_1_BR0  ;
+		REGS[`I2C_BR1_INDEX]   [`I2C_1_INDEX] = `I2C_1_BR1  ;
+		REGS[`I2C_TXDR_INDEX]  [`I2C_1_INDEX] = `I2C_1_TXDR ;
+		REGS[`I2C_SR_INDEX]    [`I2C_1_INDEX] = `I2C_1_SR   ;
+		REGS[`I2C_GCDR_INDEX]  [`I2C_1_INDEX] = `I2C_1_GCDR ;
+		REGS[`I2C_RXDR_INDEX]  [`I2C_1_INDEX] = `I2C_1_RXDR ;
+		REGS[`I2C_IRQ_INDEX]   [`I2C_1_INDEX] = `I2C_1_IRQ  ;
+		REGS[`I2C_IRQEN_INDEX] [`I2C_1_INDEX] = `I2C_1_IRQEN;
+		REGS[`I2C_CR_INDEX]    [`I2C_2_INDEX] = `I2C_2_CR;
+		REGS[`I2C_CMDR_INDEX]  [`I2C_2_INDEX] = `I2C_2_CMDR ;
+		REGS[`I2C_BR0_INDEX]   [`I2C_2_INDEX] = `I2C_2_BR0  ;
+		REGS[`I2C_BR1_INDEX]   [`I2C_2_INDEX] = `I2C_2_BR1  ;
+		REGS[`I2C_TXDR_INDEX]  [`I2C_2_INDEX] = `I2C_2_TXDR ;
+		REGS[`I2C_SR_INDEX]    [`I2C_2_INDEX] = `I2C_2_SR   ;
+		REGS[`I2C_GCDR_INDEX]  [`I2C_2_INDEX] = `I2C_2_GCDR ;
+		REGS[`I2C_RXDR_INDEX]  [`I2C_2_INDEX] = `I2C_2_RXDR ;
+		REGS[`I2C_IRQ_INDEX]   [`I2C_2_INDEX] = `I2C_2_IRQ  ;
+		REGS[`I2C_IRQEN_INDEX] [`I2C_2_INDEX] = `I2C_2_IRQEN;
+	end
 
 	//
 	//  Module body
