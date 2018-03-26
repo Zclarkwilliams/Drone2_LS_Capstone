@@ -4,9 +4,9 @@
   (keywordMap (keywordLevel 0))
   (status
     (written
-      (timestamp 2018 3 2 21 56 17)
+      (timestamp 2018 3 25 17 8 19)
       (program "SCUBA" (version "Diamond (64-bit) 3.10.1.112"))))
-      (comment "C:\lscc\diamond\3.10_x64\ispfpga\bin\nt64\scuba.exe -w -n I2C_EFB_WB -lang verilog -synth lse -bus_exp 7 -bb -type efb -arch xo3c00f -freq 38 -i2c1 -i2c1_freq 400 -i2c1_sa 1000001 -i2c1_addr 7 -wb -dev 6900 ")
+      (comment "C:\lscc\diamond\3.10_x64\ispfpga\bin\nt64\scuba.exe -w -n I2C_EFB_WB -lang verilog -synth lse -bus_exp 7 -bb -type efb -arch xo3c00f -freq 38 -i2c1 -i2c1_freq 400 -i2c1_sa 1000001 -i2c1_addr 7 -i2c2 -i2c2_freq 400 -i2c2_sa 1000010 -i2c2_addr 7 -wb -dev 6900 ")
   (library ORCLIB
     (edifLevel 0)
     (technology
@@ -289,6 +289,12 @@
           (port i2c1_sda
             (direction INOUT))
           (port i2c1_irqo
+            (direction OUTPUT))
+          (port i2c2_scl
+            (direction INOUT))
+          (port i2c2_sda
+            (direction INOUT))
+          (port i2c2_irqo
             (direction OUTPUT)))
         (property NGD_DRC_MASK (integer 1))
         (contents
@@ -298,6 +304,12 @@
           (instance scuba_vlo_inst
             (viewRef view1 
               (cellRef VLO)))
+          (instance BB2_sda
+            (viewRef view1 
+              (cellRef BB)))
+          (instance BB2_scl
+            (viewRef view1 
+              (cellRef BB)))
           (instance BB1_sda
             (viewRef view1 
               (cellRef BB)))
@@ -382,15 +394,15 @@
             (property I2C2_GEN_CALL
               (string "DISABLED"))
             (property I2C2_CLK_DIVIDER
-              (string "1"))
+              (string "24"))
             (property I2C2_BUS_PERF
-              (string "100kHz"))
+              (string "400kHz"))
             (property I2C2_SLAVE_ADDR
-              (string "0b1000001"))
+              (string "0b1000010"))
             (property I2C2_ADDRESSING
               (string "7BIT"))
             (property EFB_I2C2
-              (string "DISABLED"))
+              (string "ENABLED"))
             (property I2C1_WAKEUP
               (string "DISABLED"))
             (property I2C1_GEN_CALL
@@ -438,9 +450,31 @@
               (portRef SPISCSN (instanceRef EFBInst_0))
               (portRef SPIMOSII (instanceRef EFBInst_0))
               (portRef SPIMISOI (instanceRef EFBInst_0))
-              (portRef SPISCKI (instanceRef EFBInst_0))
+              (portRef SPISCKI (instanceRef EFBInst_0))))
+          (net i2c2_sdaoen
+            (joined
+              (portRef I2C2SDAOEN (instanceRef EFBInst_0))
+              (portRef T (instanceRef BB2_sda))))
+          (net i2c2_sdao
+            (joined
+              (portRef I2C2SDAO (instanceRef EFBInst_0))
+              (portRef I (instanceRef BB2_sda))))
+          (net i2c2_scloen
+            (joined
+              (portRef I2C2SCLOEN (instanceRef EFBInst_0))
+              (portRef T (instanceRef BB2_scl))))
+          (net i2c2_sclo
+            (joined
+              (portRef I2C2SCLO (instanceRef EFBInst_0))
+              (portRef I (instanceRef BB2_scl))))
+          (net i2c2_sdai
+            (joined
               (portRef I2C2SDAI (instanceRef EFBInst_0))
-              (portRef I2C2SCLI (instanceRef EFBInst_0))))
+              (portRef O (instanceRef BB2_sda))))
+          (net i2c2_scli
+            (joined
+              (portRef I2C2SCLI (instanceRef EFBInst_0))
+              (portRef O (instanceRef BB2_scl))))
           (net i2c1_sdaoen
             (joined
               (portRef I2C1SDAOEN (instanceRef EFBInst_0))
@@ -465,6 +499,18 @@
             (joined
               (portRef I2C1SCLI (instanceRef EFBInst_0))
               (portRef O (instanceRef BB1_scl))))
+          (net i2c2_irqo
+            (joined
+              (portRef i2c2_irqo)
+              (portRef I2C2IRQO (instanceRef EFBInst_0))))
+          (net i2c2_sda
+            (joined
+              (portRef i2c2_sda)
+              (portRef B (instanceRef BB2_sda))))
+          (net i2c2_scl
+            (joined
+              (portRef i2c2_scl)
+              (portRef B (instanceRef BB2_scl))))
           (net i2c1_irqo
             (joined
               (portRef i2c1_irqo)

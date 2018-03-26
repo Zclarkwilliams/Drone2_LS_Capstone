@@ -14,12 +14,12 @@ module bno055_driver #(
 	parameter INIT_TIME = 12'd650
 )
 (
-	inout wire scl1,                      //  I2C EFB #1 SDA wire
-	inout wire scl2,                      //  I2C EFB #2 SDA wire
-	inout wire sda1,                      //  I2C EFB #1 SDA wire
-	inout wire sda2,                      //  I2C EFB #2 SDA wire
+	inout wire scl_1,                      //  I2C EFB #1 SDA wire
+	inout wire scl_2,                      //  I2C EFB #2 SDA wire
+	inout wire sda_1,                      //  I2C EFB #1 SDA wire
+	inout wire sda_2,                      //  I2C EFB #2 SDA wire
 	input wire rstn,                      //  async negative reset signal 0 = reset, 1 = not reset
-	//input wire SDA_DEBUG_IN, SCL_DEBUG_IN /* synthesis syn_force_pads=1 syn_noprune=1*/, //For capturing SDA and SCL in Reveal, no connections inside module
+	input wire SDA_DEBUG_IN, SCL_DEBUG_IN /* synthesis syn_force_pads=1 syn_noprune=1*/, //For capturing SDA and SCL in Reveal, no connections inside module
 	output wire [7:0]led_data_out,        //  Module LED Status output
 	input  wire sys_clk,                  //  master clock
 	output wire rstn_imu,                 //  Low active reset signal to IMU hardware to trigger reset
@@ -91,14 +91,12 @@ module bno055_driver #(
 	
 assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : data_rx_reg[led_view_index]); //  Inverted output for LEDS, since they are low active
 
-	// Generate module master clock
-	//clock CLK (sys_clk);
 	
 	//  Instantiate i2c driver
-	i2c_module i2c(	.scl1(scl1),
-					.sda1(sda1),
-					//.scl2(scl2),
-					//.sda2(sda2),
+	i2c_module i2c(	.scl_1(scl_1),
+					.sda_1(sda_1),
+					.scl_2(scl_2),
+					.sda_2(sda_2),
 					.rstn(rstn),
 					.rstn_imu(rstn_imu),
 					.target_read_count(target_read_count),

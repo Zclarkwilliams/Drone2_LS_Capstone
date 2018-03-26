@@ -11,8 +11,8 @@ Ethan Grinnell, Brett Creely, Daniel Christiansen, Kirk Hooper, Zachary Clark-Wi
 
 
 module i2c_module(
-	inout  scl1,// scl2,                     //  I2C EFB #1 and #2 SCL wires
-	inout  sda1,// sda2,                     //  I2C EFB #1 and #2 SDA wires
+	inout  scl_1, scl_2,                     //  I2C EFB #1 and #2 SCL wires
+	inout  sda_1, sda_2,                     //  I2C EFB #1 and #2 SDA wires
 	input  wire rstn,                      //  Async negative global reset signal 0 = reset, 1 = not reset
 	input  wire [5:0] target_read_count,   //  The number of bytes to for the continuous read burst - Max value is 31 bytes
 	output reg  [7:0] module_data_out,     //  Received data byte for i2c read cycles
@@ -47,7 +47,7 @@ module i2c_module(
 	reg  [23:0]count_wd_delay ;                     //  Countdown watchdog timer for hardware reset 
 	reg  wd_event_active;                           //  The current WD event state, active indicates a watchdog fault
 	reg  clear_watchdog;                            //  Reset watchdog to max value
-	wire irq1_out;//, irq2_out;                        //  IRQ output from EFB i2c modules
+	wire irq1_out, irq2_out;                        //  IRQ output from EFB i2c modules
 	reg  ack_flag, next_ack_flag;                   //  Used to delay read of EFB ack set/clear by one clock and prevent ack in one state from being considered for following states
 	reg  data_latch;                                //  Strobe to data late to retain dataRX value, which in turn generates module data output
 	reg  next_data_latch;                           //  The next data_latch value that will be asserted at the following clock edge.
@@ -71,12 +71,12 @@ module i2c_module(
 		.wb_dat_i(data_tx),               //  Transmitted data byte TO EFB
 		.wb_dat_o(data_rx),               //  Received data byte from EFB
 		.wb_ack_o(ack),                   //  Active-high command ack signal from EFB module, indicates that requested command is ack'd
-		.i2c1_scl(scl1),                  //  I2C #2 scl inout
-		.i2c1_sda(sda1),                  //  I2C #2 sda  inout
-		.i2c1_irqo(irq1_out)//,             //  I2C #2 IRQ Output
-		//.i2c2_scl(scl2),                  //  I2C #2 scl inout
-		//.i2c2_sda(sda2),                  //  I2C #2 sda inout
-		//.i2c2_irqo(irq2_out)              //  I2C #2 IRQ Output
+		.i2c1_scl(scl_1),                  //  I2C #2 scl inout
+		.i2c1_sda(sda_1),                  //  I2C #2 sda  inout
+		.i2c1_irqo(irq1_out),             //  I2C #2 IRQ Output
+		.i2c2_scl(scl_2),                  //  I2C #2 scl inout
+		.i2c2_sda(sda_2),                  //  I2C #2 sda inout
+		.i2c2_irqo(irq2_out)              //  I2C #2 IRQ Output
 );
 
 	//#0.100 forces delay during simulation to prevent mismatch with real synthesized behavior
@@ -90,7 +90,6 @@ module i2c_module(
 			count_us       <= 12'hFFF;
 		else if( clear_waiting_us == `CLEAR_US_TIMER )
 			count_us       <= (`WAIT_US_DIVIDER*5);
-		//else if( count_us != 8'hFF )
 		else if( count_us != 12'hFFF )
 			count_us       <= (count_us - 1'b1);
 		else

@@ -31,3 +31,6 @@ wb_ack_o  o
 i2c1_scl  b
 i2c1_sda  b
 i2c1_irqo  o
+i2c2_scl  b
+i2c2_sda  b
+i2c2_irqo  o
