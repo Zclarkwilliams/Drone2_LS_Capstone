@@ -427,8 +427,10 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 					next_go_flag           = `NOT_GO;
 					if( (read_write_in == `I2C_READ)) //  Only latch data if this was a read
 						rx_data_latch_strobe  = `HIGH;
-					//next_bno055_state      = return_state;
-					next_bno055_state      = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_DATA;
+					//if(return_state != `BNO055_STATE_WAIT_10MS)
+						next_bno055_state  = return_state;
+					//else                  
+					//	next_bno055_state  = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_DATA;
 				end
 				
 				
