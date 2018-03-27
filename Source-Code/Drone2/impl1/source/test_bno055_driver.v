@@ -1,14 +1,14 @@
 `timescale 1 ns / 100 ps
 module bno055_module_tb();
-	wire scl1;
-	wire sda1;
-	wire scl2;
-	wire sda2;
+	wire scl_1;
+	wire sda_1;
+	wire scl_2;
+	wire sda_2;
 	reg rstn;
 	reg purn;
 	wire rstn_imu;
 	wire [7:0] data_rx;
-    wire clk;
+    wire sys_clk;
 	wire done;
 	reg go;
 	reg read_write_in = 1;
@@ -16,6 +16,9 @@ module bno055_module_tb();
 	reg i2c_ack;
 	wire SDA_DEBUG_IN, SCL_DEBUG_IN;
 	reg [7:0]sda_byte;
+	
+	integer i;
+	integer j;
 
 
 	GSR GSR_INST (.GSR (rstn));
@@ -23,16 +26,16 @@ module bno055_module_tb();
 
 
 	bno055_driver bno055(
-		.scl1(scl1), 
-		.sda1(sda1), 
-		.scl2(scl2), 
-		.sda2(sda2), 
+		.scl_1(scl_1), 
+		.sda_1(sda_1), 
+		.scl_2(scl_2), 
+		.sda_2(sda_2), 
 		.rstn( (rstn) ),
 		.rstn_imu(rstn_imu),
-		.data_out(data_rx),
+		.led_data_out(data_rx),
 		.SDA_DEBUG_IN(SDA_DEBUG_IN),
 		.SCL_DEBUG_IN(SCL_DEBUG_IN),
-		.clk(clk)
+		.sys_clk(sys_clk)
 		); /* synthesis syn_hier=hard */;
 		
 // Generate a slave ACK every 9 i2c SCL posedges, regardless of what data is on the bus
@@ -64,7 +67,12 @@ module bno055_module_tb();
 		#10 rstn = 0;
 		#10 rstn = 1;
 		read_write_in = 0;
-		#1_000_000_000;
+		for(j = 0; j < 2; j = j + 1) begin
+			for(i = 0; i < 10; i = i + 1) begin
+				$display("efb_registers %1d EFB#%1d = %h", i[4:0], (j[4:0]+1), bno055.i2c.efb_registers[i][j]);
+			end
+		end
+		#10;
 		$stop;
 		end
 endmodule
