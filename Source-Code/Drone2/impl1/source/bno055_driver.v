@@ -254,6 +254,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 		end
 	end
 
+
 	//  Determine next state of FSM and drive i2c module inputs
 	always@(*) begin
 		if( ~(rstn & rstn_imu) ) begin
@@ -271,8 +272,8 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 			next_target_read_count = 1'b1;
 			rx_data_latch_strobe   = `LOW;
 			i2c_number 			   = 1'b0; // Default to i2c EFB #1
-			next_slave_address     = `BNO055_SLAVE_ADDRESS;
 			next_test_data_index   = 6'b0;
+			next_slave_address     = slave_address;
 		end
 		else begin
 			// Default to preserve these values, can be altered in lower steps
@@ -293,24 +294,28 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 			next_slave_address     = `BNO055_SLAVE_ADDRESS;
 			case(bno055_state)
 				`BNO055_STATE_RESET: begin
-					next_imu_good     = `FALSE;
-					clear_waiting_ms  = `CLEAR_MS_TIMER; //  Clear and set to wait_ms value
-					next_bno055_state = `BNO055_STATE_BOOT;
+					next_imu_good      = `FALSE;
+					clear_waiting_ms   = `CLEAR_MS_TIMER; //  Clear and set to wait_ms value
+					next_bno055_state  = `BNO055_STATE_BOOT;
+					next_slave_address = `BNO055_SLAVE_ADDRESS;
 				end
 				`BNO055_STATE_BOOT: begin
-					next_imu_good     = `FALSE;
-					clear_waiting_ms  = `RUN_MS_TIMER;
-					next_bno055_state = `BNO055_STATE_BOOT_WAIT;
+					next_imu_good      = `FALSE;
+					clear_waiting_ms   = `RUN_MS_TIMER;
+					next_bno055_state  = `BNO055_STATE_BOOT_WAIT;
+					next_slave_address = `BNO055_SLAVE_ADDRESS;
 				end
 				`BNO055_STATE_BOOT_WAIT: begin
-					next_imu_good     = `FALSE;
-					clear_waiting_ms  = `RUN_MS_TIMER;
-					next_bno055_state = `BNO055_STATE_BOOT_WAIT;
+					next_imu_good      = `FALSE;
+					clear_waiting_ms   = `RUN_MS_TIMER;
+					next_bno055_state  = `BNO055_STATE_BOOT_WAIT;
+					next_slave_address = `BNO055_SLAVE_ADDRESS;
 					if((~busy) && (count_ms[27] == 1'b1) ) // Wait for i2c to be in not busy state and count_ms wrapped around to 0x3FFFFFF
 						next_bno055_state = `BNO055_STATE_READ_CHIP_ID;
 				end
 				`BNO055_STATE_READ_CHIP_ID: begin //  Page 0
 					next_imu_good          = `FALSE;
+					next_slave_address     = `BNO055_SLAVE_ADDRESS;
 					next_go_flag           = `NOT_GO;
 					next_bno055_state      = `BNO055_STATE_READ_CHIP_ID;
 					next_return_state      = `BNO055_STATE_SET_EXT_CRYSTAL;
@@ -323,6 +328,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 				end
 				`BNO055_STATE_SET_EXT_CRYSTAL: begin //  Page 0
 					next_imu_good      = `FALSE;
+					next_slave_address = `BNO055_SLAVE_ADDRESS;
 					next_go_flag       = `NOT_GO;
 					next_bno055_state  = `BNO055_SUB_STATE_START;
 					next_return_state  = `BNO055_STATE_SET_UNITS;
@@ -332,6 +338,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 				end
 				`BNO055_STATE_SET_UNITS: begin //  Page 0
 					next_imu_good      = `FALSE;
+					next_slave_address = `BNO055_SLAVE_ADDRESS;
 					next_go_flag       = `NOT_GO;
 					next_bno055_state  = `BNO055_SUB_STATE_START;
 					next_return_state  = `BNO055_STATE_SET_POWER_MODE;
@@ -346,6 +353,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 				end
 				`BNO055_STATE_SET_POWER_MODE: begin //  Page 0
 					next_imu_good      = `FALSE;
+					next_slave_address = `BNO055_SLAVE_ADDRESS;
 					clear_waiting_ms   = `RUN_MS_TIMER;
 					next_go_flag       = `NOT_GO;
 					next_bno055_state  = `BNO055_SUB_STATE_START;
@@ -357,6 +365,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 				end
 				`BNO055_STATE_SET_RUN_MODE: begin //  Page 0
 					next_imu_good      = `FALSE;
+					next_slave_address = `BNO055_SLAVE_ADDRESS;
 					clear_waiting_ms   = `CLEAR_MS_TIMER; //  Clear and set to wait_ms value
 					next_go_flag       = `NOT_GO;
 					next_bno055_state  = `BNO055_SUB_STATE_START;
@@ -367,6 +376,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 				end
 				`BNO055_STATE_WAIT_20MS: begin // Wait 20ms to go from config to running mode
 					next_imu_good      = `FALSE;
+					next_slave_address = `BNO055_SLAVE_ADDRESS;
 					clear_waiting_ms   = `RUN_MS_TIMER;
 					next_data_reg      = `BYTE_ALL_ZERO;
 					next_data_tx       = `BYTE_ALL_ZERO;
@@ -380,6 +390,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 				end
 				`BNO055_STATE_READ_IMU_DATA_BURST: begin //  Page 0 - Read from Acceleration Data X-Axis LSB to Calibration Status registers - 46 bytes
 					clear_waiting_ms       = `CLEAR_MS_TIMER; //  Clear and set to wait_ms value
+					next_slave_address     = `BNO055_SLAVE_ADDRESS;
 					next_go_flag           = `NOT_GO;
 					next_bno055_state      = `BNO055_SUB_STATE_START;
 					next_return_state      = `BNO055_STATE_WAIT_10MS;
@@ -394,6 +405,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 												//i2c time is variable and dependent on slave
 												//This timer starts at the beginning of the the previous state
 					next_imu_good      = `TRUE;
+					next_slave_address = `BNO055_SLAVE_ADDRESS;
 					clear_waiting_ms   = `RUN_MS_TIMER;
 					next_data_reg      = `BYTE_ALL_ZERO;
 					next_data_tx       = `BYTE_ALL_ZERO;
@@ -408,6 +420,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 				// FSM Sub States - Repeated for each i2c transaction
 				`BNO055_SUB_STATE_START: begin //  Begin i2c transaction, wait for busy to be asserted
 					next_test_data_index   = 6'b0;
+					next_slave_address     = `BNO055_SLAVE_ADDRESS;
 					next_go_flag           = `GO;
 					if(busy && rstn_imu) // Stay here until i2c is busy AND the IMU isn't in reset (Prevent glitch at WD event)
 						next_bno055_state = `BNO055_SUB_STATE_WAIT_I2C;
@@ -416,34 +429,40 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 				end
 				`BNO055_SUB_STATE_WAIT_I2C: begin //  Wait for end of i2c transaction, wait for busy to be cleared
 					next_go_flag           = `NOT_GO;
+					next_slave_address     = `BNO055_SLAVE_ADDRESS;
 					if(~busy && rstn_imu) // Stay here until i2c is not busy AND the IMU isn't in reset (Prevent glitch at WD event)
 						next_bno055_state = `BNO055_SUB_STATE_STOP;
 					else
 						next_bno055_state = `BNO055_SUB_STATE_WAIT_I2C;
 				end //  Set output data latch strobe and return to major FSM state
 				`BNO055_SUB_STATE_STOP: begin
+					next_go_flag           = `NOT_GO;
+					next_slave_address     = `BNO055_SLAVE_ADDRESS;
 					next_data_reg          = `BYTE_ALL_ZERO;
 					next_data_tx           = `BYTE_ALL_ZERO;
-					next_go_flag           = `NOT_GO;
 					if( (read_write_in == `I2C_READ)) //  Only latch data if this was a read
 						rx_data_latch_strobe  = `HIGH;
-					//if(return_state != `BNO055_STATE_WAIT_10MS)
+					if(return_state != `BNO055_STATE_WAIT_10MS)
 						next_bno055_state  = return_state;
-					//else                  
-					//	next_bno055_state  = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_DATA;
+					else                  
+						next_bno055_state  = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_DATA;
 				end
 				
 				
 				`BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_DATA: begin // Read measurement to send to Arduino
 					next_go_flag           = `GO;
-					next_data_reg          = 0;
-					next_data_tx           = data_rx_reg[test_data_index];
 					next_slave_address     = `TEST_I2C_DATA_RECEIVER_SLAVE_ADDR;
+					next_data_reg          = data_rx_reg[test_data_index];
+					next_read_write_in     = `I2C_WRITE;
+					next_data_tx           = data_rx_reg[test_data_index+1];
 					next_bno055_state      = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_START;
 				end
 				`BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_START: begin // Send measurement to Arduino
 					next_go_flag           = `NOT_GO;
 					next_slave_address     = `TEST_I2C_DATA_RECEIVER_SLAVE_ADDR;
+					next_data_reg          = data_reg;
+					next_data_tx           = data_tx; 
+					next_read_write_in     = read_write_in;
 					if(busy && rstn_imu)
 						next_bno055_state  = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_WAIT;
 					else
@@ -452,15 +471,22 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 				`BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_WAIT: begin // Wait until send completes
 					next_go_flag           = `NOT_GO;
 					next_slave_address     = `TEST_I2C_DATA_RECEIVER_SLAVE_ADDR;
-					next_test_data_index   = test_data_index  + 1'b1;
-					if(~busy && rstn_imu)
+					next_data_reg          = data_reg;
+					next_data_tx           = data_tx; 
+					next_read_write_in     = read_write_in;
+					if(~busy && rstn_imu) begin
+						next_test_data_index   = test_data_index  + 2'h2;
 						next_bno055_state  = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_STOP;
+					end
 					else
 						next_bno055_state  = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_WAIT;
 				end
 				`BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_STOP: begin // See if this was the last, loop around if more, otherwise, exit loop
 					next_go_flag           = `NOT_GO;
 					next_slave_address     = `TEST_I2C_DATA_RECEIVER_SLAVE_ADDR;
+					next_data_reg          = data_reg;
+					next_data_tx           = data_tx; 
+					next_read_write_in     = read_write_in;
 					if(test_data_index    >= `DATA_RX_BYTE_REG_CNT)
 						next_bno055_state  = return_state;
 					else

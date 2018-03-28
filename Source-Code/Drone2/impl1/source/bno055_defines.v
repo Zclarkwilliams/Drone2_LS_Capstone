@@ -394,7 +394,7 @@ Total: 46 bytes
 
 */
 
-`define BNO055_STATE_BITS      4             //  The number of bits used to represent the current state
+`define BNO055_STATE_BITS      5             //  The number of bits used to represent the current state
 `define DATA_RX_BYTE_REG_CNT   46            //  The number of byte registers to used receive all measurement data
 
 // Value aliases
