@@ -6,3 +6,7 @@ Source-Code/Drone2/impl1/source/\._Real_\._Math_\.vhd
 Source-Code/Drone2/impl1/source/generate_core\.tcl
 
 Source-Code/Drone2/impl1/source/generate_ngd\.tcl
+
+Source-Code/Drone2/test/
+
+Source-Code/Drone2/Drone2\.ldf
