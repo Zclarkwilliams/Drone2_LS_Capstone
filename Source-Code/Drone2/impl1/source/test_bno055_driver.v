@@ -24,8 +24,13 @@ module bno055_module_tb();
 	GSR GSR_INST (.GSR (rstn));
 	PUR PUR_INST (.PUR (purn));
 
+	defparam OSCH_inst.NOM_FREQ = "38.00";
+	OSCH OSCH_inst (.STDBY(1'b0),
+       			    .OSC(sys_clk),
+       			    .SEDSTDBY());
 
-	bno055_driver bno055(
+
+	bno055_driver #(0) bno055(
 		.scl_1(scl_1), 
 		.sda_1(sda_1), 
 		.scl_2(scl_2), 
@@ -72,7 +77,7 @@ module bno055_module_tb();
 				$display("efb_registers %1d EFB#%1d = %h", i[4:0], (j[4:0]+1), bno055.i2c.efb_registers[i][j]);
 			end
 		end
-		#10;
+		#1_000_000_000;
 		$stop;
 		end
 endmodule

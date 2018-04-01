@@ -13,8 +13,8 @@ module test_drone2;
 	wire pitch_pwm;
 
 	// I2C lines for IMU communication
-	wire sda_1;
-	wire scl_1;
+	wire sda;
+	wire scl;
 
 	drone2 DUT(.motor_1_pwm(motor_1_pwm),
 			   .motor_2_pwm(motor_2_pwm),
@@ -24,8 +24,8 @@ module test_drone2;
 			   .yaw_pwm(yaw_pwm),
 			   .roll_pwm(roll_pwm),
 			   .pitch_pwm(pitch_pwm),
-			   .sda_1(sda_1),
-			   .scl_1(scl_1));
+			   .sda(sda),
+			   .scl(scl));
 
 	initial begin
 		$display("%m successful");

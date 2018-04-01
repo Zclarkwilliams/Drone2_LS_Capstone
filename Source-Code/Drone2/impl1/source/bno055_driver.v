@@ -90,7 +90,9 @@ module bno055_driver #(
 	`define TEST_I2C_DATA_RECEIVER_SLAVE_ADDR 7'h29   //  Arduino slave address
 	reg test_data_flag;                               //  Flag for test state, send data to data receiver (Arduino)
 	reg [5:0]test_data_index;                         //  Index to read data out of receive data registers, send to Arduino
-	reg [5:0]next_test_data_index;                    //  Next value of test data index
+	reg clear_test_data_index;
+	reg increment_test_data_index;
+	//reg [5:0]old_test_data_index;
 
 	//
 	//  Module body
@@ -120,6 +122,8 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 	);
 
 	//  Generates a multiple of 1ms length duration delay trigger - Defaulted to 650 ms for BNO055 reset and boot time
+	
+	
 	always@(posedge sys_clk, negedge clear_waiting_ms, negedge rstn) begin
 		if(~rstn)
 			count_ms       <= 28'hFFFFFFF;
@@ -221,6 +225,20 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 			z_velocity        <= 8'b0;
 		end
 	end
+//--------------------------------------------------------------------------------------------------------------------//
+/// For debug testing, write data to external i2c device, Arduino to validate measurements
+//--------------------------------------------------------------------------------------------------------------------//
+	always@(posedge sys_clk) begin
+		if( ~clear_test_data_index)
+			test_data_index <= 0;
+		else if( increment_test_data_index)
+			test_data_index <= (test_data_index + 1'b1);
+		else
+			test_data_index <= test_data_index;
+	end
+//--------------------------------------------------------------------------------------------------------------------//
+// end of debug stuff
+//--------------------------------------------------------------------------------------------------------------------//
 	
 	//  Advance state and registered data at each positive clock edge
 	always@(posedge sys_clk, negedge rstn) begin
@@ -236,7 +254,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 			wait_ms           <= INIT_TIME; // Reset to Normal takes 650 ms for BNO055;
 			slave_address     <= next_slave_address;
 			imu_good          <= `FALSE;
-			test_data_index   <= 6'b0;
+			//old_test_data_index <= 0;
 		end
 		else begin
 			data_reg          <= next_data_reg;
@@ -250,7 +268,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 			wait_ms           <= next_wait_ms;
 			slave_address     <= next_slave_address;
 			imu_good          <= next_imu_good;
-			test_data_index   <= next_test_data_index;
+			//old_test_data_index <= test_data_index;
 		end
 	end
 
@@ -258,40 +276,43 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 	//  Determine next state of FSM and drive i2c module inputs
 	always@(*) begin
 		if( ~(rstn & rstn_imu) ) begin
-			next_imu_good          = `FALSE;
-			clear_waiting_ms       = `RUN_MS_TIMER;
-			next_bno055_state      = `BNO055_STATE_RESET;
-			next_return_state      = `BNO055_STATE_RESET;
-			next_go_flag           = `NOT_GO;
-			next_data_reg          = `BYTE_ALL_ZERO;
-			next_data_tx           = `BYTE_ALL_ZERO; 
-			next_read_write_in     = `I2C_READ;
-			next_led_view_index    = `FALSE;
-			next_wait_ms           = INIT_TIME; // Reset to Normal takes 650 ms for BNO055
-			rstn_buffer            = `LOW;
-			next_target_read_count = 1'b1;
-			rx_data_latch_strobe   = `LOW;
-			i2c_number 			   = 1'b0; // Default to i2c EFB #1
-			next_test_data_index   = 6'b0;
-			next_slave_address     = slave_address;
+			next_imu_good             = `FALSE;
+			clear_waiting_ms          = `RUN_MS_TIMER;
+			next_bno055_state         = `BNO055_STATE_RESET;
+			next_return_state         = `BNO055_STATE_RESET;
+			next_go_flag              = `NOT_GO;
+			next_data_reg             = `BYTE_ALL_ZERO;
+			next_data_tx              = `BYTE_ALL_ZERO; 
+			next_read_write_in        = `I2C_READ;
+			next_led_view_index       = `FALSE;
+			next_wait_ms              = INIT_TIME; // Reset to Normal takes 650 ms for BNO055
+			rstn_buffer               = `LOW;
+			next_target_read_count    = 1'b1;
+			rx_data_latch_strobe      = `LOW;
+			i2c_number 			      = 1'b0; // Default to i2c EFB #1
+			next_slave_address        = slave_address;
+			increment_test_data_index = 1'b0;
+			clear_test_data_index     = 1'b0;
 		end
 		else begin
 			// Default to preserve these values, can be altered in lower steps
-			next_imu_good          = imu_good;
-			clear_waiting_ms       = `RUN_MS_TIMER;
-			next_go_flag           = `NOT_GO;
-			next_bno055_state      = bno055_state;
-			next_return_state      = return_state;
-			next_data_reg          = data_reg;
-			next_data_tx           = data_tx; 
-			next_read_write_in     = read_write_in;
-			next_led_view_index    = led_view_index;
-			next_wait_ms           = wait_ms;
-			rstn_buffer            = `HIGH;
-			next_target_read_count = target_read_count;
-			rx_data_latch_strobe   = `LOW;
-			i2c_number 			   = 1'b0; // Default to i2c EFB #1
-			next_slave_address     = `BNO055_SLAVE_ADDRESS;
+			next_imu_good             = imu_good;
+			clear_waiting_ms          = `RUN_MS_TIMER;
+			next_go_flag              = `NOT_GO;
+			next_bno055_state         = bno055_state;
+			next_return_state         = return_state;
+			next_data_reg             = data_reg;
+			next_data_tx              = data_tx; 
+			next_read_write_in        = read_write_in;
+			next_led_view_index       = led_view_index;
+			next_wait_ms              = wait_ms;
+			rstn_buffer               = `HIGH;
+			next_target_read_count    = target_read_count;
+			rx_data_latch_strobe      = `LOW;
+			i2c_number 			      = 1'b0; // Default to i2c EFB #1
+			next_slave_address        = `BNO055_SLAVE_ADDRESS;
+			increment_test_data_index = 1'b0;
+			clear_test_data_index     = 1'b1;
 			case(bno055_state)
 				`BNO055_STATE_RESET: begin
 					next_imu_good      = `FALSE;
@@ -413,13 +434,13 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 					next_bno055_state  = `BNO055_STATE_WAIT_10MS;
 					rstn_buffer        = `LOW; //  Clear the RX data buffer index starting next state's read burst
 					if((count_ms[27] == 1'b1) ) begin // Wait for count_ms wrapped around to 0x3FFFFFF
-						next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
+						next_bno055_state  = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_DATA;
+						//next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
 					end
 				end
 				
 				// FSM Sub States - Repeated for each i2c transaction
 				`BNO055_SUB_STATE_START: begin //  Begin i2c transaction, wait for busy to be asserted
-					next_test_data_index   = 6'b0;
 					next_slave_address     = `BNO055_SLAVE_ADDRESS;
 					next_go_flag           = `GO;
 					if(busy && rstn_imu) // Stay here until i2c is busy AND the IMU isn't in reset (Prevent glitch at WD event)
@@ -442,28 +463,26 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 					next_data_tx           = `BYTE_ALL_ZERO;
 					if( (read_write_in == `I2C_READ)) //  Only latch data if this was a read
 						rx_data_latch_strobe  = `HIGH;
-					if(return_state != `BNO055_STATE_WAIT_10MS)
-						next_bno055_state  = return_state;
-					else                  
-						next_bno055_state  = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_DATA;
+					next_bno055_state      = return_state;
 				end
 				
 				
 				`BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_DATA: begin // Read measurement to send to Arduino
-					next_go_flag           = `GO;
+					next_go_flag           = `NOT_GO;
 					next_slave_address     = `TEST_I2C_DATA_RECEIVER_SLAVE_ADDR;
 					next_data_reg          = data_rx_reg[test_data_index];
+					//next_data_reg          = 1'd1;
 					next_read_write_in     = `I2C_WRITE;
-					next_data_tx           = data_rx_reg[test_data_index+1];
+					next_data_tx           = 2'd2;
 					next_bno055_state      = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_START;
 				end
 				`BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_START: begin // Send measurement to Arduino
-					next_go_flag           = `NOT_GO;
+					next_go_flag           = `GO;
 					next_slave_address     = `TEST_I2C_DATA_RECEIVER_SLAVE_ADDR;
 					next_data_reg          = data_reg;
 					next_data_tx           = data_tx; 
 					next_read_write_in     = read_write_in;
-					if(busy && rstn_imu)
+					if(busy)
 						next_bno055_state  = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_WAIT;
 					else
 						next_bno055_state  = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_START;
@@ -474,8 +493,8 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 					next_data_reg          = data_reg;
 					next_data_tx           = data_tx; 
 					next_read_write_in     = read_write_in;
-					if(~busy && rstn_imu) begin
-						next_test_data_index   = test_data_index  + 2'h2;
+					if(~busy) begin
+						increment_test_data_index = 1'b1;
 						next_bno055_state  = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_STOP;
 					end
 					else
@@ -487,10 +506,13 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 					next_data_reg          = data_reg;
 					next_data_tx           = data_tx; 
 					next_read_write_in     = read_write_in;
-					if(test_data_index    >= `DATA_RX_BYTE_REG_CNT)
-						next_bno055_state  = return_state;
-					else
+					if(test_data_index >= (`DATA_RX_BYTE_REG_CNT-1)) begin
+						clear_test_data_index = 1'b0;
+						next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
+					end
+					else begin
 						next_bno055_state  = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_DATA;
+					end
 				end
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
