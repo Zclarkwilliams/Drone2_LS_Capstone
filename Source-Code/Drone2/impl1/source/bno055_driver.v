@@ -470,10 +470,9 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 				`BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_DATA: begin // Read measurement to send to Arduino
 					next_go_flag           = `NOT_GO;
 					next_slave_address     = `TEST_I2C_DATA_RECEIVER_SLAVE_ADDR;
-					next_data_reg          = data_rx_reg[test_data_index];
-					//next_data_reg          = 1'd1;
+					next_data_reg          = test_data_index;
 					next_read_write_in     = `I2C_WRITE;
-					next_data_tx           = 2'd2;
+					next_data_tx           = data_rx_reg[test_data_index];
 					next_bno055_state      = `BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_START;
 				end
 				`BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_START: begin // Send measurement to Arduino
@@ -506,7 +505,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 					next_data_reg          = data_reg;
 					next_data_tx           = data_tx; 
 					next_read_write_in     = read_write_in;
-					if(test_data_index >= (`DATA_RX_BYTE_REG_CNT-1)) begin
+					if(test_data_index >= (`DATA_RX_BYTE_REG_CNT)) begin
 						clear_test_data_index = 1'b0;
 						next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
 					end
