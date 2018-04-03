@@ -411,6 +411,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 				end
 				`BNO055_STATE_READ_IMU_DATA_BURST: begin //  Page 0 - Read from Acceleration Data X-Axis LSB to Calibration Status registers - 46 bytes
 					clear_waiting_ms       = `CLEAR_MS_TIMER; //  Clear and set to wait_ms value
+					next_wait_ms       = 'd10; //  Pause for 10 ms between iterations, for next wait state, not used in this one
 					next_slave_address     = `BNO055_SLAVE_ADDRESS;
 					next_go_flag           = `NOT_GO;
 					next_bno055_state      = `BNO055_SUB_STATE_START;
@@ -468,6 +469,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 				
 				
 				`BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_DATA: begin // Read measurement to send to Arduino
+					next_wait_ms           = 'd10; //  Pause for 10 ms between iterations, for next wait state, not used in this one
 					next_go_flag           = `NOT_GO;
 					next_slave_address     = `TEST_I2C_DATA_RECEIVER_SLAVE_ADDR;
 					next_data_reg          = test_data_index;
