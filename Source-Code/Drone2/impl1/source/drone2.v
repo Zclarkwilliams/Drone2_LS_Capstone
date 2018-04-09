@@ -192,4 +192,3 @@ module drone2 (output wire motor_1_pwm,
 		.sys_clk(sys_clk));
 
 endmodule
-
