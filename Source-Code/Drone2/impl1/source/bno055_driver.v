@@ -279,6 +279,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 			next_data_reg             = data_reg;
 			next_data_tx              = data_tx; 
 			next_read_write_in        = read_write_in;
+			next_led_view_index       = led_view_index;
 			next_wait_ms              = wait_ms;
 			rstn_buffer               = `HIGH;
 			next_target_read_count    = target_read_count;
@@ -310,14 +311,13 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 					next_imu_good          = `FALSE;
 					next_slave_address     = `BNO055_SLAVE_ADDRESS;
 					next_go_flag           = `NOT_GO;
-					next_bno055_state      = `BNO055_STATE_READ_CHIP_ID;
+					next_bno055_state      = `BNO055_SUB_STATE_START;
 					next_return_state      = `BNO055_STATE_SET_EXT_CRYSTAL;
 					next_data_reg          = `BNO055_CHIP_ID_ADDR;
 					next_data_tx           = `BYTE_ALL_ZERO;
 					next_read_write_in     = `I2C_READ;
 					next_target_read_count = 1'b1;
 					next_led_view_index    = 1'b0;
-					next_bno055_state      = `BNO055_SUB_STATE_START;
 				end
 				`BNO055_STATE_SET_EXT_CRYSTAL: begin //  Page 0
 					next_imu_good      = `FALSE;
