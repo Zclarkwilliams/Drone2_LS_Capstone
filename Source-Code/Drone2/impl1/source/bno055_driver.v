@@ -14,10 +14,10 @@ module bno055_driver #(
 	parameter INIT_TIME = 12'd650
 )
 (
-	inout wire scl_1,                      //  I2C EFB #1 SDA wire
-	inout wire scl_2,                      //  I2C EFB #2 SDA wire
-	inout wire sda_1,                      //  I2C EFB #1 SDA wire
-	inout wire sda_2,                      //  I2C EFB #2 SDA wire
+	inout wire scl_1,                     //  I2C EFB #1 SDA wire
+	inout wire scl_2,                     //  I2C EFB #2 SDA wire
+	inout wire sda_1,                     //  I2C EFB #1 SDA wire
+	inout wire sda_2,                     //  I2C EFB #2 SDA wire
 	input wire rstn,                      //  async negative reset signal 0 = reset, 1 = not reset
 	input wire SDA_DEBUG_IN, SCL_DEBUG_IN /* synthesis syn_force_pads=1 syn_noprune=1*/, //For capturing SDA and SCL in Reveal, no connections inside module
 	output wire [7:0]led_data_out,        //  Module LED Status output
@@ -68,7 +68,7 @@ module bno055_driver #(
 	reg  [7:0]next_data_tx;                           //  Data written to registers for this command
 	reg  [6:0]slave_address;                          //  Slave address to access
 	reg  [6:0]next_slave_address;                     //  Next value of slave address
-	reg  [`BNO055_STATE_BITS-1:0]bno055_state /* synthesis syn_encoding = "sequential" */ ; //  State for bno055 command sequence FSM
+	reg  [`BNO055_STATE_BITS-1:0]bno055_state /* synthesis syn_encoding = "one-hot" */ ; //  State for bno055 command sequence FSM
 	reg  [`BNO055_STATE_BITS-1:0]next_bno055_state;   //  Next FSM state
 	reg  [`BNO055_STATE_BITS-1:0]return_state;        //  FSM return state from i2c sub state
 	reg  [`BNO055_STATE_BITS-1:0]next_return_state;   //  Next value for FSM return state
@@ -92,7 +92,6 @@ module bno055_driver #(
 	reg [5:0]test_data_index;                         //  Index to read data out of receive data registers, send to Arduino
 	reg clear_test_data_index;
 	reg increment_test_data_index;
-	//reg [5:0]old_test_data_index;
 
 	//
 	//  Module body
@@ -136,11 +135,12 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 	end
 
 	always@(posedge sys_clk, negedge rstn_buffer, negedge rstn) begin
-		if( (~rstn) || (~rstn_buffer) ) begin
-			if(~rstn) begin
-				for(data_rx_reg_index = 0; data_rx_reg_index < `DATA_RX_BYTE_REG_CNT; data_rx_reg_index = data_rx_reg_index+1'b1)
-					data_rx_reg[data_rx_reg_index] <= 8'b0;
-			end
+		if(~rstn) begin
+			for(data_rx_reg_index = 0; data_rx_reg_index < `DATA_RX_BYTE_REG_CNT; data_rx_reg_index = data_rx_reg_index+1'b1)
+				data_rx_reg[data_rx_reg_index] <= 8'b0;
+			data_rx_reg_index <= 0;
+		end
+		else if(~rstn_buffer ) begin
 			data_rx_reg_index <= 0;
 		end
 		else if (one_byte_ready) begin

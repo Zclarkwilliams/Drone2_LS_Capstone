@@ -280,7 +280,7 @@ module i2c_module(
 						next_we            = `I2C_WE_WRITE;
 						next_stb           = `I2C_CMD_START;
 						next_addr          = efb_registers[`I2C_BR0_INDEX][i2c_number];
-						next_data_tx       = 8'd190;
+						next_data_tx       = 8'd190; // Prescaler value for a 38.00 MHz clock to 400kHz i2c rate
 						next_ack_flag      = `TRUE;
 						rstn_imu           = `LOW;
 						clear_read_count   = `HIGH;
@@ -305,7 +305,7 @@ module i2c_module(
 						next_we            = `I2C_WE_WRITE;
 						next_stb           = `I2C_CMD_START;
 						next_addr          = efb_registers[`I2C_BR1_INDEX][i2c_number];
-						next_data_tx       = `BYTE_ALL_ZERO;
+						next_data_tx       = `BYTE_ALL_ZERO;  // Set the high register to 0, not needed for 38.00 MHz clock
 						next_ack_flag      = `TRUE;
 						busy               = `HIGH;
 						clear_read_count   = `HIGH;
