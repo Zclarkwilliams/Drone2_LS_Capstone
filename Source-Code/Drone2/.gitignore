@@ -1,6 +1,6 @@
 # Ignore all files under impl* except verilog source files
 
-./*/* 
+/**/*
 impl*/*
 !impl*/source
 impl*/source/*
