@@ -1,36 +1,10 @@
 # Ignore all files under impl* except verilog source files
 
-/**/*
-impl*/*
-!impl*/source
-impl*/source/*
-
-# Some of this stuff may need to be added back in.
-# Also alot of it is in the impl* directory so its already
-# handled above.
-
-*.html
-*.xml
-.recovery
-.build_status
-*.sty
-simulation*/
-*.log
-*test_impl*
-*xxx*
-*prim.v
-*.twr
-*.synproj
-*.ngd
-*.lsedata
-*.arearep
-.vdbs*/
-*.mrp
-*.prf
-*.hrr
-*.cam
-*.asd
-*.ncd
-*.ini
-*.ccl
-*.tcr
+/*
+!impl*/source/*.v
+!impl*/source/*I2C_EFB_WB*
+!Drone2.lpf
+!Drone2.ldf
+!Drone21.sty
+!project_setup.tcl
+!.editorconfig
