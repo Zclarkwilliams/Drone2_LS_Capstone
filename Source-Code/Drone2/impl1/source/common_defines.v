@@ -22,6 +22,7 @@
 
 //  A byte of all zeros
 `define BYTE_ALL_ZERO           8'h00
+`define ALL_ZERO_2BYTE          16'h0000
 
 // PWM signal pulse lengths
 `define MIN_PWM_TIME_HIGH_US	10'd1000
@@ -46,3 +47,25 @@
 `define YAW_DEFAULT_PULSE_TIME_HIGH_US		11'd1500
 `define ROLL_DEFAULT_PULSE_TIME_HIGH_US		11'd1500
 `define PITCH_DEFAULT_PULSE_TIME_HIGH_US	11'd1500
+
+/*	Motor_Rate Module Defines:
+ *
+ *	All values assigned below are initially arbitrary and 
+ *	must be tested and adjusted appropriately
+ *
+ */
+ 
+//	Min and Max boundary values for to send to ESC's
+`define MOTOR_VAL_MIN					8'h04
+`define MOTOR_VAL_MAX					8'hFF
+//	Bias to add as a buffer to the motor equation
+`define	MOTOR_RATE_BIAS				 	1'b0
+//	Scaler to set proportions of yaw, roll, and pitch 
+`define MOTOR_RATE_YAW_SCALER			1
+`define MOTOR_RATE_ROLL_SCALER			1
+`define MOTOR_RATE_PITCH_SCALER			1
+//	Mapping 16 bit motor rate output to 8 bit value for pwm conversion
+`define MAPPING_SHIFT_BIT				8
+//	Value to add to value before bit shift rounding to help rounding error
+`define MOTOR_RATE_MAP_ROUND_VAL		128
+
