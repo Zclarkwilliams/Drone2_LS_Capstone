@@ -33,6 +33,24 @@ Ethan Grinnell, Brett Creely, Daniel Christiansen, Kirk Hooper, Zachary Clark-Wi
 `define I2C_2_RXDR  8'h51 //  Receive data
 `define I2C_2_IRQ   8'h52 //  IRQ
 `define I2C_2_IRQEN 8'h53 //  IRQ Enable
+
+
+`define I2C_1_INDEX 1'b0 //Index of primary i2c module
+`define I2C_2_INDEX 1'b1 //Index of secondary i2c module
+
+
+
+//EFB I2C Module register index
+`define I2C_CR_INDEX    4'd0 //  Control register
+`define I2C_CMDR_INDEX  4'd1 //  Command register
+`define I2C_BR0_INDEX   4'd2 //  clock pre-scaler low byte
+`define I2C_BR1_INDEX   4'd3 //  clock pre-scaler high byte
+`define I2C_TXDR_INDEX  4'd4 //  Transmit data
+`define I2C_SR_INDEX    4'd5 //  Status
+`define I2C_GCDR_INDEX  4'd6 //  General Call
+`define I2C_RXDR_INDEX  4'd7 //  Receive data
+`define I2C_IRQ_INDEX   4'd8 //  IRQ
+`define I2C_IRQEN_INDEX 4'd9 //  IRQ Enable
 // WE bits
 `define I2C_WE_WRITE 1
 `define I2C_WE_READ  0

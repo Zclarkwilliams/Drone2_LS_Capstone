@@ -38,8 +38,10 @@ module drone2 (output wire motor_1_pwm,
 			   input wire resetn,
 			   output wire rstn_imu,
 			   output wire [7:0]led_data_out,
-			   inout wire sda,
-			   inout wire scl);
+			   inout wire sda_1,
+			   inout wire scl_1,
+			   inout wire sda_2,
+			   inout wire scl_2);
 
 	/* TODO: Figure out what these bit widths actually need to be
 	 *		 and move them to the common_defines.v file.
@@ -136,8 +138,10 @@ module drone2 (output wire motor_1_pwm,
 		.sys_clk(sys_clk));
 
 	bno055_driver	i(
-		.scl1(scl),                      //  I2C EFB SDA wires
-		.sda1(sda),                      //  I2C EFB SDA wires
+		.scl_1(scl_1),                    //  I2C EFB SDA wires, Primary EFB
+		.sda_1(sda_1),                    //  I2C EFB SDA wires, Primary EFB
+		.scl_2(scl_2),                    //  I2C EFB SDA wires, Secondary EFB
+		.sda_2(sda_2),                    //  I2C EFB SDA wires, Secondary EFB
 		.rstn(resetn),                   //  async negative reset signal 0 = reset, 1 = not resete
 		.led_data_out(led_data_out),     //  Module LED Status output
 		.sys_clk(sys_clk),               //  master clock
@@ -188,4 +192,3 @@ module drone2 (output wire motor_1_pwm,
 		.sys_clk(sys_clk));
 
 endmodule
-
