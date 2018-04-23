@@ -66,7 +66,9 @@
  */
  
 `timescale 1ns / 1ns
-`include "pid_mixer_defs.v"
+//`include "pid_mixer_defs.v"
+
+
 
 module motor_mixer	#(parameter BIT_WIDTH = 16,
 					  parameter MOTOR_RATE_BIT_WIDTH = 8)
