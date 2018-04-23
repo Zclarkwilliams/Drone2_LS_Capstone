@@ -66,7 +66,7 @@
  */
  
 `timescale 1ns / 1ns
-//`include "pid_mixer_defs.v"
+`include "common_defines.v"
 
 
 
