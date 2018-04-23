@@ -27,40 +27,44 @@
 
  `include "common_defines.v"
 
-module drone2 (output wire motor_1_pwm,
-			   output wire motor_2_pwm,
-			   output wire motor_3_pwm,
-			   output wire motor_4_pwm,
-			   input wire throttle_pwm,
-			   input wire yaw_pwm,
-			   input wire roll_pwm,
-			   input wire pitch_pwm,
-			   input wire resetn,
-			   output wire rstn_imu,
-			   output wire [7:0]led_data_out,
-			   inout wire sda_1,
-			   inout wire scl_1,
-			   inout wire sda_2,
-			   inout wire scl_2);
+module drone2 (
+	output wire motor_1_pwm,
+	output wire motor_2_pwm,
+	output wire motor_3_pwm,
+	output wire motor_4_pwm,
+	input wire throttle_pwm,
+	input wire yaw_pwm,
+	input wire roll_pwm,
+	input wire pitch_pwm,
+	input wire resetn,
+	output wire rstn_imu,
+	output wire [7:0]led_data_out,
+	inout wire sda,
+	inout wire scl);
 
 	/* TODO: Figure out what these bit widths actually need to be
 	 *		 and move them to the common_defines.v file.
 	 */
-	localparam REC_VAL_BIT_WIDTH = 8;
-	localparam PID_RATE_BIT_WIDTH = 36;
-	localparam RATE_BIT_WIDTH = 36;
-	localparam IMU_VAL_BIT_WIDTH = 16;
+	localparam REC_VAL_BIT_WIDTH = 8;   // values from receiver
+	localparam PID_RATE_BIT_WIDTH = 16; // values from body frame controller
+	localparam RATE_BIT_WIDTH = 16;     // values from angle controller
+	localparam IMU_VAL_BIT_WIDTH = 16;  // values from IMU 
 
+	// values from receiver to angle_controller
 	wire [REC_VAL_BIT_WIDTH-1:0] throttle_val;
 	wire [REC_VAL_BIT_WIDTH-1:0] yaw_val;
 	wire [REC_VAL_BIT_WIDTH-1:0] roll_val;
 	wire [REC_VAL_BIT_WIDTH-1:0] pitch_val;
 
-	wire [PID_RATE_BIT_WIDTH-1:0] throttle_target_rate;
-	wire [PID_RATE_BIT_WIDTH-1:0] yaw_target_rate;
-	wire [PID_RATE_BIT_WIDTH-1:0] roll_target_rate;
-	wire [PID_RATE_BIT_WIDTH-1:0] pitch_target_rate;
+	// values from angle_controller to body_frame_controller
+	wire [RATE_BIT_WIDTH-1:0] throttle_target_rate;
+	wire [RATE_BIT_WIDTH-1:0] yaw_target_rate;
+	wire [RATE_BIT_WIDTH-1:0] roll_target_rate;
+	wire [RATE_BIT_WIDTH-1:0] pitch_target_rate;
+	wire [RATE_BIT_WIDTH-1:0] roll_angle_error;
+	wire [RATE_BIT_WIDTH-1:0] pitch_angle_error;
 
+	// values from the IMU
 	wire [IMU_VAL_BIT_WIDTH-1:0] x_velocity;
 	wire [IMU_VAL_BIT_WIDTH-1:0] y_velocity;
 	wire [IMU_VAL_BIT_WIDTH-1:0] z_velocity;
@@ -74,17 +78,28 @@ module drone2 (output wire motor_1_pwm,
 	wire [IMU_VAL_BIT_WIDTH-1:0] y_linear_accel;
 	wire [IMU_VAL_BIT_WIDTH-1:0] z_linear_accel;
 
+	// values from the body_frame_controller to the motor_mixer
 	wire [PID_RATE_BIT_WIDTH-1:0] yaw_rate;
 	wire [PID_RATE_BIT_WIDTH-1:0] roll_rate;
 	wire [PID_RATE_BIT_WIDTH-1:0] pitch_rate;
 
+	// values from motor_mixer to pwm_generator
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_1_rate;
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_2_rate;
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_3_rate;
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_4_rate;
 	
+	// status signals from IMU
 	wire imu_good;
-	wire valid_strobe;
+	wire imu_valid_strobe;
+	
+	// status signals from angle_controller
+	wire ac_valid_strobe;
+	wire ac_active;
+	
+	// status signals from body_frame_controller
+	wire bf_valid_strobe;
+	wire bf_active;
 
 	// TODO: Replace modules using this with the top level reset_n later on
 	wire temp_reset_n;
@@ -101,47 +116,10 @@ module drone2 (output wire motor_1_pwm,
 						   .sys_clk(sys_clk),
 						   .resetn(temp_reset_n));  // TODO: Change this to the top level reset signal (.resetn(resetn))
 
-	receiver receiver (
-		.throttle_val(throttle_val),
-		.yaw_val(yaw_val),
-		.roll_val(roll_val),
-		.pitch_val(pitch_val),
-		.throttle_pwm(throttle_pwm),
-		.yaw_pwm(yaw_pwm),
-		.roll_pwm(roll_pwm),
-		.pitch_pwm(pitch_pwm),
-		.us_clk(us_clk),
-		.resetn(temp_reset_n)); // TODO: Change this to the top level reset signal (.resetn(resetn))
-
-	pwm_generator pwm_generator (
-		.motor_1_pwm(motor_1_pwm),
-		.motor_2_pwm(motor_2_pwm),
-		.motor_3_pwm(motor_3_pwm),
-		.motor_4_pwm(motor_4_pwm),
-		.motor_1_rate(motor_1_rate),
-		.motor_2_rate(motor_2_rate),
-		.motor_3_rate(motor_3_rate),
-		.motor_4_rate(motor_4_rate),
-		.us_clk(us_clk),
-		.resetn(temp_reset_n)); // TODO: Change this to the top level reset signal (.resetn(resetn))
-
-	// TODO: Rename this block appropriately (I think we mentioned this is the initial p controller block)
-	value_to_rate #(RATE_BIT_WIDTH, REC_VAL_BIT_WIDTH) value_to_rate (
-		.throttle_rate(throttle_target_rate),
-		.yaw_rate(yaw_target_rate),
-		.roll_rate(roll_target_rate),
-		.pitch_rate(pitch_target_rate),
-		.throttle_val(throttle_val),
-		.yaw_val(yaw_val),
-		.roll_val(roll_val),
-		.pitch_val(pitch_val),
-		.sys_clk(sys_clk));
-
+/*
 	bno055_driver	i(
-		.scl_1(scl_1),                    //  I2C EFB SDA wires, Primary EFB
-		.sda_1(sda_1),                    //  I2C EFB SDA wires, Primary EFB
-		.scl_2(scl_2),                    //  I2C EFB SDA wires, Secondary EFB
-		.sda_2(sda_2),                    //  I2C EFB SDA wires, Secondary EFB
+		.scl1(scl),                      //  I2C EFB SDA wires
+		.sda1(sda),                      //  I2C EFB SDA wires
 		.rstn(resetn),                   //  async negative reset signal 0 = reset, 1 = not resete
 		.led_data_out(led_data_out),     //  Module LED Status output
 		.sys_clk(sys_clk),               //  master clock
@@ -161,26 +139,67 @@ module drone2 (output wire motor_1_pwm,
 		.y_velocity(y_velocity),          
 		.z_velocity(z_velocity)
 		);
+*/
 
+	receiver receiver (
+		.throttle_val(throttle_val),
+		.yaw_val(yaw_val),
+		.roll_val(roll_val),
+		.pitch_val(pitch_val),
+		.throttle_pwm(throttle_pwm),
+		.yaw_pwm(yaw_pwm),
+		.roll_pwm(roll_pwm),
+		.pitch_pwm(pitch_pwm),
+		.us_clk(us_clk),
+		.resetn(temp_reset_n)); // TODO: Change this to the top level reset signal (.resetn(resetn))
 
-	// TODO: Name this block more appropriately (more descriptive)
-	pid #(PID_RATE_BIT_WIDTH, IMU_VAL_BIT_WIDTH, IMU_VAL_BIT_WIDTH) pid (
+	angle_controller #(
+		.RATE_BIT_WIDTH(RATE_BIT_WIDTH),
+		.REC_VAL_BIT_WIDTH(REC_VAL_BIT_WIDTH),
+		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH)) 
+	angle_controller (
+		.throttle_rate_out(throttle_target_rate),
+		.yaw_rate_out(yaw_target_rate),
+		.roll_rate_out(roll_target_rate),
+		.pitch_rate_out(pitch_target_rate),
+		.pitch_angle_error(pitch_angle_error),
+		.roll_angle_error(roll_angle_error),
+		.complete_signal(ac_valid_strobe),
+		.active_signal(ac_active),
+		.throttle_target(throttle_val),
+		.yaw_target(yaw_val),
+		.roll_target(roll_val),
+		.pitch_target(pitch_val),
+		.pitch_actual(y_rotation),
+		.roll_actual(x_rotation),
+		.resetn(resetn),
+		.start_signal(imu_valid_strobe),
+		.us_clk(us_clk));		
+
+	body_frame_controller #(
+		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
+		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH),
+		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH)) 
+	body_frame_controller (
 		.yaw_rate_out(yaw_rate),
 		.roll_rate_out(roll_rate),
 		.pitch_rate_out(pitch_rate),
-		.yaw_rate_in(yaw_target_rate),
-		.roll_rate_in(roll_target_rate),
-		.pitch_rate_in(pitch_target_rate),
-		.x_velocity(x_velocity),
-		.y_velocity(y_velocity),
-		.z_velocity(z_velocity),
-		.x_rotation(x_rotation),
-		.y_rotation(y_rotation),
-		.z_rotation(z_rotation),
-		.sys_clk(sys_clk));
+		.yaw_target(yaw_target_rate),
+		.roll_target(roll_target_rate),
+		.pitch_target(pitch_target_rate),
+		.roll_rotation(x_rotation),
+		.pitch_rotation(y_rotation),
+		.yaw_rotation(z_rotation),
+		.roll_angle_error(roll_angle_error),
+		.pitch_angle_error(pitch_angle_error),
+		.start_signal(ac_valid_strobe),
+		.resetn(resetn),
+		.us_clk(us_clk));
 
-	// TODO: Figure out if this is the correct name for this block still
-	pid_mixer #(PID_RATE_BIT_WIDTH, `MOTOR_RATE_BIT_WIDTH) pid_mixer (
+	motor_mixer #(
+		PID_RATE_BIT_WIDTH,
+		`MOTOR_RATE_BIT_WIDTH)
+	motor_mixer (
 		.motor_1_rate(motor_1_rate),
 		.motor_2_rate(motor_2_rate),
 		.motor_3_rate(motor_3_rate),
@@ -191,4 +210,17 @@ module drone2 (output wire motor_1_pwm,
 		.pitch_rate(pitch_rate),
 		.sys_clk(sys_clk));
 
+	pwm_generator pwm_generator (
+		.motor_1_pwm(motor_1_pwm),
+		.motor_2_pwm(motor_2_pwm),
+		.motor_3_pwm(motor_3_pwm),
+		.motor_4_pwm(motor_4_pwm),
+		.motor_1_rate(motor_1_rate),
+		.motor_2_rate(motor_2_rate),
+		.motor_3_rate(motor_3_rate),
+		.motor_4_rate(motor_4_rate),
+		.us_clk(us_clk),
+		.resetn(temp_reset_n)); // TODO: Change this to the top level reset signal (.resetn(resetn))
+
 endmodule
+
