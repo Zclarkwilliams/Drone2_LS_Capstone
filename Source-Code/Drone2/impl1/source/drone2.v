@@ -112,14 +112,17 @@ module drone2 (
        			    .OSC(sys_clk),
        			    .SEDSTDBY());
 
-	us_clk us_clk_divider (.us_clk(us_clk),
-						   .sys_clk(sys_clk),
-						   .resetn(temp_reset_n));  // TODO: Change this to the top level reset signal (.resetn(resetn))
-
-/*
+	us_clk us_clk_divider (
+		.us_clk(us_clk),
+		.sys_clk(sys_clk),
+		.resetn(temp_reset_n));  // TODO: Change this to the top level reset signal (.resetn(resetn))
+		
+		
 	bno055_driver	i(
-		.scl1(scl),                      //  I2C EFB SDA wires
-		.sda1(sda),                      //  I2C EFB SDA wires
+		.scl_1(scl_1),                    //  I2C EFB SDA wires, Primary EFB
+		.sda_1(sda_1),                    //  I2C EFB SDA wires, Primary EFB
+		.scl_2(scl_2),                    //  I2C EFB SDA wires, Secondary EFB
+		.sda_2(sda_2),                    //  I2C EFB SDA wires, Secondary EFB
 		.rstn(resetn),                   //  async negative reset signal 0 = reset, 1 = not resete
 		.led_data_out(led_data_out),     //  Module LED Status output
 		.sys_clk(sys_clk),               //  master clock
@@ -139,7 +142,6 @@ module drone2 (
 		.y_velocity(y_velocity),          
 		.z_velocity(z_velocity)
 		);
-*/
 
 	receiver receiver (
 		.throttle_val(throttle_val),
@@ -196,6 +198,7 @@ module drone2 (
 		.resetn(resetn),
 		.us_clk(us_clk));
 
+/*
 	motor_mixer #(
 		PID_RATE_BIT_WIDTH,
 		`MOTOR_RATE_BIT_WIDTH)
@@ -209,6 +212,7 @@ module drone2 (
 		.roll_rate(roll_rate),
 		.pitch_rate(pitch_rate),
 		.sys_clk(sys_clk));
+*/
 
 	pwm_generator pwm_generator (
 		.motor_1_pwm(motor_1_pwm),

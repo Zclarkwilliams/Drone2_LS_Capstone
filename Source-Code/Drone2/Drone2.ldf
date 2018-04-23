@@ -10,7 +10,7 @@
             <Options/>
         </Source>
         <Source name="impl1/source/bno055_driver.v" type="Verilog" type_short="Verilog">
-            <Options top_module="bno055_driver"/>
+            <Options/>
         </Source>
         <Source name="impl1/source/common_defines.v" type="Verilog" type_short="Verilog">
             <Options/>
@@ -51,10 +51,10 @@
         <Source name="impl1/source/body_frame_controller.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="impl1/source/motor_mixer.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/motor_mixer.v" type="Verilog" type_short="Verilog" excluded="TRUE">
             <Options/>
         </Source>
-        <Source name="impl1/source/motor_rate_calculator.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/motor_rate_calculator.v" type="Verilog" type_short="Verilog" excluded="TRUE">
             <Options/>
         </Source>
         <Source name="Drone2.lpf" type="Logic Preference" type_short="LPF">
