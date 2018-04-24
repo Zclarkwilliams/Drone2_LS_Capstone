@@ -51,10 +51,10 @@
         <Source name="impl1/source/body_frame_controller.v" type="Verilog" type_short="Verilog">
             <Options top_module="body_frame_controller"/>
         </Source>
-        <Source name="impl1/source/motor_mixer.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+        <Source name="impl1/source/motor_mixer.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="impl1/source/motor_rate_calculator.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+        <Source name="impl1/source/motor_rate_calculator.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
         <Source name="Drone2.lpf" type="Logic Preference" type_short="LPF">

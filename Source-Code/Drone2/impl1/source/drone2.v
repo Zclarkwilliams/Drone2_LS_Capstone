@@ -201,22 +201,17 @@ module drone2 (
 		.us_clk(us_clk));
 */
 
-
-/*
-	motor_mixer #(
-		PID_RATE_BIT_WIDTH,
-		`MOTOR_RATE_BIT_WIDTH)
-	motor_mixer (
+	motor_mixer motor_mixer (
 		.motor_1_rate(motor_1_rate),
 		.motor_2_rate(motor_2_rate),
 		.motor_3_rate(motor_3_rate),
 		.motor_4_rate(motor_4_rate),
 		.throttle_rate(throttle_target_rate),
-		.yaw_rate(yaw_rate),
-		.roll_rate(roll_rate),
-		.pitch_rate(pitch_rate),
-		.sys_clk(sys_clk));
-*/
+		.yaw_rate(yaw_target_rate),
+		.roll_rate(roll_target_rate),
+		.pitch_rate(pitch_target_rate),
+		.sys_clk(sys_clk),
+		.rst_n(resetn));
 
 	pwm_generator pwm_generator (
 		.motor_1_pwm(motor_1_pwm),
