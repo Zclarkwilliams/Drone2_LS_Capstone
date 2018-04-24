@@ -81,31 +81,32 @@
 
 	// calculation logic
 	always @(state) begin
-			case(state)
-				WAIT: begin
-					pid_active = 1'b0;
-					pid_complete = 1'b0;
-				end
-				CALC1: begin
-					pid_active = 1'b1;
-					pid_complete = 1'b0;
+		case(state)
+			WAIT: begin
+				pid_active = 1'b0;
+				pid_complete = 1'b0;
+			end
+			CALC1: begin
+				pid_active = 1'b1;
+				pid_complete = 1'b0;
+				
+			end
+			CALC2: begin
+				pid_active = 1'b1;
+				pid_complete = 1'b0;
 					
-				end
-				CALC2: begin
-					pid_active = 1'b1;
-					pid_complete = 1'b0;
+			end
+			CALC3: begin
+				pid_active = 1'b0;
+				pid_complete = 1'b0;
 					
-				end
-				CALC3: begin
-					pid_active = 1'b0;
-					pid_complete = 1'b0;
+			end
+			COMPLETE: begin
+				pid_active = 1'b0;
+				pid_complete = 1'b0;
 					
-				end
-				COMPLETE: begin
-					pid_active = 1'b0;
-					pid_complete = 1'b0;
-					
-				end
+			end
+		endcase
 	end
 	
 endmodule
