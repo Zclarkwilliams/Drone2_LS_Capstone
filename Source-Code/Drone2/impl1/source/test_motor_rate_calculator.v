@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
-`define PASS 	0
-`define FAIL	1
+`define PASS 	1'b0
+`define FAIL	1'b1
 `define TRUE 	1'b1
 `define FALSE	1'b0
 
