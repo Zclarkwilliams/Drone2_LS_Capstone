@@ -25,14 +25,15 @@
 
 	// state names
 	localparam
-		WAIT = 5'b00001,
-		CALC1 = 5'b00010,
-		CALC2 = 5'b00100,
-		CALC3 = 5'b01000,
-		CALC4 = 5'b10000;
+		WAIT     = 6'b000001,
+		CALC1    = 6'b000010,
+		CALC2    = 6'b000100,
+		CALC3    = 6'b001000,
+		CALC4    = 6'b010000,
+		COMPLETE = 6'b100000;
 	
 	// state variables
-	reg [4:0] state, next_state;
+	reg [5:0] state, next_state;
 	
 	// update state
 	always @(posedge us_clk or negedge resetn) begin
@@ -43,6 +44,68 @@
 	end
 	
 	// next state logic
+	always @(*) begin
+		case(state)
+			WAIT: begin
+				if(!resetn)
+					next_state = WAIT;
+				else if(start_flag)
+					next_state = CALC1;
+				else
+					next_state = WAIT;
+			end
+			CALC1: begin
+				if(!resetn)
+					next_state = WAIT;
+				else
+					next_state = CALC2;
+			end
+			CALC2: begin
+				if(!resetn)
+					next_state = WAIT;												else
+					next_state = CALC3;
+			end
+			CALC3: begin
+				if(!resetn)
+					next_state = WAIT;
+				else
+					next_state = COMPLETE;
+			end
+			COMPLETE: begin
+				if(wait_flag)
+					next_state = WAIT;				else
+					next_state = COMPLETE;
+			end
+		endcase
+	end
 
-
+	// calculation logic
+	always @(state) begin
+			case(state)
+				WAIT: begin
+					pid_active = 1'b0;
+					pid_complete = 1'b0;
+				end
+				CALC1: begin
+					pid_active = 1'b1;
+					pid_complete = 1'b0;
+					
+				end
+				CALC2: begin
+					pid_active = 1'b1;
+					pid_complete = 1'b0;
+					
+				end
+				CALC3: begin
+					pid_active = 1'b0;
+					pid_complete = 1'b0;
+					
+				end
+				COMPLETE: begin
+					pid_active = 1'b0;
+					pid_complete = 1'b0;
+					
+				end
+	end
+	
 endmodule

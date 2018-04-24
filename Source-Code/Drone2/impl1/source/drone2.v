@@ -128,7 +128,7 @@ module drone2 (
 		.sys_clk(sys_clk),               //  master clock
 		.rstn_imu(rstn_imu),             //  Low active reset signal to IMU hardware to trigger reset
 		.imu_good(imu_good),             //  The IMU is either in an error or initial bootup states, measurements not yet active
-		.valid_strobe(valid_strobe),     //  Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
+		.valid_strobe(imu_valid_strobe),     //  Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
 		.accel_rate_x(x_accel),          //  Accelerometer X-Axis                Precision: 1 m/s^2 = 100 LSB
 		.accel_rate_y(y_accel),          //  Accelerometer Y-Axis                Precision: 1 m/s^2 = 100 LSB
 		.accel_rate_z(z_accel),          //  Accelerometer Z-Axis                Precision: 1 m/s^2 = 100 LSB
@@ -178,6 +178,7 @@ module drone2 (
 		.start_signal(imu_valid_strobe),
 		.us_clk(us_clk));		
 
+/*
 	body_frame_controller #(
 		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
 		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH),
@@ -186,6 +187,7 @@ module drone2 (
 		.yaw_rate_out(yaw_rate),
 		.roll_rate_out(roll_rate),
 		.pitch_rate_out(pitch_rate),
+		.complete_signal(bf_valid_strobe),
 		.yaw_target(yaw_target_rate),
 		.roll_target(roll_target_rate),
 		.pitch_target(pitch_target_rate),
@@ -197,6 +199,8 @@ module drone2 (
 		.start_signal(ac_valid_strobe),
 		.resetn(resetn),
 		.us_clk(us_clk));
+*/
+
 
 /*
 	motor_mixer #(
