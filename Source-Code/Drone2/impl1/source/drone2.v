@@ -224,7 +224,7 @@ module drone2 (
 		*/
 		
 		.sys_clk(sys_clk),
-		.rst_n(temp_reset_n));
+		.rst_n(resetn));
 
 	assign led_data_out = ~throttle_val;
 
@@ -233,12 +233,21 @@ module drone2 (
 		.motor_2_pwm(motor_2_pwm),
 		.motor_3_pwm(motor_3_pwm),
 		.motor_4_pwm(motor_4_pwm),
+		
+		.motor_1_rate(throttle_val),
+		.motor_2_rate(roll_val),
+		.motor_3_rate(pitch_val),
+		.motor_4_rate(yaw_val),
+
+		/*
 		.motor_1_rate(motor_1_rate),
 		.motor_2_rate(motor_2_rate),
 		.motor_3_rate(motor_3_rate),
 		.motor_4_rate(motor_4_rate),
-		.us_clk(us_clk));
-		//.resetn(temp_reset_n)); // TODO: Change this to the top level reset signal (.resetn(resetn))
+		*/
+		
+		.us_clk(us_clk),
+		.resetn(temp_reset_n)); // TODO: Change this to the top level reset signal (.resetn(resetn))
 
 endmodule
 
