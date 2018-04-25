@@ -85,12 +85,7 @@ module pwm_generator #(parameter INPUT_BIT_WIDTH = 8)
 			high_counter <= 10'h000;
 			high_counter_en <= 1'b0;
 			// Latch in new values
-
-			// for testing!
-			//m1_rate <= 10'b1111111100;
 			m1_rate <= {motor_1_rate, 2'b00};
-			// !!! change this back !!!
-
 			m2_rate <= {motor_2_rate, 2'b00};
 			m3_rate <= {motor_3_rate, 2'b00};
 			m4_rate <= {motor_4_rate, 2'b00};
