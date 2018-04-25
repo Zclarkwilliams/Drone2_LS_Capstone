@@ -16,8 +16,8 @@ CoreRevision=1.2
 ModuleName=I2C_EFB_WB
 SourceFormat=Verilog HDL
 ParameterFileVersion=1.0
-Date=03/25/2018
-Time=17:08:19
+Date=03/02/2018
+Time=21:56:17
 
 [Parameters]
 Verilog=1
@@ -35,10 +35,10 @@ i2c1_ce=0
 i2c1_freq=400
 i2c1_sa=10000
 i2c1_we=0
-i2c2=1
+i2c2=0
 i2c2_addr=7-Bit Addressing
 i2c2_ce=0
-i2c2_freq=400
+i2c2_freq=50
 i2c2_sa=10000
 i2c2_we=0
 ufm_addr=7-Bit Addressing
@@ -87,4 +87,4 @@ ufm_dt=hex
 wb=1
 
 [Command]
-cmd_line= -w -n I2C_EFB_WB -lang verilog -synth lse -bus_exp 7 -bb -type efb -arch xo3c00f -freq 38 -i2c1 -i2c1_freq 400 -i2c1_sa 1000001 -i2c1_addr 7 -i2c2 -i2c2_freq 400 -i2c2_sa 1000010 -i2c2_addr 7 -wb -dev 6900
+cmd_line= -w -n I2C_EFB_WB -lang verilog -synth lse -bus_exp 7 -bb -type efb -arch xo3c00f -freq 38 -i2c1 -i2c1_freq 400 -i2c1_sa 1000001 -i2c1_addr 7 -wb -dev 6900

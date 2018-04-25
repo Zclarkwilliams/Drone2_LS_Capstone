@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<DiamondModule name="I2C_EFB_WB" module="I2C_EFB_WB" VendorName="Lattice Semiconductor Corporation" generator="IPexpress" date="2018 03 25 17:08:21.487" version="1.2" type="Module" synthesis="lse" source_format="Verilog HDL">
+<DiamondModule name="I2C_EFB_WB" module="I2C_EFB_WB" VendorName="Lattice Semiconductor Corporation" generator="IPexpress" date="2018 03 02 21:56:19.208" version="1.2" type="Module" synthesis="lse" source_format="Verilog HDL">
   <Package>
-		<File name="I2C_EFB_WB.lpc" type="lpc" modified="2018 03 25 17:08:19.141"/>
-		<File name="I2C_EFB_WB.v" type="top_level_verilog" modified="2018 03 25 17:08:19.266"/>
-		<File name="I2C_EFB_WB_tmpl.v" type="template_verilog" modified="2018 03 25 17:08:19.266"/>
+		<File name="I2C_EFB_WB.lpc" type="lpc" modified="2018 03 02 21:56:17.223"/>
+		<File name="I2C_EFB_WB.v" type="top_level_verilog" modified="2018 03 02 21:56:17.348"/>
+		<File name="I2C_EFB_WB_tmpl.v" type="template_verilog" modified="2018 03 02 21:56:17.348"/>
   </Package>
 </DiamondModule>

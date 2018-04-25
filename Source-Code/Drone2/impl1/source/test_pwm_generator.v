@@ -21,9 +21,10 @@ reg rst, clk;
 
 // TODO: Fix these tests because the parameters don't match up
 pwm_generator
-	#(.INPUT_WIDTH(8),
+	#(.INPUT_BIT_WIDTH(8)/*,
 	.CLK_CONVERSION_HIGH(2),
-	.CLK_CONVERSION_LOW(4))
+	.CLK_CONVERSION_LOW(4)*/
+	)
 	pwm_dut
 	(.motor_1_pwm(m_1_pwm),
 	.motor_2_pwm(m_2_pwm),
@@ -33,8 +34,8 @@ pwm_generator
 	.motor_2_rate(m_2_rate),
 	.motor_3_rate(m_3_rate),
 	.motor_4_rate(m_4_rate),
-	.rst(rst),
-	.sys_clk(clk));
+	.resetn(rst),
+	.us_clk(clk));
 
 initial begin
 	m_1_rate <= 0;

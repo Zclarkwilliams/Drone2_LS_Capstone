@@ -1,0 +1,31 @@
+SCUBA, Version Diamond (64-bit) 3.10.1.112
+Sun Apr 15 16:01:47 2018
+
+Copyright (c) 1991-1994 by NeoCAD Inc. All rights reserved.
+Copyright (c) 1995 AT&T Corp.   All rights reserved.
+Copyright (c) 1995-2001 Lucent Technologies Inc.  All rights reserved.
+Copyright (c) 2001 Agere Systems   All rights reserved.
+Copyright (c) 2002-2017 Lattice Semiconductor Corporation,  All rights reserved.
+
+    Issued command   : C:\lscc\diamond\3.10_x64\ispfpga\bin\nt64\scuba.exe -w -n adder -lang verilog -synth lse -bus_exp 7 -bb -arch xo3c00f -type mgaddsub -width 16 -signed -cin -overflow -pipeline 0 
+    Circuit name     : adder
+    Module type      : add
+    Module Version   : 3.5
+    Width            : 16
+    Ports            : 
+	Inputs       : DataA[15:0], DataB[15:0], Cin
+	Outputs      : Result[15:0], Overflow
+    I/O buffer       : not inserted
+    Representation   : signed number
+    EDIF output      : adder.edn
+    Verilog output   : adder.v
+    Verilog template : adder_tmpl.v
+    Verilog testbench: tb_adder_tmpl.v
+    Verilog purpose  : for synthesis and simulation
+    Bus notation     : big endian
+    Report output    : adder.srp
+    Element Usage    :
+         FADD2B : 12
+           XOR2 : 1
+    Estimated Resource Usage:
+            LUT : 25

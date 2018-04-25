@@ -77,11 +77,11 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_GYRO_DATA_Z_MSB_ADDR          8'h19
 
 //EULER DATA REGISTERS
-`define BNO055_EULER_H_LSB_ADDR              8'h1A //  Z-axis, Heading
+`define BNO055_EULER_H_LSB_ADDR              8'h1A
 `define BNO055_EULER_H_MSB_ADDR              8'h1B
-`define BNO055_EULER_R_LSB_ADDR              8'h1C //  X-Axis, Roll
+`define BNO055_EULER_R_LSB_ADDR              8'h1C
 `define BNO055_EULER_R_MSB_ADDR              8'h1D
-`define BNO055_EULER_P_LSB_ADDR              8'h1E //  Y-Axis, Pitch
+`define BNO055_EULER_P_LSB_ADDR              8'h1E
 `define BNO055_EULER_P_MSB_ADDR              8'h1F
 
 //QUATERNION DATA REGISTERS
@@ -282,15 +282,12 @@ MIT license, all text above must be included in any redistribution
 `define GYR_DATA_Y_MSB_INDEX                 15
 `define GYR_DATA_Z_LSB_INDEX                 16
 `define GYR_DATA_Z_MSB_INDEX                 17
-//  **** NOTE ****
-//  These do not follow the same sequence as other registers, instead of X, Y, Z, these are sequenced, Z, X, Y
-`define EUL_DATA_Z_LSB_INDEX                 18 //  Yaw/Heading, Z-Axis
-`define EUL_DATA_Z_MSB_INDEX                 19
-`define EUL_DATA_X_LSB_INDEX                 20 //  Roll, X-Axis
-`define EUL_DATA_X_MSB_INDEX                 21
-`define EUL_DATA_Y_LSB_INDEX                 22 //  Pitch, Y-Axis
-`define EUL_DATA_Y_MSB_INDEX                 23
-//  **** /END NOTE ****
+`define EUL_DATA_X_LSB_INDEX                 18
+`define EUL_DATA_X_MSB_INDEX                 19
+`define EUL_DATA_Y_LSB_INDEX                 20
+`define EUL_DATA_Y_MSB_INDEX                 21
+`define EUL_DATA_Z_LSB_INDEX                 22
+`define EUL_DATA_Z_MSB_INDEX                 23
 `define QUA_DATA_W_LSB_INDEX                 24
 `define QUA_DATA_W_MSB_INDEX                 25
 `define QUA_DATA_X_LSB_INDEX                 26
@@ -341,14 +338,12 @@ Section 4.3.25 GYR_DATA_Z_LSB 0X18 Data Sheet, Page:60
 Section 4.3.26 GYR_DATA_Z_MSB 0X19 Data Sheet, Page:60
 
 Fusion calculated Euler angles 3-axis, 6 bytes - Degrees, Precision: Deg = 16 LSB
-**** NOTE ****
-These do not follow the same sequence as other registers, instead of X, Y, Z, these are sequenced, Z, X, Y
-Section 4.3.27 EUL_DATA_Z_LSB 0X1A Data Sheet, Page:60  Yaw/Heading, Z-Axis
-Section 4.3.28 EUL_DATA_Z_MSB 0X1B Data Sheet, Page:60
-Section 4.3.29 EUL_DATA_X_LSB 0X1C Data Sheet, Page:61  Roll, X-Axis
-Section 4.3.30 EUL_DATA_X_MSB 0X1D Data Sheet, Page:61
-Section 4.3.31 EUL_DATA_Y_LSB 0X1E Data Sheet, Page:61  Pitch, Y-Axis
-Section 4.3.32 EUL_DATA_Y_MSB 0X1F Data Sheet, Page:61
+Section 4.3.27 EUL_DATA_X_LSB 0X1A Data Sheet, Page:60
+Section 4.3.28 EUL_DATA_X_MSB 0X1B Data Sheet, Page:60
+Section 4.3.29 EUL_DATA_Y_LSB 0X1C Data Sheet, Page:61
+Section 4.3.30 EUL_DATA_Y_MSB 0X1D Data Sheet, Page:61
+Section 4.3.31 EUL_DATA_Z_LSB 0X1E Data Sheet, Page:61
+Section 4.3.32 EUL_DATA_Z_MSB 0X1F Data Sheet, Page:61
 
 Quaternions, 4-axis, 8 bytes - Quaternion units, Precision: Unit = 2^14 LSB
 Section 4.3.33 QUA_DATA_W_LSB 0X20 Data Sheet, Page:62

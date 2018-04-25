@@ -72,8 +72,8 @@ module motor_rate_calculator	#(	parameter 		BIT_WIDTH = 16)
 	//	Output the found value  - as long as rst_n is not asserted, and final_sum is not zero
 	always @ (negedge rst_n or yaw or roll or pitch or throttle) begin		
 		if(!rst_n)
-			motor_rate = `ALL_ZERO_2BYTE;
+			motor_rate	= `ALL_ZERO_2BYTE;
 		else
-			motor_rate = bias + yaw + roll + pitch + throttle;
+			motor_rate	= bias + yaw + roll + pitch + throttle;
 		end
 endmodule

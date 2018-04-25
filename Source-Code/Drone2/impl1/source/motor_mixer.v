@@ -157,6 +157,10 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 							 .motor_rate(motor_4_output));
 	
 	always @(posedge sys_clk or negedge rst_n)begin
+		$display("yaw			%d", yaw_rate);
+		$display("roll          %d", roll_rate);
+		$display("pitch         %d", pitch_rate);
+		$display("throttle      %d", throttle_rate);
 		if (!rst_n) begin
 			n_m1_yaw_rate			= `ALL_ZERO_2BYTE;
 			n_m4_yaw_rate			= `ALL_ZERO_2BYTE;
@@ -192,7 +196,14 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 			end
 		end
 	
-	always @(motor_1_output or motor_1_mapped or motor_2_output or motor_2_mapped or motor_3_output or motor_3_mapped or motor_4_output or motor_4_mapped) begin
+	always @((motor_1_output or motor_1_mapped) or 
+			(motor_2_output or motor_2_mapped) or 
+			(motor_3_output or motor_3_mapped) or
+			(motor_4_output or motor_4_mapped)) begin
+		$display("mapped1	   %d", motor_1_mapped);
+		$display("output1      %d", motor_1_output);
+		$display("mapped2      %d", motor_2_mapped);
+		$display("output2      %d", motor_2_output);
 		if (!rst_n)	begin
 			motor_1_rate			= `ALL_ZERO_2BYTE;
 			motor_2_rate			= `ALL_ZERO_2BYTE;
@@ -218,7 +229,6 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 						output_state		= STATE_MAP_16_TO_8;
 					end
 				STATE_SEND_OUTPUT: 	begin
-					$display("sending output to the ports!!!!");
 					if (motor_1_mapped < `MOTOR_VAL_MIN || motor_1_mapped > `MOTOR_VAL_MAX) begin
 						motor_1_rate 		= motor_1_rate_last;
 						end
