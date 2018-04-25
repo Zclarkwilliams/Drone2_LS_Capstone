@@ -117,7 +117,7 @@ module drone2 (
 		.sys_clk(sys_clk),
 		.resetn(temp_reset_n));  // TODO: Change this to the top level reset signal (.resetn(resetn))
 		
-		
+	/*	
 	bno055_driver	i(
 		.scl_1(scl_1),                    //  I2C EFB SDA wires, Primary EFB
 		.sda_1(sda_1),                    //  I2C EFB SDA wires, Primary EFB
@@ -142,6 +142,7 @@ module drone2 (
 		.y_velocity(y_velocity),          
 		.z_velocity(z_velocity)
 		);
+	*/
 
 	receiver receiver (
 		.throttle_val(throttle_val),
@@ -155,6 +156,7 @@ module drone2 (
 		.us_clk(us_clk),
 		.resetn(temp_reset_n)); // TODO: Change this to the top level reset signal (.resetn(resetn))
 
+	/*
 	angle_controller #(
 		.RATE_BIT_WIDTH(RATE_BIT_WIDTH),
 		.REC_VAL_BIT_WIDTH(REC_VAL_BIT_WIDTH),
@@ -172,11 +174,12 @@ module drone2 (
 		.yaw_target(yaw_val),
 		.roll_target(roll_val),
 		.pitch_target(pitch_val),
-		.pitch_actual(y_rotation),
-		.roll_actual(x_rotation),
+		.pitch_actual(16'h0000),  // changed for testing
+		.roll_actual(16'h0000),  // changed for testing
 		.resetn(resetn),
-		.start_signal(imu_valid_strobe),
+		.start_signal(1'b1), // changed for testing
 		.us_clk(us_clk));		
+	*/
 
 /*
 	body_frame_controller #(
@@ -206,12 +209,24 @@ module drone2 (
 		.motor_2_rate(motor_2_rate),
 		.motor_3_rate(motor_3_rate),
 		.motor_4_rate(motor_4_rate),
+		
+		// test connections
+		.throttle_rate({4'h0, throttle_val, 4'h0}),
+		.yaw_rate({4'h0, yaw_val, 4'h0}),
+		.roll_rate({4'h0, roll_val, 4'h0}),
+		.pitch_rate({4'h0, pitch_val, 4'h0}),
+		
+		/*
 		.throttle_rate(throttle_target_rate),
 		.yaw_rate(yaw_target_rate),
 		.roll_rate(roll_target_rate),
 		.pitch_rate(pitch_target_rate),
+		*/
+		
 		.sys_clk(sys_clk),
-		.rst_n(resetn));
+		.rst_n(temp_reset_n));
+
+	assign led_data_out = ~throttle_val;
 
 	pwm_generator pwm_generator (
 		.motor_1_pwm(motor_1_pwm),
@@ -222,8 +237,8 @@ module drone2 (
 		.motor_2_rate(motor_2_rate),
 		.motor_3_rate(motor_3_rate),
 		.motor_4_rate(motor_4_rate),
-		.us_clk(us_clk),
-		.resetn(temp_reset_n)); // TODO: Change this to the top level reset signal (.resetn(resetn))
+		.us_clk(us_clk));
+		//.resetn(temp_reset_n)); // TODO: Change this to the top level reset signal (.resetn(resetn))
 
 endmodule
 
