@@ -53,7 +53,8 @@ module motor_rate_calculator	#(	parameter 		BIT_WIDTH = 16)
 \**********************************************************************************************************************/
 	
 //	Multiplication stage 	- get the product for each axis rate value scaled by axis scale	
-	always @ (negedge rst_n or yaw_rate or roll_rate or pitch_rate or throttle_rate) begin
+	//always @ (negedge rst_n or yaw_rate or roll_rate or pitch_rate or throttle_rate) begin
+	always @(*) begin
 		if (!rst_n) begin
 			yaw   		= `ALL_ZERO_2BYTE; 
 			roll  		= `ALL_ZERO_2BYTE; 
@@ -70,7 +71,8 @@ module motor_rate_calculator	#(	parameter 		BIT_WIDTH = 16)
 	
 	//	Summation stage 	 	- sum the scaled rate values and the bias
 	//	Output the found value  - as long as rst_n is not asserted, and final_sum is not zero
-	always @ (negedge rst_n or yaw or roll or pitch or throttle) begin		
+	//always @ (negedge rst_n or yaw or roll or pitch or throttle) begin	
+	always @(*) begin
 		if(!rst_n)
 			motor_rate = `ALL_ZERO_2BYTE;
 		else

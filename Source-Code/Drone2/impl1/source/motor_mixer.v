@@ -1,4 +1,4 @@
-/*
+/**
  * module pid_mixer - takes finalized rates and converts them to motor rates
  *
  * Parameters
@@ -173,26 +173,26 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 			n_throttle_rate			= `ALL_ZERO_2BYTE;
 			end
 		else begin
-			n_m1_yaw_rate		= (~yaw_rate + 1'b1);
-			n_m4_yaw_rate		= (~yaw_rate + 1'b1);
-			n_m2_yaw_rate		= yaw_rate;
-			n_m3_yaw_rate		= yaw_rate;
+			n_m1_yaw_rate			= (~yaw_rate + 1'b1);
+			n_m4_yaw_rate			= (~yaw_rate + 1'b1);
+			n_m2_yaw_rate			= yaw_rate;
+			n_m3_yaw_rate			= yaw_rate;
 				
-			n_m1_roll_rate		= roll_rate;
-			n_m3_roll_rate		= roll_rate;
-			n_m2_roll_rate		= (~roll_rate + 1'b1);
-			n_m4_roll_rate		= (~roll_rate + 1'b1);
+			n_m1_roll_rate			= roll_rate;
+			n_m3_roll_rate			= roll_rate;
+			n_m2_roll_rate			= (~roll_rate + 1'b1);
+			n_m4_roll_rate			= (~roll_rate + 1'b1);
 				
-			n_m1_pitch_rate		= (~pitch_rate + 1'b1);
-			n_m2_pitch_rate		= (~pitch_rate + 1'b1);
-			n_m3_pitch_rate		= pitch_rate;
-			n_m4_pitch_rate		= pitch_rate;
+			n_m1_pitch_rate			= (~pitch_rate + 1'b1);
+			n_m2_pitch_rate			= (~pitch_rate + 1'b1);
+			n_m3_pitch_rate			= pitch_rate;
+			n_m4_pitch_rate			= pitch_rate;
 				
-			n_throttle_rate		= throttle_rate;
+			n_throttle_rate			= throttle_rate;
 			end
 		end
 	
-	always @(posedge sys_clk or motor_1_output or negedge rst_n) begin
+	always @(motor_1_output or motor_1_mapped or motor_2_output or motor_2_mapped or motor_3_output or motor_3_mapped or motor_4_output or motor_4_mapped) begin
 		if (!rst_n)	begin
 			motor_1_rate			= `ALL_ZERO_2BYTE;
 			motor_2_rate			= `ALL_ZERO_2BYTE;
@@ -218,6 +218,7 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 						output_state		= STATE_MAP_16_TO_8;
 					end
 				STATE_SEND_OUTPUT: 	begin
+					$display("sending output to the ports!!!!");
 					if (motor_1_mapped < `MOTOR_VAL_MIN || motor_1_mapped > `MOTOR_VAL_MAX) begin
 						motor_1_rate 		= motor_1_rate_last;
 						end
