@@ -1,0 +1,8 @@
+#Start recording tcl command: 4/15/2018 18:01:19
+#Project Location: C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2; Project name: motor_mixer
+prj_project new -name "motor_mixer" -impl "impl1" -dev LCMXO3LF-6900C-5BG256C -synthesis "lse"
+prj_project save
+prj_src add "C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2/pid_mixer.v"
+prj_src remove "C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2/pid_mixer.v"
+prj_project close
+#Stop recording: 4/15/2018 18:03:47

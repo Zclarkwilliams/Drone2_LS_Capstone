@@ -1,0 +1,39 @@
+[Device]
+Family=machxo3lf
+PartType=LCMXO3LF-6900C
+PartName=LCMXO3LF-6900C-5BG256C
+SpeedGrade=5
+Package=CABGA256
+OperatingCondition=COM
+Status=S
+
+[IP]
+VendorName=Lattice Semiconductor Corporation
+CoreType=LPM
+CoreStatus=Demo
+CoreName=Adder
+CoreRevision=3.5
+ModuleName=adder
+SourceFormat=Verilog HDL
+ParameterFileVersion=1.0
+Date=04/15/2018
+Time=16:01:47
+
+[Parameters]
+Verilog=1
+VHDL=0
+EDIF=1
+Destination=Synplicity
+Expression=BusA(0 to 7)
+Order=Big Endian [MSB:LSB]
+IO=0
+InputWidth=16
+Representation=Signed
+UseCIport=1
+COport=Overflow
+OutReg=0
+Complex=0
+Stage=0
+
+[Command]
+cmd_line= -w -n adder -lang verilog -synth lse -bus_exp 7 -bb -arch xo3c00f -type mgaddsub -width 16 -signed -cin -overflow -pipeline 0

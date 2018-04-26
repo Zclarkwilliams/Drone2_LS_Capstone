@@ -1,0 +1,13 @@
+#Start recording tcl command: 4/13/2018 10:14:42
+#Project Location: C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2; Project name: Drone2
+prj_project open "C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2/Drone2.ldf"
+prj_src exclude "C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2/impl1/source/pid.v"
+prj_src exclude "C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2/impl1/source/test_drone2.v"
+prj_src exclude "C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2/impl1/source/test_pid.v" "C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2/impl1/source/test_pid_mixer.v" "C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2/impl1/source/test_pwm_generator.v" "C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2/impl1/source/test_receiver.v" "C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2/impl1/source/test_value_to_rate.v"
+prj_src add "C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2/motor_rate_calculator.v"
+prj_src add "C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2/multiplier.v"
+prj_src add "C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2/adder.v"
+prj_src add "C:/lscc/Projects/Capstone2018/Drone2_LS_Capstone-master/Source-Code/Drone2/mixer_defs.v"
+prj_project save
+prj_project close
+#Stop recording: 4/15/2018 18:01:19

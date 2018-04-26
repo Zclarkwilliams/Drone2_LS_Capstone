@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DiamondModule name="multiplier" module="Adder" VendorName="Lattice Semiconductor Corporation" generator="IPexpress" date="2018 04 15 14:00:25.537" version="3.5" type="Module" synthesis="lse" source_format="Verilog">
+  <Package>
+		<File name="multiplier.lpc" type="lpc" modified="2018 04 15 14:00:22.050"/>
+		<File name="multiplier.v" type="top_level_verilog" modified="2018 04 15 14:00:22.302"/>
+		<File name="multiplier_tmpl.v" type="template_verilog" modified="2018 04 15 14:00:22.304"/>
+		<File name="tb_multiplier_tmpl.v" type="testbench_verilog" modified="2018 04 15 14:00:22.327"/>
+  </Package>
+</DiamondModule>
