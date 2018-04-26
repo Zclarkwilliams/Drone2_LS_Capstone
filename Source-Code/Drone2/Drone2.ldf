@@ -2,14 +2,29 @@
 <BaliProject version="3.2" title="Drone2" device="LCMXO3LF-6900C-5BG256C" default_implementation="impl1">
     <Options/>
     <Implementation title="impl1" dir="impl1" description="impl1" synthesis="lse" default_strategy="Strategy1">
-        <Options def_top="adder"/>
-        <Source name="impl1/source/drone2.v" type="Verilog" type_short="Verilog">
-            <Options top_module="drone2"/>
-        </Source>
-        <Source name="impl1/source/imu.v" type="Verilog" type_short="Verilog">
+        <Options/>
+        <Source name="impl1/source/I2C_EFB_WB.ipx" type="IPX_Module" type_short="IPX">
             <Options/>
         </Source>
-        <Source name="impl1/source/pid.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+        <Source name="impl1/source/bno055_defines.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/source/bno055_driver.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/source/common_defines.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/source/drone2.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/source/i2c_module_defines.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/source/i2c_module_top.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/source/pid.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
         <Source name="impl1/source/pid_mixer.v" type="Verilog" type_short="Verilog">
@@ -18,49 +33,25 @@
         <Source name="impl1/source/pwm_generator.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
+        <Source name="impl1/source/pwm_generator_block.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/source/pwm_reader.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/source/pwm_to_value.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
         <Source name="impl1/source/receiver.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="impl1/source/test_drone2.v" type="Verilog" type_short="Verilog" excluded="TRUE">
-            <Options/>
-        </Source>
-        <Source name="impl1/source/test_imu.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
-        <Source name="impl1/source/test_pid.v" type="Verilog" type_short="Verilog" excluded="TRUE">
-            <Options/>
-        </Source>
-        <Source name="impl1/source/test_pid_mixer.v" type="Verilog" type_short="Verilog" excluded="TRUE">
-            <Options/>
-        </Source>
-        <Source name="impl1/source/test_pwm_generator.v" type="Verilog" type_short="Verilog" excluded="TRUE">
-            <Options/>
-        </Source>
-        <Source name="impl1/source/test_receiver.v" type="Verilog" type_short="Verilog" excluded="TRUE">
-            <Options/>
-        </Source>
-        <Source name="impl1/source/test_value_to_rate.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+        <Source name="impl1/source/us_clk.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
         <Source name="impl1/source/value_to_rate.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="motor_rate_calculator.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
-        <Source name="multiplier.v" type="Verilog" type_short="Verilog">
-            <Options top_module="multiplier"/>
-        </Source>
-        <Source name="adder.v" type="Verilog" type_short="Verilog">
-            <Options top_module="adder"/>
-        </Source>
-        <Source name="mixer_defs.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
         <Source name="Drone2.lpf" type="Logic Preference" type_short="LPF">
-            <Options/>
-        </Source>
-        <Source name="impl1/impl1.xcf" type="Programming Project File" type_short="Programming">
             <Options/>
         </Source>
     </Implementation>
