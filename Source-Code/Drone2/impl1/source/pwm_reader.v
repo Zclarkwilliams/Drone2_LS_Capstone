@@ -23,8 +23,8 @@
 
 `include "common_defines.v"
 
-module pwm_reader #(parameter DEFAULT_PWM_TIME_HIGH_US = 1500)
-				   (output wire [10:0] pwm_pulse_length_us,
+module pwm_reader #(parameter DEFAULT_PWM_TIME_HIGH_US = 16'd1500)
+				   (output wire [15:0] pwm_pulse_length_us,
 					input wire pwm,
 					input wire us_clk,
 					input wire resetn);
@@ -49,9 +49,9 @@ module pwm_reader #(parameter DEFAULT_PWM_TIME_HIGH_US = 1500)
 	/* TODO: produce an error bit when this is outside of the range to some degree
 	 *		 (i.e. if it is less than 500us or more than 2500us)
 	 */
-	reg [14:0] time_high_count;
+	reg [15:0] time_high_count;
 	// Where the current time high count is stored until the next high pwm pulse
-	reg [10:0] time_high_us;
+	reg [15:0] time_high_us;
 
 	initial begin
 		state = STATE_INIT;

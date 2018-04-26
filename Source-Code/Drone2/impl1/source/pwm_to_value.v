@@ -25,7 +25,7 @@ module pwm_to_value (output wire [`PWM_VALUE_BIT_WIDTH - 1:0] value_out,
 					 input wire us_clk);
 
 			// Ranges from 0 to MIN_PWM_TIME_HIGH_US
-			reg [9:0] adjusted_value;
+			reg [15:0] adjusted_value;
 
 			always @(posedge us_clk) begin
 				// Slide the pwm_time_high_us to a value between 0 and MIN_PWM_TIME_HIGH_US
