@@ -13,31 +13,30 @@
  *
  * Inputs
  * @sys_clk: 		system clock
- * @throttle_rate:	throttle rate (rad/s) in fixed point 2's complement
  * @yaw_rate: 		yaw rate (rad/s) in fixed point 2's complement
  * @roll_rate: 		roll rate (rad/s) in fixed point 2's complement
  * @pitch_rate: 	pitch rate (rad/s) in fixed point 2's complement
+ * @throttle_rate:	throttle rate (rad/s) in fixed point 2's complement
  *		^^^ NOTE: Inputs rates expected to be formated as follows
  *					[15:0] rate_input = [15:4] IntegerPart . [3:0] DecimalPart
  *
- *	Top level instantiation of module
+ *	Top level (Drone2.v) instantiation of module
  *	
- *		pid_mixer #(
- *					PID_RATE_BIT_WIDTH, 
+ *		pid_mixer  #(
+ *					 PID_RATE_BIT_WIDTH, 
  *					`MOTOR_RATE_BIT_WIDTH) 
  *		pid_mixer	(
- *					.motor_1_rate(motor_1_rate),
- *					.motor_2_rate(motor_2_rate),
- *					.motor_3_rate(motor_3_rate),
- *					.motor_4_rate(motor_4_rate),
- *					.throttle_rate(throttle_target_rate),
+ *					.sys_clk(sys_clk),
  *					.yaw_rate(yaw_rate),
  *					.roll_rate(roll_rate),
  *					.pitch_rate(pitch_rate),
- *					.sys_clk(sys_clk)
- *					);
+ *					.throttle_rate(throttle_target_rate),
+ *					.motor_1_rate(motor_1_rate),
+ *					.motor_2_rate(motor_2_rate),
+ *					.motor_3_rate(motor_3_rate),
+ *					.motor_4_rate(motor_4_rate));
  *
- *		 		   |  <----			 ---->  |
+ *		 		   | <-----			 -----> |
  *		 		   | Motor_1		Motor_2 |
  *		 		   V 	\			  /     V
  *		 				 \			 /
@@ -49,9 +48,9 @@
  *						  /		    \	
  *						 /			 \
  *						/			  \
- *		 		     ---->	| 	   | <---- 
- *		 		    Motor_3 |	   | Motor_4
- *		 		            V      V 
+ *		 		    -----> | 	   | <----- 
+ *		 		   Motor_3 |	   | Motor_4
+ *		 		           V       V 
  *
  *		Motors_1 and Motor_4 will spin counter clockwise (CCW)
  *		Motors_2 and Motor_3 will spin clockwise (CW)
@@ -71,23 +70,22 @@
 
 module motor_mixer	#(parameter BIT_WIDTH = 16,
 					  parameter MOTOR_RATE_BIT_WIDTH = 8)
-					(//	Inputs
-					 input  wire rst_n,
+					(input  wire rst_n,
 					 input  wire sys_clk,
 					 input  wire [BIT_WIDTH-1:0] yaw_rate,
 					 input  wire [BIT_WIDTH-1:0] roll_rate,
 					 input  wire [BIT_WIDTH-1:0] pitch_rate,
 					 input  wire [BIT_WIDTH-1:0] throttle_rate,
-					 //	Outputs
 					 output reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_1_rate,
 					 output reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_2_rate,
 					 output reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_3_rate,
 					 output reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_4_rate);
 	
 	localparam MOTOR_MIXER_STATE_BIT_WIDTH = 2;
-	localparam [MOTOR_MIXER_STATE_BIT_WIDTH-1:0]
-		STATE_MAP_16_TO_8	= 0,
-		STATE_SEND_OUTPUT	= 1;
+	localparam [MOTOR_MIXER_STATE_BIT_WIDTH-1:0] STATE_MAP_16_TO_8	= 0,
+												 STATE_SEND_OUTPUT	= 1;
+	
+	reg	 [MOTOR_MIXER_STATE_BIT_WIDTH-1:0] output_state;
 	
 	reg  [BIT_WIDTH-1:0] n_m1_yaw_rate;
 	reg  [BIT_WIDTH-1:0] n_m2_yaw_rate;
@@ -111,17 +109,15 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 	wire [BIT_WIDTH-1:0] motor_3_output;
 	wire [BIT_WIDTH-1:0] motor_4_output;
 	
-	reg  [BIT_WIDTH-1:0] motor_1_mapped;
-	reg  [BIT_WIDTH-1:0] motor_2_mapped;
-	reg  [BIT_WIDTH-1:0] motor_3_mapped;
-	reg  [BIT_WIDTH-1:0] motor_4_mapped;
+	reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_1_mapped;
+	reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_2_mapped;
+	reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_3_mapped;
+	reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_4_mapped;
 	
-	reg	 [BIT_WIDTH-1:0] motor_1_rate_last;
-	reg	 [BIT_WIDTH-1:0] motor_2_rate_last;
-	reg	 [BIT_WIDTH-1:0] motor_3_rate_last;
-	reg	 [BIT_WIDTH-1:0] motor_4_rate_last;
-	
-	reg	 [MOTOR_MIXER_STATE_BIT_WIDTH-1:0] output_state;
+	reg	 [MOTOR_RATE_BIT_WIDTH-1:0] motor_1_rate_last;
+	reg	 [MOTOR_RATE_BIT_WIDTH-1:0] motor_2_rate_last;
+	reg	 [MOTOR_RATE_BIT_WIDTH-1:0] motor_3_rate_last;
+	reg	 [MOTOR_RATE_BIT_WIDTH-1:0] motor_4_rate_last;
 	
 	motor_rate_calculator	#(BIT_WIDTH)
 		motor_1_rate_calc	(.rst_n(rst_n),
@@ -157,121 +153,103 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 							 .motor_rate(motor_4_output));
 	
 	always @(posedge sys_clk or negedge rst_n)begin
-		$display("yaw			%d", yaw_rate);
-		$display("roll          %d", roll_rate);
-		$display("pitch         %d", pitch_rate);
-		$display("throttle      %d", throttle_rate);
 		if (!rst_n) begin
-			n_m1_yaw_rate			= `ALL_ZERO_2BYTE;
-			n_m4_yaw_rate			= `ALL_ZERO_2BYTE;
-			n_m2_yaw_rate			= `ALL_ZERO_2BYTE;
-			n_m3_yaw_rate			= `ALL_ZERO_2BYTE;	
-			n_m1_roll_rate			= `ALL_ZERO_2BYTE;
-			n_m3_roll_rate			= `ALL_ZERO_2BYTE;
-			n_m2_roll_rate			= `ALL_ZERO_2BYTE;
-			n_m4_roll_rate			= `ALL_ZERO_2BYTE;		
-			n_m1_pitch_rate			= `ALL_ZERO_2BYTE;
-			n_m2_pitch_rate			= `ALL_ZERO_2BYTE;
-			n_m3_pitch_rate			= `ALL_ZERO_2BYTE;
-			n_m4_pitch_rate			= `ALL_ZERO_2BYTE;	
-			n_throttle_rate			= `ALL_ZERO_2BYTE;
+			n_m1_yaw_rate			<= `ALL_ZERO_2BYTE;
+			n_m4_yaw_rate			<= `ALL_ZERO_2BYTE;
+			n_m2_yaw_rate			<= `ALL_ZERO_2BYTE;
+			n_m3_yaw_rate			<= `ALL_ZERO_2BYTE;	
+			n_m1_roll_rate			<= `ALL_ZERO_2BYTE;
+			n_m3_roll_rate			<= `ALL_ZERO_2BYTE;
+			n_m2_roll_rate			<= `ALL_ZERO_2BYTE;
+			n_m4_roll_rate			<= `ALL_ZERO_2BYTE;		
+			n_m1_pitch_rate			<= `ALL_ZERO_2BYTE;
+			n_m2_pitch_rate			<= `ALL_ZERO_2BYTE;
+			n_m3_pitch_rate			<= `ALL_ZERO_2BYTE;
+			n_m4_pitch_rate			<= `ALL_ZERO_2BYTE;	
+			n_throttle_rate			<= `ALL_ZERO_2BYTE;
 			end
 		else begin
-			n_m1_yaw_rate			= (~yaw_rate + 1'b1);
-			n_m4_yaw_rate			= (~yaw_rate + 1'b1);
-			n_m2_yaw_rate			= yaw_rate;
-			n_m3_yaw_rate			= yaw_rate;
+			n_m1_yaw_rate			<= (~yaw_rate + 1'b1);
+			n_m4_yaw_rate			<= (~yaw_rate + 1'b1);
+			n_m2_yaw_rate			<= yaw_rate;
+			n_m3_yaw_rate			<= yaw_rate;
 				
-			n_m1_roll_rate			= roll_rate;
-			n_m3_roll_rate			= roll_rate;
-			n_m2_roll_rate			= (~roll_rate + 1'b1);
-			n_m4_roll_rate			= (~roll_rate + 1'b1);
+			n_m1_roll_rate			<= roll_rate;
+			n_m3_roll_rate			<= roll_rate;
+			n_m2_roll_rate			<= (~roll_rate + 1'b1);
+			n_m4_roll_rate			<= (~roll_rate + 1'b1);
 				
-			n_m1_pitch_rate			= (~pitch_rate + 1'b1);
-			n_m2_pitch_rate			= (~pitch_rate + 1'b1);
-			n_m3_pitch_rate			= pitch_rate;
-			n_m4_pitch_rate			= pitch_rate;
+			n_m1_pitch_rate			<= (~pitch_rate + 1'b1);
+			n_m2_pitch_rate			<= (~pitch_rate + 1'b1);
+			n_m3_pitch_rate			<= pitch_rate;
+			n_m4_pitch_rate			<= pitch_rate;
 				
-			n_throttle_rate			= throttle_rate;
+			n_throttle_rate			<= throttle_rate;
 			end
 		end
 	
-	always @((motor_1_output or motor_1_mapped) or 
-			(motor_2_output or motor_2_mapped) or 
-			(motor_3_output or motor_3_mapped) or
-			(motor_4_output or motor_4_mapped)) begin
-		$display("mapped1	   %d", motor_1_mapped);
-		$display("output1      %d", motor_1_output);
-		$display("mapped2      %d", motor_2_mapped);
-		$display("output2      %d", motor_2_output);
-		if (!rst_n)	begin
-			motor_1_rate			= `ALL_ZERO_2BYTE;
-			motor_2_rate			= `ALL_ZERO_2BYTE;
-			motor_3_rate			= `ALL_ZERO_2BYTE;
-			motor_4_rate			= `ALL_ZERO_2BYTE;
-			motor_1_mapped			= `ALL_ZERO_2BYTE;
-			motor_2_mapped			= `ALL_ZERO_2BYTE;
-			motor_3_mapped			= `ALL_ZERO_2BYTE;
-			motor_4_mapped			= `ALL_ZERO_2BYTE;
-			output_state 			= STATE_MAP_16_TO_8;
-			end
-		else begin
-			case(output_state)
-				STATE_MAP_16_TO_8: 	begin
-					if (motor_1_output != `ALL_ZERO_2BYTE) begin
-						motor_1_mapped		= ((motor_1_output + `MOTOR_RATE_MAP_ROUND_VAL) >> `MAPPING_SHIFT_BIT); // Map 16 bit to 8
-						motor_2_mapped		= ((motor_2_output + `MOTOR_RATE_MAP_ROUND_VAL) >> `MAPPING_SHIFT_BIT); // Map 16 bit to 8
-						motor_3_mapped		= ((motor_3_output + `MOTOR_RATE_MAP_ROUND_VAL) >> `MAPPING_SHIFT_BIT); // Map 16 bit to 8
-						motor_4_mapped		= ((motor_4_output + `MOTOR_RATE_MAP_ROUND_VAL) >> `MAPPING_SHIFT_BIT); // Map 16 bit to 8
-						output_state		= STATE_SEND_OUTPUT;
-						end
-					else 
-						output_state		= STATE_MAP_16_TO_8;
+	always @(motor_1_output or motor_1_mapped or motor_2_output or 
+			 motor_2_mapped or motor_3_output or motor_3_mapped or 
+			 motor_4_output or motor_4_mapped or output_state) begin
+		case(output_state)
+			STATE_MAP_16_TO_8: 	begin
+				if (motor_1_output != `ALL_ZERO_2BYTE) begin
+					motor_1_mapped		= ((motor_1_output + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
+					motor_2_mapped		= ((motor_2_output + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
+					motor_3_mapped		= ((motor_3_output + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
+					motor_4_mapped		= ((motor_4_output + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
+					output_state		= STATE_SEND_OUTPUT;
 					end
-				STATE_SEND_OUTPUT: 	begin
-					if (motor_1_mapped < `MOTOR_VAL_MIN || motor_1_mapped > `MOTOR_VAL_MAX) begin
-						motor_1_rate 		= motor_1_rate_last;
-						end
-					else begin 
-						motor_1_rate 		= motor_1_mapped;
-						motor_1_rate_last 	= motor_1_mapped;
-						end
-					if (motor_2_mapped < `MOTOR_VAL_MIN || motor_2_mapped > `MOTOR_VAL_MAX) begin
-						motor_2_rate 		= motor_2_rate_last;
-						end
-					else begin 
-						motor_2_rate 		= motor_2_mapped;
-						motor_2_rate_last 	= motor_2_mapped;
-						end
-					if (motor_3_mapped < `MOTOR_VAL_MIN || motor_3_mapped > `MOTOR_VAL_MAX) begin
-						motor_3_rate 		= motor_3_rate_last;
-						end
-					else begin 
-						motor_3_rate 		= motor_3_mapped;
-						motor_3_rate_last 	= motor_3_mapped;
-						end
-					if (motor_4_mapped < `MOTOR_VAL_MIN || motor_4_mapped > `MOTOR_VAL_MAX) begin
-						motor_4_rate 		= motor_4_rate_last;
-						end
-					else begin 
-						motor_4_rate 		= motor_4_mapped;
-						motor_4_rate_last 	= motor_4_mapped;
-						end
-					output_state 			= STATE_MAP_16_TO_8;
+				else 
+					output_state		= STATE_MAP_16_TO_8;
+				end
+			STATE_SEND_OUTPUT: 	begin
+				if (motor_1_mapped < `MOTOR_VAL_MIN || motor_1_mapped > `MOTOR_VAL_MAX) begin
+					motor_1_rate 		= motor_1_rate_last;
 					end
-				default begin
-					// This state should never be reached! If reached, act as a rst_n signal.
-					motor_1_rate			= `ALL_ZERO_2BYTE;
-					motor_2_rate			= `ALL_ZERO_2BYTE;
-					motor_3_rate			= `ALL_ZERO_2BYTE;
-					motor_4_rate			= `ALL_ZERO_2BYTE;
-					motor_1_mapped			= `ALL_ZERO_2BYTE;
-					motor_2_mapped			= `ALL_ZERO_2BYTE;
-					motor_3_mapped			= `ALL_ZERO_2BYTE;
-					motor_4_mapped			= `ALL_ZERO_2BYTE;
-					output_state			= STATE_MAP_16_TO_8;
+				else begin 
+					motor_1_rate 		= motor_1_mapped;
+					motor_1_rate_last 	= motor_1_mapped;
 					end
-				endcase
-			end
+				if (motor_2_mapped < `MOTOR_VAL_MIN || motor_2_mapped > `MOTOR_VAL_MAX) begin
+					motor_2_rate 		= motor_2_rate_last;
+					end
+				else begin 
+					motor_2_rate 		= motor_2_mapped;
+					motor_2_rate_last 	= motor_2_mapped;
+					end
+				if (motor_3_mapped < `MOTOR_VAL_MIN || motor_3_mapped > `MOTOR_VAL_MAX) begin
+					motor_3_rate 		= motor_3_rate_last;
+					end
+				else begin 
+					motor_3_rate 		= motor_3_mapped;
+					motor_3_rate_last 	= motor_3_mapped;
+					end
+				if (motor_4_mapped < `MOTOR_VAL_MIN || motor_4_mapped > `MOTOR_VAL_MAX) begin
+					motor_4_rate 		= motor_4_rate_last;
+					end
+				else begin 
+					motor_4_rate 		= motor_4_mapped;
+					motor_4_rate_last 	= motor_4_mapped;
+					end
+				output_state 			= STATE_MAP_16_TO_8;
+				end
+			default begin
+				// This state should never be reached! If reached, act as a rst_n signal.
+				motor_1_rate			= `ALL_ZERO_2BYTE;
+				motor_2_rate			= `ALL_ZERO_2BYTE;
+				motor_3_rate			= `ALL_ZERO_2BYTE;
+				motor_4_rate			= `ALL_ZERO_2BYTE;
+				motor_1_mapped			= `ALL_ZERO_2BYTE;
+				motor_2_mapped			= `ALL_ZERO_2BYTE;
+				motor_3_mapped			= `ALL_ZERO_2BYTE;
+				motor_4_mapped			= `ALL_ZERO_2BYTE;
+				motor_1_rate_last		= `ALL_ZERO_2BYTE;
+				motor_2_rate_last		= `ALL_ZERO_2BYTE;
+				motor_3_rate_last		= `ALL_ZERO_2BYTE;
+				motor_4_rate_last		= `ALL_ZERO_2BYTE;
+				output_state			= STATE_MAP_16_TO_8;
+				end
+			endcase
 		end
 endmodule
