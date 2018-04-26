@@ -141,7 +141,8 @@ module drone2 (
 		.x_velocity(x_velocity),          
 		.y_velocity(y_velocity),          
 		.z_velocity(z_velocity)
-		);
+		);ode in the pull request reverted a lot of stuff related to the I2C EFB, was that intentional? The rate went back to 50kHz, only one EFB is used, the names were change
+	ode in the pull request reverted a lot of stuff related to the I2C EFB, was that intentional? The rate went back to 50kHz, only one EFB is used, the names were change
 	*/
 
 	receiver receiver (
@@ -224,7 +225,7 @@ module drone2 (
 		*/
 		
 		.sys_clk(sys_clk),
-		.rst_n(resetn));
+		.rst_n(temp_reset_n));
 
 	assign led_data_out = ~throttle_val;
 

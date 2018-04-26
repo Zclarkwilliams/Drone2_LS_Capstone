@@ -25,9 +25,9 @@
 `define ALL_ZERO_2BYTE          16'h0000
 
 // PWM signal pulse lengths
-`define MIN_PWM_TIME_HIGH_US	10'd1000
-`define MAX_PWM_TIME_HIGH_US	11'd2000
-`define PWM_PERIOD_US			15'd20000
+`define MIN_PWM_TIME_HIGH_US	16'd1000
+`define MAX_PWM_TIME_HIGH_US	16'd2000
+`define PWM_PERIOD_US			16'd20000
 
 //  Clock dividers and system clock frequency
 `define SYS_CLK_FREQ            38_000_000                    //  Frequency of system clock, in Hz
@@ -37,16 +37,16 @@
 `define WAIT_I2C_DIVIDER        (`I2C_CLK_FREQ/`SYS_CLK_FREQ) //  Number of system clock ticks per i2c scl tick, at i2c rate
 
 // Bit widths
-`define PWM_TIME_BIT_WIDTH	4'd11	// Sized to hold the MAX_PWM_TIME_HIGH_US
+`define PWM_TIME_BIT_WIDTH	5'd16	// Sized to hold the MAX_PWM_TIME_HIGH_US
 `define PWM_VALUE_BIT_WIDTH 4'd8	// Sized to hold the mapped pwm value
 
 `define MOTOR_RATE_BIT_WIDTH 4'd8
 
 // Default values (on reset or error) for pwm pulse high values in microseconds
-`define THROTTLE_DEFAULT_PULSE_TIME_HIGH_US 11'd1000
-`define YAW_DEFAULT_PULSE_TIME_HIGH_US		11'd1500
-`define ROLL_DEFAULT_PULSE_TIME_HIGH_US		11'd1500
-`define PITCH_DEFAULT_PULSE_TIME_HIGH_US	11'd1500
+`define THROTTLE_DEFAULT_PULSE_TIME_HIGH_US  16'd1000
+`define YAW_DEFAULT_PULSE_TIME_HIGH_US		 16'd1500
+`define ROLL_DEFAULT_PULSE_TIME_HIGH_US		 16'd1500
+`define PITCH_DEFAULT_PULSE_TIME_HIGH_US	 16'd1500
 
 /*	Motor_Rate Module Defines:
  *
