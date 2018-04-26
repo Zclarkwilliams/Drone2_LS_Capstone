@@ -65,8 +65,8 @@
 `define MOTOR_RATE_ROLL_SCALER			1
 `define MOTOR_RATE_PITCH_SCALER			1
 //	Mapping 16 bit motor rate output to 8 bit value for pwm conversion
-`define MAPPING_SHIFT_BIT				8
+`define MAPPING_SHIFT_8BIT				8
 //	Value to add to value before bit shift rounding to help rounding error
-`define MOTOR_RATE_MAP_ROUND_VAL		128
+`define MOTOR_RATE_ROUND_UP_VAL 		8'd128
 
 
