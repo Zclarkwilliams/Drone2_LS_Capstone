@@ -227,14 +227,16 @@ module drone2 (
 		.sys_clk(sys_clk),
 		.rst_n(temp_reset_n));
 
-	assign led_data_out = ~throttle_val;
+	//assign led_data_out = ~throttle_val;
+	wire [2:0] state_out;
+	assign led_data_out[2:0] = ~state_out;
 
 	pwm_generator pwm_generator (
 		.motor_1_pwm(motor_1_pwm),
 		.motor_2_pwm(motor_2_pwm),
 		.motor_3_pwm(motor_3_pwm),
 		.motor_4_pwm(motor_4_pwm),
-		
+		.state_out(state_out),
 		.motor_1_rate(throttle_val),
 		.motor_2_rate(roll_val),
 		.motor_3_rate(pitch_val),

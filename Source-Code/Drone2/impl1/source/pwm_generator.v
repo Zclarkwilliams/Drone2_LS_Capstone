@@ -29,6 +29,7 @@ module pwm_generator #(parameter INPUT_BIT_WIDTH = 8)
 					   output wire motor_2_pwm,
 					   output wire motor_3_pwm,
 					   output wire motor_4_pwm,
+					   output wire [2:0] state_out,
 					   input wire [INPUT_BIT_WIDTH - 1:0] motor_1_rate,
 					   input wire [INPUT_BIT_WIDTH - 1:0] motor_2_rate,
 					   input wire [INPUT_BIT_WIDTH - 1:0] motor_3_rate,
@@ -47,6 +48,7 @@ module pwm_generator #(parameter INPUT_BIT_WIDTH = 8)
 
 	// PWM gen blocks
 	pwm_generator_block pwm1 (
+		.state_out(state_out),
 		.motor_pwm(motor_1_pwm),
 		.motor_val(m1_rate),
 		.period_counter(period_counter),
