@@ -216,16 +216,17 @@ module drone2 (
 		.yaw_rate({4'h0, yaw_val, 4'h0}),
 		.roll_rate({4'h0, roll_val, 4'h0}),
 		.pitch_rate({4'h0, pitch_val, 4'h0}),
-		
+	
 		/*
 		.throttle_rate(throttle_target_rate),
 		.yaw_rate(yaw_target_rate),
 		.roll_rate(roll_target_rate),
 		.pitch_rate(pitch_target_rate),
 		*/
-		
+	
 		.sys_clk(sys_clk),
-		.rst_n(temp_reset_n));
+		.rst_n(resetn));
+
 
 	//assign led_data_out = ~throttle_val;
 	wire [2:0] state_out;
@@ -237,17 +238,20 @@ module drone2 (
 		.motor_3_pwm(motor_3_pwm),
 		.motor_4_pwm(motor_4_pwm),
 		.state_out(state_out),
+		
+		/*
 		.motor_1_rate(throttle_val),
 		.motor_2_rate(roll_val),
 		.motor_3_rate(pitch_val),
 		.motor_4_rate(yaw_val),
+		*/
 
-		/*
+		
 		.motor_1_rate(motor_1_rate),
 		.motor_2_rate(motor_2_rate),
 		.motor_3_rate(motor_3_rate),
 		.motor_4_rate(motor_4_rate),
-		*/
+		
 		
 		.us_clk(us_clk),
 		.resetn(temp_reset_n)); // TODO: Change this to the top level reset signal (.resetn(resetn))
