@@ -400,7 +400,8 @@ Total: 46 bytes
 */
 
 `define BNO055_STATE_BITS      5             //  The number of bits used to represent the current state
-`define DATA_RX_BYTE_REG_CNT   46            //  The number of byte registers to used receive all measurement data
+`define DATA_RX_BYTE_REG_CNT   46            //  The number of byte registers used to receive all measurement data
+`define CAL_DATA_REG_CNT       22            //  The number of byte registers used to store calibration data
 
 // Value aliases
 `define GO                      1'b1         //  Go signal to i2c driver is logic high
@@ -429,19 +430,19 @@ Total: 46 bytes
 `define BNO055_STATE_BOOT                1
 `define BNO055_STATE_BOOT_WAIT           2
 
-`define BNO055_SUB_STATE_START           3
-`define BNO055_SUB_STATE_WAIT_I2C        4
-`define BNO055_SUB_STATE_STOP            5
+`define BNO055_STATE_READ_CHIP_ID        3
+`define BNO055_STATE_SET_EXT_CRYSTAL     4
+`define BNO055_STATE_SET_UNITS           5
+`define BNO055_STATE_SET_POWER_MODE      6
+`define BNO055_STATE_CAL_RESTORE_DATA    7
+`define BNO055_STATE_CAL_RESTORE_START   8
+`define BNO055_STATE_CAL_RESTORE_WAIT    9
+`define BNO055_STATE_CAL_RESTORE_STOP    10
+`define BNO055_STATE_SET_RUN_MODE        11
+`define BNO055_STATE_WAIT_20MS           12
+`define BNO055_STATE_READ_IMU_DATA_BURST 13
+`define BNO055_STATE_WAIT_10MS           14
 
-`define BNO055_STATE_READ_CHIP_ID        6
-`define BNO055_STATE_SET_EXT_CRYSTAL     7
-`define BNO055_STATE_SET_UNITS           8
-`define BNO055_STATE_SET_POWER_MODE      9
-`define BNO055_STATE_SET_RUN_MODE        10
-`define BNO055_STATE_WAIT_20MS           11
-`define BNO055_STATE_READ_IMU_DATA_BURST 12
-`define BNO055_STATE_WAIT_10MS           13
-`define BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_DATA  14
-`define BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_START 15
-`define BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_WAIT  16
-`define BNO055_SUB_STATE_SEND_DATA_2_I2C_RECEIVER_STOP  17
+`define BNO055_SUB_STATE_START           15
+`define BNO055_SUB_STATE_WAIT_I2C        16
+`define BNO055_SUB_STATE_STOP            17
