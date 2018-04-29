@@ -228,15 +228,18 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 /// For debug testing, write data to external i2c device, Arduino to validate measurements
 //--------------------------------------------------------------------------------------------------------------------//
 	always@(posedge sys_clk) begin
-		if( ~clear_cal_restore_index)
+		if( ~clear_cal_restore_index) begin
 			cal_reg_addr      <= `BNO055_ACCEL_OFFSET_X_LSB_ADDR;
 			cal_restore_index <= 0;
-		else if( increment_cal_restore_index)
+		end
+		else if( increment_cal_restore_index) begin
 			cal_reg_addr      <= (cal_reg_addr      + 1'b1);
 			cal_restore_index <= (cal_restore_index + 1'b1);
-		else
+		end
+		else begin
 			cal_reg_addr      <= cal_reg_addr;
 			cal_restore_index <= cal_restore_index;
+		end
 	end
 //--------------------------------------------------------------------------------------------------------------------//
 // end of debug stuff
