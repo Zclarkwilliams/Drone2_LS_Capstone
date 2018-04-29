@@ -264,6 +264,8 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_REMAP_SIGN_P6                 8'h07
 `define BNO055_REMAP_SIGN_P7                 8'h05
 
+
+//Indices of measurement data in rx_data_reg
 `define ACC_DATA_X_LSB_INDEX                 0
 `define ACC_DATA_X_MSB_INDEX                 1
 `define ACC_DATA_Y_LSB_INDEX                 2
@@ -398,6 +400,31 @@ Section 4.3.54 CALIB_STAT     0X35 Data Sheet, Page:67
 Total: 46 bytes
 
 */
+
+//Indices of calibration data in cal_data_reg
+`define ACCEL_OFFSET_X_LSB_INDEX 0
+`define ACCEL_OFFSET_X_MSB_INDEX 1
+`define ACCEL_OFFSET_Y_LSB_INDEX 2
+`define ACCEL_OFFSET_Y_MSB_INDEX 3
+`define ACCEL_OFFSET_Z_LSB_INDEX 4
+`define ACCEL_OFFSET_Z_MSB_INDEX 5
+`define MAG_OFFSET_X_LSB_INDEX   6
+`define MAG_OFFSET_X_MSB_INDEX   7
+`define MAG_OFFSET_Y_LSB_INDEX   8
+`define MAG_OFFSET_Y_MSB_INDEX   9
+`define MAG_OFFSET_Z_LSB_INDEX   10
+`define MAG_OFFSET_Z_MSB_INDEX   11
+`define GYRO_OFFSET_X_LSB_INDEX  12
+`define GYRO_OFFSET_X_MSB_INDEX  13
+`define GYRO_OFFSET_Y_LSB_INDEX  14
+`define GYRO_OFFSET_Y_MSB_INDEX  15
+`define GYRO_OFFSET_Z_LSB_INDEX  16
+`define GYRO_OFFSET_Z_MSB_INDEX  17
+`define ACCEL_RADIUS_LSB_INDEX   18
+`define ACCEL_RADIUS_MSB_INDEX   19
+`define MAG_RADIUS_LSB_INDEX     20
+`define MAG_RADIUS_MSB_INDEX     21
+
 
 `define BNO055_STATE_BITS      5             //  The number of bits used to represent the current state
 `define DATA_RX_BYTE_REG_CNT   46            //  The number of byte registers used to receive all measurement data

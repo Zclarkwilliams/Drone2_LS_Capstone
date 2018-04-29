@@ -162,6 +162,48 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 		else
 			valid_strobe      <= `LOW;
 	end
+	
+	
+	task set_calibration_data_values;
+	/*
+		Calibration Values for the BNO055 IMU that we are using: 
+		
+		Accelerometer: -27 -46 38
+		Mag: 284 30 -93 
+		Gyro: -2 -3 0 
+		Accel Radius: 1000
+		Mag Radius: 851
+		Accel X MSB:255, X LSB:229, Y MSB:255, Y LSB:210, Z MSB0,    Z LSB:38
+		Mag   X MSB:1,   X LSB:28,  Y MSB:0,   Y LSB:30,  Z MSB:255, Z LSB:163
+		Gyro  X MSB:255, X LSB:254, Y MSB:255, Y LSB:253, Z MSB:0,   Z LSB:0
+		Accel radius MSB:3, LSB:232
+		Mag radius   MSB:3, LSB:83
+	*/
+		begin
+			calibration_reg[`ACCEL_OFFSET_X_LSB_INDEX] <= 8'd229;
+			calibration_reg[`ACCEL_OFFSET_X_MSB_INDEX] <= 8'd255;
+			calibration_reg[`ACCEL_OFFSET_Y_LSB_INDEX] <= 8'd210;
+			calibration_reg[`ACCEL_OFFSET_Y_MSB_INDEX] <= 8'd255;
+			calibration_reg[`ACCEL_OFFSET_Z_LSB_INDEX] <= 8'd38;
+			calibration_reg[`ACCEL_OFFSET_Z_MSB_INDEX] <= 8'd0;
+			calibration_reg[`MAG_OFFSET_X_LSB_INDEX  ] <= 8'd28;
+			calibration_reg[`MAG_OFFSET_X_MSB_INDEX  ] <= 8'd1;
+			calibration_reg[`MAG_OFFSET_Y_LSB_INDEX  ] <= 8'd30;
+			calibration_reg[`MAG_OFFSET_Y_MSB_INDEX  ] <= 8'd0;
+			calibration_reg[`MAG_OFFSET_Z_LSB_INDEX  ] <= 8'd163;
+			calibration_reg[`MAG_OFFSET_Z_MSB_INDEX  ] <= 8'd255;
+			calibration_reg[`GYRO_OFFSET_X_LSB_INDEX ] <= 8'd254;
+			calibration_reg[`GYRO_OFFSET_X_MSB_INDEX ] <= 8'd255;
+			calibration_reg[`GYRO_OFFSET_Y_LSB_INDEX ] <= 8'd253;
+			calibration_reg[`GYRO_OFFSET_Y_MSB_INDEX ] <= 8'd255;
+			calibration_reg[`GYRO_OFFSET_Z_LSB_INDEX ] <= 8'd0;
+			calibration_reg[`GYRO_OFFSET_Z_MSB_INDEX ] <= 8'd0;
+			calibration_reg[`ACCEL_RADIUS_LSB_INDEX  ] <= 8'd3;
+			calibration_reg[`ACCEL_RADIUS_MSB_INDEX  ] <= 8'd232;
+			calibration_reg[`MAG_RADIUS_LSB_INDEX    ] <= 8'd3;
+			calibration_reg[`MAG_RADIUS_MSB_INDEX    ] <= 8'd83;
+		end
+	endtask
 
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn) begin
@@ -192,6 +234,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 			x_velocity        <= 8'b0;	
 			y_velocity        <= 8'b0;	
 			z_velocity        <= 8'b0;		
+			set_calibration_data_values();
 		end
 		else if(rx_data_latch_strobe) begin
 			accel_rate_x      <= {data_rx_reg[`ACC_DATA_X_MSB_INDEX],data_rx_reg[`ACC_DATA_X_LSB_INDEX]};     
@@ -222,6 +265,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 			x_velocity        <= 8'b0;	
 			y_velocity        <= 8'b0;	
 			z_velocity        <= 8'b0;
+			set_calibration_data_values();
 		end
 	end
 //--------------------------------------------------------------------------------------------------------------------//
@@ -322,6 +366,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 					clear_waiting_ms   = `CLEAR_MS_TIMER; //  Clear and set to wait_ms value
 					next_bno055_state  = `BNO055_STATE_BOOT;
 					next_slave_address = `BNO055_SLAVE_ADDRESS;
+					clear_cal_restore_index = 1'b0;
 				end
 				`BNO055_STATE_BOOT: begin
 					next_imu_good      = `FALSE;
@@ -341,24 +386,13 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 					next_imu_good          = `FALSE;
 					next_slave_address     = `BNO055_SLAVE_ADDRESS;
 					next_go_flag           = `NOT_GO;
-					next_bno055_state      = `BNO055_STATE_READ_CHIP_ID;
-					next_return_state      = `BNO055_STATE_SET_EXT_CRYSTAL;
+					next_bno055_state      = `BNO055_SUB_STATE_START;
+					next_return_state      = `BNO055_STATE_SET_UNITS;
 					next_data_reg          = `BNO055_CHIP_ID_ADDR;
 					next_data_tx           = `BYTE_ALL_ZERO;
 					next_read_write_in     = `I2C_READ;
 					next_target_read_count = 1'b1;
 					next_led_view_index    = 1'b0;
-					next_bno055_state      = `BNO055_SUB_STATE_START;
-				end
-				`BNO055_STATE_SET_EXT_CRYSTAL: begin //  Page 0
-					next_imu_good      = `FALSE;
-					next_slave_address = `BNO055_SLAVE_ADDRESS;
-					next_go_flag       = `NOT_GO;
-					next_bno055_state  = `BNO055_SUB_STATE_START;
-					next_return_state  = `BNO055_STATE_SET_UNITS;
-					next_data_reg      = `BNO055_SYS_TRIGGER_ADDR;
-					next_data_tx       = 8'h80; //Enable external crystal, set bit 7 to 1'b1
-					next_read_write_in = `I2C_WRITE;
 				end
 				`BNO055_STATE_SET_UNITS: begin //  Page 0
 					next_imu_good      = `FALSE;
@@ -386,9 +420,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 					next_data_tx       = `BNO055_POWER_MODE_NORMAL;
 					next_read_write_in = `I2C_WRITE;
 				end
-				
 				`BNO055_STATE_CAL_RESTORE_DATA: begin
-					next_wait_ms           = 12'd20; //  used in change run mode state, but set here
 					next_go_flag           = `NOT_GO;
 					next_slave_address     = `BNO055_SLAVE_ADDRESS;
 					next_data_reg          = cal_reg_addr;
@@ -428,13 +460,23 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 					next_read_write_in     = read_write_in;
 					if(cal_restore_index >= (`CAL_DATA_REG_CNT)) begin
 						clear_cal_restore_index = 1'b0;
-						next_bno055_state  = `BNO055_STATE_SET_RUN_MODE;
+						next_bno055_state       = `BNO055_STATE_SET_EXT_CRYSTAL;
 					end
 					else begin
 						next_bno055_state  = `BNO055_STATE_CAL_RESTORE_DATA;
 					end
 				end
-				
+				`BNO055_STATE_SET_EXT_CRYSTAL: begin //  Page 0
+					next_imu_good      = `FALSE;
+					next_slave_address = `BNO055_SLAVE_ADDRESS;
+					next_go_flag       = `NOT_GO;
+					next_bno055_state  = `BNO055_SUB_STATE_START;
+					next_return_state  = `BNO055_STATE_SET_RUN_MODE;
+					next_data_reg      = `BNO055_SYS_TRIGGER_ADDR;
+					next_data_tx       = 8'h80; //Enable external crystal, set bit 7 to 1'b1
+					next_read_write_in = `I2C_WRITE;
+					next_wait_ms            = 12'd20; //  used in change run mode state, but set here
+				end
 				`BNO055_STATE_SET_RUN_MODE: begin // Change to run mode, changing run mode takes 7 to 19 ms depending on modes
 					next_imu_good      = `FALSE;
 					next_slave_address = `BNO055_SLAVE_ADDRESS;
