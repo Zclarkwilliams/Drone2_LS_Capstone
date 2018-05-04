@@ -2,7 +2,7 @@
 
 ECE 412-413 Capstone Winter/Spring 2018
 Team 32 Drone2 SOC
-Ethan Grinnell, Brett Creely, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
 
 */
 `timescale 1ns / 1ns
