@@ -48,7 +48,7 @@ module drone2 (
 	localparam REC_VAL_BIT_WIDTH = 8;   // values from receiver
 	localparam PID_RATE_BIT_WIDTH = 16; // values from body frame controller
 	localparam RATE_BIT_WIDTH = 16;     // values from angle controller
-	localparam IMU_VAL_BIT_WIDTH = 16;  // values from IMU 
+	localparam IMU_VAL_BIT_WIDTH = 16;  // values from IMU
 
 	// values from receiver to angle_controller
 	wire [REC_VAL_BIT_WIDTH-1:0] throttle_val;
@@ -88,22 +88,20 @@ module drone2 (
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_2_rate;
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_3_rate;
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_4_rate;
-	
+
 	// status signals from IMU
 	wire imu_good;
 	wire imu_valid_strobe;
-	
+
 	// status signals from angle_controller
 	wire ac_valid_strobe;
 	wire ac_active;
-	
+
 	// status signals from body_frame_controller
 	wire bf_valid_strobe;
 	wire bf_active;
 
 	// TODO: Replace modules using this with the top level reset_n later on
-	wire temp_reset_n;
-	assign temp_reset_n = `HIGH;
 
 	wire sys_clk;
 	// TODO: Determine if we should stick with this clock rate (slower? faster?)
@@ -115,9 +113,9 @@ module drone2 (
 	us_clk us_clk_divider (
 		.us_clk(us_clk),
 		.sys_clk(sys_clk),
-		.resetn(temp_reset_n));  // TODO: Change this to the top level reset signal (.resetn(resetn))
-		
-	/*	
+		.resetn(resetn));  // TODO: Change this to the top level reset signal (.resetn(resetn))
+
+	/*
 	bno055_driver	i(
 		.scl_1(scl_1),                    //  I2C EFB SDA wires, Primary EFB
 		.sda_1(sda_1),                    //  I2C EFB SDA wires, Primary EFB
@@ -135,11 +133,11 @@ module drone2 (
 		.euler_angle_x(x_rotation),      //  Euler angle X-Axis                  Precision: Deg = 16 LSB
 		.euler_angle_y(y_rotation),      //  Euler angle Y-Axis                  Precision: Deg = 16 LSB
 		.euler_angle_z(z_rotation),      //  Euler angle Z-Axis                  Precision: Deg = 16 LSB
-		.linear_accel_x(x_linear_accel), //  Linear Acceleration X-Axis          Precision: 1 m/s^2 = 100 LSB      
-		.linear_accel_y(y_linear_accel), //  Linear Acceleration Y-Axis          Precision: 1 m/s^2 = 100 LSB           
-		.linear_accel_z(z_linear_accel), //  Linear Acceleration Z-Axis          Precision: 1 m/s^2 = 100 LSB   
-		.x_velocity(x_velocity),          
-		.y_velocity(y_velocity),          
+		.linear_accel_x(x_linear_accel), //  Linear Acceleration X-Axis          Precision: 1 m/s^2 = 100 LSB
+		.linear_accel_y(y_linear_accel), //  Linear Acceleration Y-Axis          Precision: 1 m/s^2 = 100 LSB
+		.linear_accel_z(z_linear_accel), //  Linear Acceleration Z-Axis          Precision: 1 m/s^2 = 100 LSB
+		.x_velocity(x_velocity),
+		.y_velocity(y_velocity),
 		.z_velocity(z_velocity)
 		);ode in the pull request reverted a lot of stuff related to the I2C EFB, was that intentional? The rate went back to 50kHz, only one EFB is used, the names were change
 	ode in the pull request reverted a lot of stuff related to the I2C EFB, was that intentional? The rate went back to 50kHz, only one EFB is used, the names were change
@@ -155,13 +153,13 @@ module drone2 (
 		.roll_pwm(roll_pwm),
 		.pitch_pwm(pitch_pwm),
 		.us_clk(us_clk),
-		.resetn(temp_reset_n)); // TODO: Change this to the top level reset signal (.resetn(resetn))
+		.resetn(resetn)); // TODO: Change this to the top level reset signal (.resetn(resetn))
 
 	/*
 	angle_controller #(
 		.RATE_BIT_WIDTH(RATE_BIT_WIDTH),
 		.REC_VAL_BIT_WIDTH(REC_VAL_BIT_WIDTH),
-		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH)) 
+		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH))
 	angle_controller (
 		.throttle_rate_out(throttle_target_rate),
 		.yaw_rate_out(yaw_target_rate),
@@ -179,14 +177,14 @@ module drone2 (
 		.roll_actual(16'h0000),  // changed for testing
 		.resetn(resetn),
 		.start_signal(1'b1), // changed for testing
-		.us_clk(us_clk));		
+		.us_clk(us_clk));
 	*/
 
 /*
 	body_frame_controller #(
 		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
 		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH),
-		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH)) 
+		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH))
 	body_frame_controller (
 		.yaw_rate_out(yaw_rate),
 		.roll_rate_out(roll_rate),
@@ -210,27 +208,25 @@ module drone2 (
 		.motor_2_rate(motor_2_rate),
 		.motor_3_rate(motor_3_rate),
 		.motor_4_rate(motor_4_rate),
-		
+
 		// test connections
 		.throttle_rate({4'h0, throttle_val, 4'h0}),
 		.yaw_rate({4'h0, yaw_val, 4'h0}),
 		.roll_rate({4'h0, roll_val, 4'h0}),
 		.pitch_rate({4'h0, pitch_val, 4'h0}),
-	
+
 		/*
 		.throttle_rate(throttle_target_rate),
 		.yaw_rate(yaw_target_rate),
 		.roll_rate(roll_target_rate),
 		.pitch_rate(pitch_target_rate),
 		*/
-	
+
 		.sys_clk(sys_clk),
 		.rst_n(resetn));
 
-
-	//assign led_data_out = ~throttle_val;
-	wire [2:0] state_out;
-	assign led_data_out[2:0] = ~state_out;
+	// For now when in reset all LEDs are on
+	assign led_data_out = (!resetn) ? 8'b0 : 8'b1;
 
 	pwm_generator pwm_generator (
 		.motor_1_pwm(motor_1_pwm),
@@ -238,7 +234,7 @@ module drone2 (
 		.motor_3_pwm(motor_3_pwm),
 		.motor_4_pwm(motor_4_pwm),
 		.state_out(state_out),
-		
+
 		/*
 		.motor_1_rate(throttle_val),
 		.motor_2_rate(roll_val),
@@ -246,15 +242,15 @@ module drone2 (
 		.motor_4_rate(yaw_val),
 		*/
 
-		
+
 		.motor_1_rate(motor_1_rate),
 		.motor_2_rate(motor_2_rate),
 		.motor_3_rate(motor_3_rate),
 		.motor_4_rate(motor_4_rate),
-		
-		
+
+
 		.us_clk(us_clk),
-		.resetn(temp_reset_n)); // TODO: Change this to the top level reset signal (.resetn(resetn))
+		.resetn(resetn)); // TODO: Change this to the top level reset signal (.resetn(resetn))
 
 endmodule
 
