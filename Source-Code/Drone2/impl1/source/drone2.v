@@ -226,7 +226,7 @@ module drone2 (
 		.rst_n(resetn));
 
 	// For now when in reset all LEDs are on
-	assign led_data_out = (!resetn) ? 8'b0 : 8'b1;
+	assign led_data_out = (!resetn) ? 8'h00 : 8'hFF;
 
 	pwm_generator pwm_generator (
 		.motor_1_pwm(motor_1_pwm),

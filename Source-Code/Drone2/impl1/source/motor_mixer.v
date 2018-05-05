@@ -72,10 +72,10 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 					  parameter MOTOR_RATE_BIT_WIDTH = 8)
 					(input  wire rst_n,
 					 input  wire sys_clk,
-					 input signed wire [BIT_WIDTH-1:0] yaw_rate,
-					 input signed wire [BIT_WIDTH-1:0] roll_rate,
-					 input signed wire [BIT_WIDTH-1:0] pitch_rate,
-					 input signed wire [BIT_WIDTH-1:0] throttle_rate,
+					 input wire signed [BIT_WIDTH-1:0] yaw_rate,
+					 input wire signed [BIT_WIDTH-1:0] roll_rate,
+					 input wire signed [BIT_WIDTH-1:0] pitch_rate,
+					 input wire signed [BIT_WIDTH-1:0] throttle_rate,
 					 output reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_1_rate,
 					 output reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_2_rate,
 					 output reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_3_rate,
@@ -192,10 +192,12 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 		case(output_state)
 			STATE_MAP_16_TO_8: 	begin
 				if (motor_1_output != `ALL_ZERO_2BYTE) begin
+					
 					motor_1_mapped		<= ((motor_1_output + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
 					motor_2_mapped		<= ((motor_2_output + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
 					motor_3_mapped		<= ((motor_3_output + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
 					motor_4_mapped		<= ((motor_4_output + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
+					
 					output_state		<= STATE_SEND_OUTPUT;
 					end
 				else

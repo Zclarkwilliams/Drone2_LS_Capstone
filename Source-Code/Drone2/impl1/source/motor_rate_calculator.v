@@ -61,9 +61,9 @@ module motor_rate_calculator	#(	parameter 		BIT_WIDTH = 16)
 			throttle	= `ALL_ZERO_2BYTE;
 			end
 		else begin
-			yaw   		= (yaw_rate   >> `MOTOR_RATE_YAW_SCALER);
-			roll  		= (roll_rate  >> `MOTOR_RATE_ROLL_SCALER);
-			pitch    	= (pitch_rate >> `MOTOR_RATE_PITCH_SCALER);
+			yaw   		= (yaw_rate   >>> `MOTOR_RATE_YAW_SCALER);
+			roll  		= (roll_rate  >>> `MOTOR_RATE_ROLL_SCALER);
+			pitch    	= (pitch_rate >>> `MOTOR_RATE_PITCH_SCALER);
 			throttle	= throttle_rate;
 			end
 		end
