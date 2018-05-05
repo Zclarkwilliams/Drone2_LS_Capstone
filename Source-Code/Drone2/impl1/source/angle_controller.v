@@ -73,14 +73,13 @@ module angle_controller
 	reg signed [RATE_BIT_WIDTH-1:0] mapped_throttle, mapped_yaw, mapped_roll, mapped_pitch;
 	reg signed [RATE_BIT_WIDTH-1:0] scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
 
-  	// TODO Rename states to STATE_...
 	// state names
-	localparam
-		WAITING =  5'b00001,
-		MAPPING =  5'b00010,
-		SCALING =  5'b00100,
-		LIMITING = 5'b01000,
-		COMPLETE = 5'b10000;
+  localparam
+		STATE_WAITING =  5'b00001,
+		STATE_MAPPING =  5'b00010,
+		STATE_SCALING =  5'b00100,
+		STATE_LIMITING = 5'b01000,
+		STATE_COMPLETE = 5'b10000;
 
 	// state variables
 	reg [4:0] state, next_state;
@@ -88,7 +87,7 @@ module angle_controller
 	// update state
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn)
-			state <= WAITING;
+			state <= STATE_WAITING;
 		else
 			state <= next_state;
 	end
@@ -96,30 +95,29 @@ module angle_controller
 	// next state logic
 	always @(*) begin
 		case(state)
-			WAITING: begin
-				if(start_signal) next_state = MAPPING;
-				else next_state = WAITING;
+			STATE_WAITING: begin
+				if(start_signal) next_state = STATE_MAPPING;
+				else next_state = STATE_WAITING;
 			end
-			MAPPING: begin
-				next_state = SCALING;
+			STATE_MAPPING: begin
+				next_state = STATE_SCALING;
 			end
-			SCALING: begin
-				next_state = LIMITING;
+			STATE_SCALING: begin
+				next_state = STATE_LIMITING;
 			end
-			LIMITING: begin
-				next_state = COMPLETE;
+			STATE_LIMITING: begin
+				next_state = STATE_COMPLETE;
 			end
-			COMPLETE: begin
-				next_state = WAITING;
+			STATE_COMPLETE: begin
+				next_state = STATE_WAITING;
 			end
 		endcase
 	end
 
-	// TODO change non-blocking to blocking
 	// output logic
 	always @(state) begin
 		case(state)
-			WAITING: begin
+			STATE_WAITING: begin
 				complete_signal = 1'b0;
 				active_signal = 1'b0;
 				if(!resetn) begin
@@ -128,7 +126,7 @@ module angle_controller
 					pitch_rate_out = 16'h0000;
 				end
 			end
-			MAPPING: begin
+			STATE_MAPPING: begin
 				complete_signal = 1'b0;
 				active_signal = 1'b1;
 
@@ -140,7 +138,7 @@ module angle_controller
 				mapped_roll = ({6'b000000, roll_target, 2'b00} - 500) - roll_actual;
 				mapped_pitch = ({6'b000000, pitch_target, 2'b00} - 500) - pitch_actual;
 			end
-			SCALING: begin
+			STATE_SCALING: begin
 				complete_signal = 1'b0;
 				active_signal = 1'b1;
 
@@ -150,41 +148,42 @@ module angle_controller
 				scaled_roll = mapped_roll * ROLL_SCALE;
 				scaled_pitch = mapped_pitch * PITCH_SCALE;
 			end
-			LIMITING: begin
+			STATE_LIMITING: begin
 				complete_signal = 1'b0;
 				active_signal = 1'b1;
 
 				// apply rate limits
 				if(mapped_throttle > THROTTLE_MAX)
 					throttle_rate_out = THROTTLE_MAX;
+        // min checking?
 				else
 					throttle_rate_out = mapped_throttle;
-
-				if(mapped_yaw > YAW_MAX)
+				
+				if(scaled_yaw > YAW_MAX)
 					yaw_rate_out = YAW_MAX;
-				else if(mapped_yaw < YAW_MIN)
+				else if(scaled_yaw < YAW_MIN)
 					yaw_rate_out = YAW_MIN;
 				else
-					yaw_rate_out = mapped_yaw;
-
-				if(mapped_roll > ROLL_MAX)
+					yaw_rate_out = scaled_yaw;
+					
+				if(scaled_roll > ROLL_MAX)
 					roll_rate_out = ROLL_MAX;
-				else if(mapped_roll < ROLL_MIN)
+				else if(scaled_roll < ROLL_MIN)
 					roll_rate_out = ROLL_MIN;
 				else
-					roll_rate_out = mapped_roll;
-
-				if(mapped_pitch > PITCH_MAX)
+					roll_rate_out = scaled_roll;
+				
+				if(scaled_pitch > PITCH_MAX)
 					pitch_rate_out = PITCH_MAX;
-				else if(mapped_pitch < PITCH_MIN)
+				else if(scaled_pitch < PITCH_MIN)
 					pitch_rate_out = PITCH_MIN;
 				else
-					pitch_rate_out = mapped_pitch;
+					pitch_rate_out = scaled_pitch;
 
 				pitch_angle_error = mapped_pitch;
 				roll_angle_error = mapped_roll;
 			end
-			COMPLETE: begin
+			STATE_COMPLETE: begin
 				complete_signal = 1'b1;
 				active_signal = 1'b0;
 			end
