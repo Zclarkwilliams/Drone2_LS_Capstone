@@ -108,6 +108,11 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 	wire [BIT_WIDTH-1:0] motor_2_output;
 	wire [BIT_WIDTH-1:0] motor_3_output;
 	wire [BIT_WIDTH-1:0] motor_4_output;
+	
+	reg [BIT_WIDTH-1:0] motor_1_temp;
+	reg [BIT_WIDTH-1:0] motor_2_temp;
+	reg [BIT_WIDTH-1:0] motor_3_temp;
+	reg [BIT_WIDTH-1:0] motor_4_temp;
 
 	reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_1_mapped;
 	reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_2_mapped;
@@ -191,49 +196,50 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 	always @(posedge sys_clk) begin
 		case(output_state)
 			STATE_MAP_16_TO_8: 	begin
-				if (motor_1_output != `ALL_ZERO_2BYTE) begin
-					
-					motor_1_mapped		<= ((motor_1_output + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
-					motor_2_mapped		<= ((motor_2_output + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
-					motor_3_mapped		<= ((motor_3_output + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
-					motor_4_mapped		<= ((motor_4_output + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
-					
-					output_state		<= STATE_SEND_OUTPUT;
-					end
+				if ($signed(motor_1_output) < $signed(`MOTOR_VAL_MIN))
+					motor_1_temp <= `MOTOR_VAL_MIN;
+				else if ($signed(motor_1_output) > $signed(`MOTOR_VAL_MAX))
+					motor_1_temp <= `MOTOR_VAL_MAX;
 				else
-					output_state		<= STATE_MAP_16_TO_8;
-				end
+					motor_1_temp <= motor_1_output;
+					
+				if ($signed(motor_2_output) < $signed(`MOTOR_VAL_MIN))
+					motor_2_temp <= `MOTOR_VAL_MIN;
+				else if ($signed(motor_2_output) > $signed(`MOTOR_VAL_MAX))
+					motor_2_temp <= `MOTOR_VAL_MAX;
+				else
+					motor_2_temp <= motor_2_output;
+					
+				if ($signed(motor_3_output) < $signed(`MOTOR_VAL_MIN))
+					motor_3_temp <= `MOTOR_VAL_MIN;
+				else if ($signed(motor_3_output) > $signed(`MOTOR_VAL_MAX))
+					motor_3_temp <= `MOTOR_VAL_MAX;
+				else
+					motor_3_temp <= motor_3_output;
+					
+				if ($signed(motor_4_output) < $signed(`MOTOR_VAL_MIN))
+					motor_4_temp <= `MOTOR_VAL_MIN;
+				else if ($signed(motor_4_output) > $signed(`MOTOR_VAL_MAX))
+					motor_4_temp <= `MOTOR_VAL_MAX;
+				else
+					motor_4_temp <= motor_4_output;
+					
+				output_state 			<= STATE_SEND_OUTPUT;
+				
+			end
 			STATE_SEND_OUTPUT: 	begin
-				if (motor_1_mapped < `MOTOR_VAL_MIN || motor_1_mapped > `MOTOR_VAL_MAX) begin
-					motor_1_rate 		<= motor_1_rate_last;
-					end
-				else begin
-					motor_1_rate 		<= motor_1_mapped;
-					motor_1_rate_last 	<= motor_1_mapped;
-					end
-				if (motor_2_mapped < `MOTOR_VAL_MIN || motor_2_mapped > `MOTOR_VAL_MAX) begin
-					motor_2_rate 		<= motor_2_rate_last;
-					end
-				else begin
-					motor_2_rate 		<= motor_2_mapped;
-					motor_2_rate_last 	<= motor_2_mapped;
-					end
-				if (motor_3_mapped < `MOTOR_VAL_MIN || motor_3_mapped > `MOTOR_VAL_MAX) begin
-					motor_3_rate 		<= motor_3_rate_last;
-					end
-				else begin
-					motor_3_rate 		<= motor_3_mapped;
-					motor_3_rate_last 	<= motor_3_mapped;
-					end
-				if (motor_4_mapped < `MOTOR_VAL_MIN || motor_4_mapped > `MOTOR_VAL_MAX) begin
-					motor_4_rate 		<= motor_4_rate_last;
-					end
-				else begin
-					motor_4_rate 		<= motor_4_mapped;
-					motor_4_rate_last 	<= motor_4_mapped;
-					end
-				output_state 			<= STATE_MAP_16_TO_8;
-				end
+				motor_1_rate <= motor_1_temp[9:2];
+				motor_2_rate <= motor_2_temp[9:2];
+				motor_3_rate <= motor_3_temp[9:2];
+				motor_4_rate <= motor_4_temp[9:2];
+				/*
+					motor_1_mapped		<= ((motor_1_temp + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
+					motor_2_mapped		<= ((motor_2_temp + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
+					motor_3_mapped		<= ((motor_3_temp + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
+					motor_4_mapped		<= ((motor_4_temp + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
+				*/
+				output_state		<= STATE_MAP_16_TO_8;
+			end
 			default begin
 				// This state should never be reached! If reached, act as a rst_n signal.
 				motor_1_rate			<= `ALL_ZERO_2BYTE;
