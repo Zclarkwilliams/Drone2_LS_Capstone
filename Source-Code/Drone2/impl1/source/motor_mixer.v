@@ -232,13 +232,7 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 				motor_2_rate <= motor_2_temp[9:2];
 				motor_3_rate <= motor_3_temp[9:2];
 				motor_4_rate <= motor_4_temp[9:2];
-				/*
-					motor_1_mapped		<= ((motor_1_temp + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
-					motor_2_mapped		<= ((motor_2_temp + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
-					motor_3_mapped		<= ((motor_3_temp + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
-					motor_4_mapped		<= ((motor_4_temp + `MOTOR_RATE_ROUND_UP_VAL) >> `MAPPING_SHIFT_8BIT); // Map 16 bit to 8
-				*/
-				output_state		<= STATE_MAP_16_TO_8;
+				output_state <= STATE_MAP_16_TO_8;
 			end
 			default begin
 				// This state should never be reached! If reached, act as a rst_n signal.
