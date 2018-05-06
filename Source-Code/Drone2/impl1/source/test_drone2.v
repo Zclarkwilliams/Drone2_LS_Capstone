@@ -1,3 +1,9 @@
+/**
+ * ECE 412-413 Capstone Winter/Spring 2018
+ * Team 32 Drone2 SOC
+ * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ */
+
 module test_drone2;
 
 	// Outputs to the motors and their corresponding ESCs

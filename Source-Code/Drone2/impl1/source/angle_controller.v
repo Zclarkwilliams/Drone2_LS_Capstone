@@ -1,35 +1,34 @@
 `timescale 1ns / 1ns
 
-/*
+/**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
  * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
- *
- * Module takes as inputs:
- * - Target rate & angles from the receiver module
- *   - 8-bit values
- *   - The throttle represents a rate, from 0 to max (???)
- *   - The yaw is a rate, from  a negative min to a positive max
- *   - The pitch and roll represent target angles (degrees)
- * - Actual pitch and roll angles from the IMU
- *   - Represent degrees
- *   - In 16-bit, 2's complement, 12-bits integer, 4-bits fractional
- *
- * Module provides as output:
- * (all values are 16-bit, 2's complement)
- * - Limited throttle rate (>= 0)
- * - Limited yaw, pitch, and roll rates
- *   - Represent degrees/second
- *
- * TODO:
- *
- * Change non-blocking to blocking
- * Clean up defines/localparams
- * Rate limits???
- * Optimize resource usage?
- *
  */
 
+/**
+ *  Module takes as inputs:
+ *		- Target rate & angles from the receiver module
+ * 		- 8-bit values
+ * 		- The throttle represents a rate, from 0 to max (???)
+ * 		- The yaw is a rate, from  a negative min to a positive max
+ * 		- The pitch and roll represent target angles (degrees)
+ * 	- Actual pitch and roll angles from the IMU
+ * 		- Represent degrees
+ * 		- In 16-bit, 2's complement, 12-bits integer, 4-bits fractional
+ *
+ * Module provides as output (all values are 16-bit, 2's complement):
+ *		- Limited throttle rate (>= 0)
+ *		- Limited yaw, pitch, and roll rates
+ * 	- Represent degrees/second
+ *
+ * TODO:
+ *		Change non-blocking to blocking
+ *		Clean up defines/localparams
+ *		Rate limits???
+ *		Optimize resource usage?
+ *		Update this header description to look like other files
+ */
 module angle_controller
 	#(parameter RATE_BIT_WIDTH = 16,  // size of target output values
 	parameter IMU_VAL_BIT_WIDTH = 16, // size of input from IMU

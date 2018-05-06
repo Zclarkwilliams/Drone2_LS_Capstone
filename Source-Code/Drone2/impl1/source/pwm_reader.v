@@ -1,14 +1,15 @@
 /**
- * Team:
- *		Drone2 Capstone 2018
- * 			Daniel Christiansen, Zachary Clark-Williams, Brett Creeley, Ethan Grinnell, Kirk Hooper
- * Author:
- *		Brett Creeley
+ * ECE 412-413 Capstone Winter/Spring 2018
+ * Team 32 Drone2 SOC
+ * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
  */
 
 /**
  * pwm_reader.v - Reads a pwm signal between `MIN_PWM_TIME_HIGH_US and `MAX_PWM_TIME_HIGH_US and
  *				  outputs that read time in microseconds
+ *
+ * Parameters:
+ * @DEFAULT_PWM_TIME_HIGH_US: Determines what this module outputs on reset on bounds error
  *
  * Outputs:
  * @pwm_pulse_length_us: time that the last pwm pulse was high for

@@ -1,17 +1,23 @@
 /**
+ * ECE 412-413 Capstone Winter/Spring 2018
+ * Team 32 Drone2 SOC
+ * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ */
+
+/**
  * module pid_mixer - takes finalized rates and converts them to motor rates
  *
- * Parameters
+ * Parameters:
  * @RATE_BIT_WIDTH: Number of bits for throttle/yaw/roll/pitch val inputs
  * @MOTOR_RATE_BIT_WIDTH: Number of bits for motor outputs
  *
- * Outputs
+ * Outputs:
  * @motor_1_rate: rate to run motor 1 at (units?)
  * @motor_2_rate: rate to run motor 2 at (units?)
  * @motor_3_rate: rate to run motor 3 at (units?)
  * @motor_4_rate: rate to run motor 4 at (units?)
  *
- * Inputs
+ * Inputs:
  * @sys_clk: 		system clock
  * @yaw_rate: 		yaw rate (rad/s) in fixed point 2's complement
  * @roll_rate: 		roll rate (rad/s) in fixed point 2's complement

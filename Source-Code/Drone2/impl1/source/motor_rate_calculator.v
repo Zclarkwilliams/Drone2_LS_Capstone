@@ -1,4 +1,10 @@
 /**
+ * ECE 412-413 Capstone Winter/Spring 2018
+ * Team 32 Drone2 SOC
+ * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ */
+
+/**
  * motor_rate_calculator - 	takes the motor specific PID outputs and axis scalers and
  *							calculates the motor rate per motor. Each input will be entered
  * 							either as a positive or negiative 16 bit 2's compliment depending
@@ -10,19 +16,17 @@
  *						   + pitch_scaler * pitch_rate
  *
  * Parameters
- * 	@BIT_WIDTH: Number of bits for throttle/yaw/roll/pitch val inputs
+ * @BIT_WIDTH: Number of bits for throttle/yaw/roll/pitch val inputs
  *
  * Outputs
- * 	@motor_rate: rate to run instantiating motor at (units?)
+ * @motor_rate: rate to run instantiating motor at (units?)
  *
  * Inputs
- *	Rate Values -
- * 	@throttle_rate:	(+)   throttle rate (rad/s) in fixed point 2's complement
- * 	@yaw_rate: 		(+/-) yaw rate (rad/s) in fixed point 2's complement
- * 	@roll_rate: 	(+/-) roll rate (rad/s) in fixed point 2's complement
- * 	@pitch_rate: 	(+/-) pitch rate (rad/s) in fixed point 2's complement
- * 	@sys_clk: 		system clock
- *
+ * @throttle_rate:	(+)   throttle rate (rad/s) in fixed point 2's complement
+ * @yaw_rate: 		(+/-) yaw rate (rad/s) in fixed point 2's complement
+ * @roll_rate: 	(+/-) roll rate (rad/s) in fixed point 2's complement
+ * @pitch_rate: 	(+/-) pitch rate (rad/s) in fixed point 2's complement
+ * @sys_clk: 		system clock
  */
 `timescale 1ns / 1ns
 `include "common_defines.v"
