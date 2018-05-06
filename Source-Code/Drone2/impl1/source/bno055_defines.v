@@ -471,6 +471,7 @@ Total: 46 bytes
 `define BNO055_STATE_READ_IMU_DATA_BURST 14
 `define BNO055_STATE_WAIT_10MS           15
 
+
 `define BNO055_SUB_STATE_START           16
 `define BNO055_SUB_STATE_WAIT_I2C        17
 `define BNO055_SUB_STATE_STOP            18
