@@ -1,10 +1,15 @@
 # Ignore all files under impl* except verilog source files
 
 /*
-!impl*/source/*.v
-!impl*/source/*I2C_EFB_WB*
+!/impl*
+/impl*/*
+!/impl*/source
+/impl*/source/*
+!/impl*/source/*.v
+!/impl*/source/*I2C_EFB_WB*
 !Drone2.lpf
 !Drone2.ldf
 !Drone21.sty
 !project_setup.tcl
 !.editorconfig
+!.gitignore
