@@ -51,7 +51,7 @@
 	input [RATE_BIT_WIDTH-1:0] pitch_angle_error,
  	input start_signal,
 	input resetn,
-	input us_clk);
+	input us_clk); 
 
 	// working registers
 	reg wait_flag, start_flag;
@@ -66,6 +66,18 @@
 	// state variables
 	reg [3:0] state, next_state;
 
+	// latch start signal
+	always @(posedge start_signal or posedge us_clk or negedge resetn) begin
+		if(!resetn)
+			start_flag <= 1'b0;
+		else if(start_signal && !start_flag)
+			start_flag <= 1'b1;
+		else if(!start_signal && start_flag)
+			start_flag <= 1'b0;
+		else
+			start_flag <= start_flag;
+	end
+
 	// update state
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn)
@@ -73,6 +85,7 @@
 		else
 			state <= next_state;
 	end
+
 
 	// next state logic
 	always @(*) begin
