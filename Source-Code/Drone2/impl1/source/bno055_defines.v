@@ -32,11 +32,9 @@ MIT license, all text above must be included in any redistribution
 
  ***************************************************************************/
 
-
 `define BNO055_ADDRESS_A                     8'h28
 `define BNO055_ADDRESS_B                     8'h29
 `define BNO055_ID                            8'hA0
-
 
 //PAGE0 REGISTER DEFINITION START
 //"All other configuration parameters and output data", all other in Page1
@@ -222,7 +220,6 @@ MIT license, all text above must be included in any redistribution
 //Offsets 8'h60 through 8'h7F are reserved
 //PAGE1 REGISTER DEFINITION END*/
 
-
 //                  CONSTANTS                  //
 // BNO055_POWERMODE
 `define BNO055_POWER_MODE_NORMAL             8'h00// DEFAULT
@@ -360,7 +357,6 @@ Section 4.3.38 QUA_DATA_Y_MSB 0X25 Data Sheet, Page:63
 Section 4.3.39 QUA_DATA_Z_LSB 0X26 Data Sheet, Page:63
 Section 4.3.40 QUA_DATA_Z_MSB 0X27 Data Sheet, Page:63
 
-
 Fusion Calculated Linear Acceleration (Excludes gravity vector) 3-axis, 6 bytes = Meters/Sec^2, Precision: 1 m/s^2 = 100 LSB
 Section 4.3.41 LIA_DATA_X_LSB 0X28 Data Sheet, Page:64
 Section 4.3.42 LIA_DATA_X_MSB 0X29 Data Sheet, Page:64
@@ -376,7 +372,6 @@ Section 4.3.49 GRV_DATA_Y_LSB 0X30 Data Sheet, Page:66
 Section 4.3.50 GRV_DATA_Y_MSB 0X31 Data Sheet, Page:66
 Section 4.3.51 GRV_DATA_Z_LSB 0X32 Data Sheet, Page:66
 Section 4.3.52 GRV_DATA_Z_MSB 0X33 Data Sheet, Page:66
-
 
 Temperature - Degrees Celsius
 Section 4.3.53 TEMP           0X34 Data Sheet, Page:67
@@ -414,16 +409,13 @@ Total: 46 bytes
 `define BNO055_CHIP_ID_REG      8'h00        //  Chip ID Register of BNO055 at 0x00
 `define BNO055_SLAVE_ADDRESS    7'b01010_00  //  BNO055 SLAVE address 0x28
 
-
 `define RUN_MS_TIMER            1'b1         //  Flag that starts multi ms timer
 `define CLEAR_MS_TIMER          1'b0         //  Flag that stops/clears multi ms timer
-
 
 //
 //  State Definitions
 //
 // Initial default state of IMU FSM
-
 
 `define BNO055_STATE_RESET               0
 `define BNO055_STATE_BOOT                1
@@ -441,3 +433,4 @@ Total: 46 bytes
 `define BNO055_STATE_WAIT_20MS           11
 `define BNO055_STATE_READ_IMU_DATA_BURST 12
 `define BNO055_STATE_WAIT_10MS           13
+

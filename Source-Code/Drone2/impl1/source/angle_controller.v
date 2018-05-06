@@ -5,7 +5,6 @@
  * Team 32 Drone2 SOC
  * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
  *
- *
  * Module takes as inputs:
  * - Target rate & angles from the receiver module
  *   - 8-bit values
@@ -53,6 +52,7 @@ module angle_controller
 	input wire start_signal,
 	input wire us_clk);
 
+	// TODO: Use decimal values instead to avoid having to comment
 	// rate limits (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	localparam signed
 		THROTTLE_MAX = 16'h0fc0, // 60
@@ -74,7 +74,7 @@ module angle_controller
 	reg signed [RATE_BIT_WIDTH-1:0] mapped_throttle, mapped_yaw, mapped_roll, mapped_pitch;
 	reg signed [RATE_BIT_WIDTH-1:0] scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
 
-  // TODO Rename states to STATE_...
+  	// TODO Rename states to STATE_...
 	// state names
 	localparam
 		WAITING =  5'b00001,
@@ -116,7 +116,7 @@ module angle_controller
 		endcase
 	end
 
-  // TODO change non-blocking to blocking
+	// TODO change non-blocking to blocking
 	// output logic
 	always @(state) begin
 		case(state)

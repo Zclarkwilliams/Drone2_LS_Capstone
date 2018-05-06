@@ -103,8 +103,6 @@ module test_pwm_reader;
 		#10 $finish;
 	end
 
-
-
 	task display_fail (input result_in,
 					   input resetn,
 					   input [10:0] pwm_pulse_length_us);
@@ -117,7 +115,7 @@ module test_pwm_reader;
 		end
 	endtask
 
-	task display_fail ();
+	task display_success ();
 		begin
 			#1 $display("########################################################################");
 			#1 $display("########################################################################");
@@ -128,3 +126,4 @@ module test_pwm_reader;
 	endtask
 
 endmodule
+

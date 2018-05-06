@@ -13,8 +13,6 @@ module test_pwm_generator;
  * >250 input value
  */
 
-
-
 reg [7:0] m_1_rate, m_2_rate, m_3_rate, m_4_rate;
 wire m_1_pwm, m_2_pwm, m_3_pwm, m_4_pwm;
 reg rst, clk;

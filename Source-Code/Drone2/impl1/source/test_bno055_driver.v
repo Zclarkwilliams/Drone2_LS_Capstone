@@ -17,10 +17,8 @@ module bno055_module_tb();
 	wire SDA_DEBUG_IN, SCL_DEBUG_IN;
 	reg [7:0]sda_byte;
 
-
 	GSR GSR_INST (.GSR (rstn));
 	PUR PUR_INST (.PUR (purn));
-
 
 	bno055_driver bno055(
 		.scl1(scl1),
@@ -68,3 +66,4 @@ module bno055_module_tb();
 		$stop;
 		end
 endmodule
+
