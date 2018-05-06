@@ -21,6 +21,9 @@
  * @roll_pwm: signal from roll on the rc/receiver
  * @pitch_pwm: signal from pitch on the rc/receiver
  * @resetn: top level reset signal
+ * @led_data_out: connects to the on board LEDs for the MachX03
+ *
+ * Inouts:
  * @sda: serial data line to the IMU
  * @scl: serial clock line to the IMU
  */
