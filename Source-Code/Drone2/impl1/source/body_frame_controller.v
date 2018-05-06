@@ -1,30 +1,37 @@
 /**
+ * ECE 412-413 Capstone Winter/Spring 2018
+ * Team 32 Drone2 SOC
+ * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ */
+
+/**
  * module body_frame_controller- top level module for rotation rate control.
  * Takes in target rotation rates and actual rotation rates and outputs control
  * values to motor mixer.
  *
- * Parameters
- * RATE_BIT_WIDTH - Size of values from angle controller
- * IMU_VAL_BIT_WIDTH - Size of values from IMU
+ * Parameters:
+ * @RATE_BIT_WIDTH - Size of values from angle controller
+ * @IMU_VAL_BIT_WIDTH - Size of values from IMU
  *
- * Outputs * yaw_rate_out - yaw rate to motor mixer
- * roll_rate_out - roll rate to motor mixer
- * pitch_rate_out - pitch rate to motor mixer
+ * Outputs:
+ * @yaw_rate_out - yaw rate to motor mixer
+ * @roll_rate_out - roll rate to motor mixer
+ * @pitch_rate_out - pitch rate to motor mixer
  *
- * Inputs
- * * (target values are 2's complement, fixed-point, 12.4 bits)
- * yaw_rate_in - target yaw rotation rate from angle controller (deg/s)
- * roll_rate_in - target roll rate from angle controller (deg/s)
- * pitch_rate_in - target pitch rate from angle controller (deg/s)
+ * Inputs:
+ * (target values are 2's complement, fixed-point, 12.4 bits)
+ * @yaw_rate_in - target yaw rotation rate from angle controller (deg/s)
+ * @roll_rate_in - target roll rate from angle controller (deg/s)
+ * @pitch_rate_in - target pitch rate from angle controller (deg/s)
  *
  * (actual values are 2's complement, in 1/100ths of a degree)
- * roll_rotation - actual roll rate from IMU (deg/s,)
- * pitch_rotation - actual pitch rate from IMU (deg/s)
- * yaw_rotation - actual yaw rate from IMU (deg/s)
+ * @roll_rotation - actual roll rate from IMU (deg/s)
+ * @pitch_rotation - actual pitch rate from IMU (deg/s)
+ * @yaw_rotation - actual yaw rate from IMU (deg/s)
  *
- * start_flag - signal from angle controller to  begin cycle
- * resetn - global reset signal
- * us_clk - 1MHz clock
+ * @start_flag - signal from angle controller to  begin cycle
+ * @resetn - global reset signal
+ * @us_clk - 1MHz clock
  */
  module body_frame_controller #(
 	parameter RATE_BIT_WIDTH = 16,

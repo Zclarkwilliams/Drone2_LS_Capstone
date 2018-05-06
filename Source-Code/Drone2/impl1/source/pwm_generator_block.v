@@ -9,6 +9,9 @@
 /**
  * pwm_generator_block - Generates a single PWM signal.
  *
+ * Parameters:
+ * @INPUT_BIT_WIDTH: used to determine width of select inputs
+ *
  * Outputs:
  * @motor_pwm: signal to drive a ESC/motor
  *

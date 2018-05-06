@@ -1,13 +1,13 @@
-/*
+/**
+ * ECE 412-413 Capstone Winter/Spring 2018
+ * Team 32 Drone2 SOC
+ * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ */
 
-ECE 412-413 Capstone Winter/Spring 2018
-Team 32 Drone2 SOC
-Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
-
-BOSCH BNO055 register offsets
-
-Modified from Adafruit Bosch BNO055 Arduino driver code
-*/
+/**
+ *	BOSCH BNO055 register offsets
+ *	Modified from Adafruit Bosch BNO055 Arduino driver code
+ */
 
 /*
 Original file header:

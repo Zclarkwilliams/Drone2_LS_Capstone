@@ -1,10 +1,8 @@
-/*
-
-ECE 412-413 Capstone Winter/Spring 2018
-Team 32 Drone2 SOC
-Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
-
-*/
+/**
+ * ECE 412-413 Capstone Winter/Spring 2018
+ * Team 32 Drone2 SOC
+ * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ */
 
 `define I2C_STATE_BITS 6     //  The number of bits used to represent the current state
 

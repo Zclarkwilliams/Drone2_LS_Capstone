@@ -9,13 +9,13 @@
 /**
  * drone2 - Top level module for the drone controller.
  *
- * Outputs
+ * Outputs:
  * @motor_1_pwm: signal to drive the ESC connected to motor 1
  * @motor_2_pwm: signal to drive the ESC connected to motor 2
  * @motor_3_pwm: signal to drive the ESC connected to motor 3
  * @motor_4_pwm: signal to drive the ESC connected to motor 4
  *
- * Inputs
+ * Inputs:
  * @throttle_pwm: signal from throttle on the rc/receiver
  * @yaw_pwm: signal from yaw on the rc/receiver
  * @roll_pwm: signal from roll on the rc/receiver
