@@ -7,12 +7,12 @@
  * RATE_BIT_WIDTH - Size of values from angle controller
  * IMU_VAL_BIT_WIDTH - Size of values from IMU
  *
- * Outputs * yaw_rate_out - yaw rate to motor mixer
+ * Outputs * yaw_rate_out - yaw rate to motor mixer
  * roll_rate_out - roll rate to motor mixer
  * pitch_rate_out - pitch rate to motor mixer
  *
  * Inputs
- * * (target values are 2's complement, fixed-point, 12.4 bits)
+ * * (target values are 2's complement, fixed-point, 12.4 bits)
  * yaw_rate_in - target yaw rotation rate from angle controller (deg/s) 
  * roll_rate_in - target roll rate from angle controller (deg/s)
  * pitch_rate_in - target pitch rate from angle controller (deg/s)
