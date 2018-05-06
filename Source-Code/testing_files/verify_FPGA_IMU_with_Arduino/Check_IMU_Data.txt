@@ -1,0 +1,1 @@
+This was used to connect the FPGA and IMU together with an Arduno. The data from the IMU is read on the Arduino serial console and can be validated.
