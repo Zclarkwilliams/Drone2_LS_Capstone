@@ -1,5 +1,5 @@
 /**
- * module body_frame_controller- top level module for rotation rate control.  
+ * module body_frame_controller- top level module for rotation rate control.
  * Takes in target rotation rates and actual rotation rates and outputs control
  * values to motor mixer.
  *
@@ -13,7 +13,7 @@
  *
  * Inputs
  * * (target values are 2's complement, fixed-point, 12.4 bits)
- * yaw_rate_in - target yaw rotation rate from angle controller (deg/s) 
+ * yaw_rate_in - target yaw rotation rate from angle controller (deg/s)
  * roll_rate_in - target roll rate from angle controller (deg/s)
  * pitch_rate_in - target pitch rate from angle controller (deg/s)
  *
@@ -21,7 +21,7 @@
  * roll_rotation - actual roll rate from IMU (deg/s,)
  * pitch_rotation - actual pitch rate from IMU (deg/s)
  * yaw_rotation - actual yaw rate from IMU (deg/s)
- * 
+ *
  * start_flag - signal from angle controller to  begin cycle
  * resetn - global reset signal
  * us_clk - 1MHz clock
@@ -48,8 +48,6 @@
 
 	// working registers
 	reg wait_flag, start_flag;
-	
-	
 
 	// state names
 	localparam
@@ -101,10 +99,10 @@
 			end
 		endcase
 	end
-	
+
 	// valid strobe logic
 	assign pid_complete = (state == COMPLETE) ? 1'b1 : 1'b0;
-	
+
 	// sub-module control logic
 	always @(state) begin
 		case(state)
@@ -114,7 +112,7 @@
 			end
 			STARTING: begin
 				wait_flag = 1'b0;
-				complete_signal = 1'b0;				
+				complete_signal = 1'b0;
 			end
 			ACTIVE: begin
 				wait_flag = 1'b0;
@@ -126,14 +124,12 @@
 			end
 		endcase
 	end
-	
-	
-	// pid instantiations
 
+	// pid instantiations
 	pid #(
 		.RATE_BIT_WIDTH(RATE_BIT_WIDTH),
 		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
-		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH)) 
+		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH))
 	yaw_pid (
 		.rate_out(yaw_rate_out),
 		.pid_complete(yaw_complete),
@@ -145,11 +141,11 @@
 		.wait_flag(wait_flag),
 		.resetn(resetn),
 		.us_clk(us_clk));
-	
+
 	pid #(
 		.RATE_BIT_WIDTH(RATE_BIT_WIDTH),
 		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
-		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH)) 
+		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH))
 	pitch_pid (
 		.rate_out(pitch_rate_out),
 		.pid_complete(pitch_complete),
@@ -161,11 +157,11 @@
 		.wait_flag(wait_flag),
 		.resetn(resetn),
 		.us_clk(us_clk));
-	
+
 	pid #(
 		.RATE_BIT_WIDTH(RATE_BIT_WIDTH),
 		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
-		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH)) 
+		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH))
 	roll_pid (
 		.rate_out(roll_rate_out),
 		.pid_complete(roll_complete),
@@ -177,6 +173,5 @@
 		.wait_flag(wait_flag),
 		.resetn(resetn),
 		.us_clk(us_clk));
-
 
 endmodule

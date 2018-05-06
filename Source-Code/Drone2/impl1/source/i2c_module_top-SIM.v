@@ -28,7 +28,6 @@ module i2c_module(
 	output reg  rstn_imu                   //  Low active reset signal to IMU hardware to trigger reset
 );
 
-
 	reg  [7:0] addr;                                //  Wishbone address register
 	reg  [7:0] data_tx;                             //  Temp storage of data to be written
 	reg  [7:0] data_rx;                             //  Temp storage of received data
@@ -107,7 +106,6 @@ module i2c_module(
 		else
 			count_us       <= count_us;
 	end
-
 
 	//  Generates a 30 ms watchdog timer
 	always@(posedge sys_clk, negedge rstn) begin
@@ -290,7 +288,6 @@ module i2c_module(
 //++++++++++++++++++++++++++++++++++++++++++++++++//
 				// Module startup states
 //++++++++++++++++++++++++++++++++++++++++++++++++//
-
 				`I2C_STATE_RESET: begin
 					rstn_local         = `LOW; //  Trigger manual reset of EFB I2C module
 					clear_watchdog     = `CLEAR_WD_TIMER; // Hold watchdog low, don't run it yet
@@ -443,14 +440,9 @@ module i2c_module(
 						next_i2c_cmd_state = `I2C_STATE_WAIT_NOT_BUSY;
 					end
 				end
-
-
-
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 				// Start of WRITE sequence
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-
-
 				`I2C_STATE_W_SET_SLAVE_WRITE: begin //   Set target slave address with write bit appended
 					clear_watchdog         = `RUN_WD_TIMER; // Start watchdog timer
 					if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
@@ -668,12 +660,9 @@ module i2c_module(
 						next_i2c_cmd_state = `I2C_STATE_W_READ_CHK_SR4;
 					end
 				end
-
-
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 				// Start of READ sequence
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-
 				`I2C_STATE_R_SET_SLAVE_WRITE: begin //   Set target slave address with write bit appended
 					clear_read_count       = `LOW; // Clear the previous bytes read counter
 					clear_watchdog         = `RUN_WD_TIMER; // Start watchdog timer
@@ -1038,7 +1027,6 @@ module i2c_module(
 						next_i2c_cmd_state = `I2C_STATE_R_READ_CHK_SR5;
 					end
 				end
-
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 				// Default case, shouldn't be triggered, but here for FSM safety
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//

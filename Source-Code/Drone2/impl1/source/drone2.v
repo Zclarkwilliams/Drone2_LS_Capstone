@@ -101,8 +101,6 @@ module drone2 (
 	wire bf_valid_strobe;
 	wire bf_active;
 
-	// TODO: Replace modules using this with the top level reset_n later on
-
 	wire sys_clk;
 	// TODO: Determine if we should stick with this clock rate (slower? faster?)
 	defparam OSCH_inst.NOM_FREQ = "38.00";
@@ -113,7 +111,7 @@ module drone2 (
 	us_clk us_clk_divider (
 		.us_clk(us_clk),
 		.sys_clk(sys_clk),
-		.resetn(resetn));  // TODO: Change this to the top level reset signal (.resetn(resetn))
+		.resetn(resetn));
 
 	/*
 	bno055_driver	i(
@@ -153,7 +151,7 @@ module drone2 (
 		.roll_pwm(roll_pwm),
 		.pitch_pwm(pitch_pwm),
 		.us_clk(us_clk),
-		.resetn(resetn)); // TODO: Change this to the top level reset signal (.resetn(resetn))
+		.resetn(resetn));
 
 	/*
 	angle_controller #(
@@ -242,7 +240,6 @@ module drone2 (
 		.motor_4_rate(yaw_val),
 		*/
 
-
 		.motor_1_rate(motor_1_rate),
 		.motor_2_rate(motor_2_rate),
 		.motor_3_rate(motor_3_rate),
@@ -250,7 +247,7 @@ module drone2 (
 
 
 		.us_clk(us_clk),
-		.resetn(resetn)); // TODO: Change this to the top level reset signal (.resetn(resetn))
+		.resetn(resetn));
 
 endmodule
 

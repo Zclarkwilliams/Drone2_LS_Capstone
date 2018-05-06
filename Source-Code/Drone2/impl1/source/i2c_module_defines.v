@@ -34,11 +34,8 @@ Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-W
 `define I2C_2_IRQ   8'h52 //  IRQ
 `define I2C_2_IRQEN 8'h53 //  IRQ Enable
 
-
 `define I2C_1_INDEX 1'b0 //Index of primary i2c module
 `define I2C_2_INDEX 1'b1 //Index of secondary i2c module
-
-
 
 //EFB I2C Module register index
 `define I2C_CR_INDEX    4'd0 //  Control register
@@ -120,11 +117,10 @@ Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-W
 `define I2C_BUS_HGC_RECEIVED    1'b1         //  Received General Call
 `define I2C_BUS_HGC_NORMAL      1'b0         //  No General Call Received
 `define WB_SLAVE_ADDRESS        7'b10000_01  //  Wishbone bus slave address
-//
+
 //  State Definitions
 //
 // Initial default state
-
 `define I2C_STATE_RESET             0
 `define I2C_STATE_SET_PRESCALE_LOW  1
 `define I2C_STATE_SET_PRESCALE_HI   2
@@ -133,8 +129,6 @@ Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-W
 `define I2C_STATE_INIT_ENA          5
 `define I2C_STATE_WAIT              6
 `define I2C_STATE_WAIT_NOT_BUSY     7
-
-
 
 // Write states
 `define I2C_STATE_W_SET_SLAVE_WRITE 8
@@ -166,3 +160,4 @@ Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-W
 `define I2C_STATE_R_READ_CHK_SR4    32
 `define I2C_STATE_R_READ_DATA2      33
 `define I2C_STATE_R_READ_CHK_SR5    34
+

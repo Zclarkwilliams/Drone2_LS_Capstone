@@ -62,7 +62,8 @@
 			end
 			CALC2: begin
 				if(!resetn)
-					next_state = WAIT;												else
+					next_state = WAIT;
+				else
 					next_state = CALC3;
 			end
 			CALC3: begin
@@ -73,7 +74,8 @@
 			end
 			COMPLETE: begin
 				if(wait_flag)
-					next_state = WAIT;				else
+					next_state = WAIT;
+				else
 					next_state = COMPLETE;
 			end
 		endcase
@@ -89,24 +91,25 @@
 			CALC1: begin
 				pid_active = 1'b1;
 				pid_complete = 1'b0;
-				
+
 			end
 			CALC2: begin
 				pid_active = 1'b1;
 				pid_complete = 1'b0;
-					
+
 			end
 			CALC3: begin
 				pid_active = 1'b0;
 				pid_complete = 1'b0;
-					
+
 			end
 			COMPLETE: begin
 				pid_active = 1'b0;
 				pid_complete = 1'b0;
-					
+
 			end
 		endcase
 	end
 
 endmodule
+

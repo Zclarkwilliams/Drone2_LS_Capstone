@@ -93,4 +93,3 @@ module receiver (output wire [`PWM_VALUE_BIT_WIDTH - 1:0] throttle_val,
 
 endmodule
 
-

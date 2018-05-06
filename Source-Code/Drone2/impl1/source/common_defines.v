@@ -52,7 +52,6 @@
  *
  *	All values assigned below are initially arbitrary and
  *	must be tested and adjusted appropriately
- *
  */
 
 //	Min and Max boundary values for to send to ESC's
@@ -69,5 +68,4 @@
 `define MAPPING_SHIFT_8BIT				8
 //	Value to add to value before bit shift rounding to help rounding error
 `define MOTOR_RATE_ROUND_UP_VAL 		8'd127
-
 

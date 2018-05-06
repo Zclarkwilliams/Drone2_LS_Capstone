@@ -55,7 +55,6 @@ module bno055_driver #(
 
 );
 
-
 	reg  read_write_in, next_read_write_in;           //  Value and next value of signal to i2c module to indicate read or write transaction, 1 = read, 0 = write
 	reg  go;                                          //  Flag to i2c module signaling start of i2c transaction. All inputs must be valid before asserting this bit
 	reg  next_go_flag;                                //  Next value of the i2c module GO flag
@@ -86,8 +85,6 @@ module bno055_driver #(
 	reg  rx_data_latch_strobe;                        //  Strobe data output register, latch onto current data in rx buffer
 	reg  next_imu_good;                               //  Next value of module imu_good bit
 	reg  i2c_number;								  //  The i2c module to call, 0 = i2c EFB #1, 1 = i2c EFB #2
-
-
 
 	//
 	//  Module body
