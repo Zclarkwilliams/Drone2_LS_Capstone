@@ -1,9 +1,9 @@
 /**
- * module pid - sub-module implementing a pid controller for  rotation rate 
+ * module pid - sub-module implementing a pid controller for  rotation rate
  * around a single axis.
  *
  * Outputs:
- * 
+ *
  */
  module pid #(parameter RATE_BIT_WIDTH = 16,
  			  parameter PID_RATE_BIT_WIDTH = 16,
@@ -31,10 +31,10 @@
 		CALC3    = 6'b001000,
 		CALC4    = 6'b010000,
 		COMPLETE = 6'b100000;
-	
+
 	// state variables
 	reg [5:0] state, next_state;
-	
+
 	// update state
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn)
@@ -42,7 +42,7 @@
 		else
 			state <= next_state;
 	end
-	
+
 	// next state logic
 	always @(*) begin
 		case(state)
@@ -108,5 +108,5 @@
 			end
 		endcase
 	end
-	
+
 endmodule

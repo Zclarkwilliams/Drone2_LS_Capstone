@@ -108,7 +108,7 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 	wire [BIT_WIDTH-1:0] motor_2_output;
 	wire [BIT_WIDTH-1:0] motor_3_output;
 	wire [BIT_WIDTH-1:0] motor_4_output;
-	
+
 	reg [BIT_WIDTH-1:0] motor_1_temp;
 	reg [BIT_WIDTH-1:0] motor_2_temp;
 	reg [BIT_WIDTH-1:0] motor_3_temp;
@@ -202,30 +202,30 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 					motor_1_temp <= `MOTOR_VAL_MAX;
 				else
 					motor_1_temp <= motor_1_output;
-					
+
 				if ($signed(motor_2_output) < $signed(`MOTOR_VAL_MIN))
 					motor_2_temp <= `MOTOR_VAL_MIN;
 				else if ($signed(motor_2_output) > $signed(`MOTOR_VAL_MAX))
 					motor_2_temp <= `MOTOR_VAL_MAX;
 				else
 					motor_2_temp <= motor_2_output;
-					
+
 				if ($signed(motor_3_output) < $signed(`MOTOR_VAL_MIN))
 					motor_3_temp <= `MOTOR_VAL_MIN;
 				else if ($signed(motor_3_output) > $signed(`MOTOR_VAL_MAX))
 					motor_3_temp <= `MOTOR_VAL_MAX;
 				else
 					motor_3_temp <= motor_3_output;
-					
+
 				if ($signed(motor_4_output) < $signed(`MOTOR_VAL_MIN))
 					motor_4_temp <= `MOTOR_VAL_MIN;
 				else if ($signed(motor_4_output) > $signed(`MOTOR_VAL_MAX))
 					motor_4_temp <= `MOTOR_VAL_MAX;
 				else
 					motor_4_temp <= motor_4_output;
-					
+
 				output_state 			<= STATE_SEND_OUTPUT;
-				
+
 			end
 			STATE_SEND_OUTPUT: 	begin
 				motor_1_rate <= motor_1_temp[9:2];

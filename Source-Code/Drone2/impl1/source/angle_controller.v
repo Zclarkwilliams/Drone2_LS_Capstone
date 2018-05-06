@@ -15,15 +15,15 @@
  * - Actual pitch and roll angles from the IMU
  *   - Represent degrees
  *   - In 16-bit, 2's complement, 12-bits integer, 4-bits fractional
- * 
+ *
  * Module provides as output:
  * (all values are 16-bit, 2's complement)
  * - Limited throttle rate (>= 0)
  * - Limited yaw, pitch, and roll rates
  *   - Represent degrees/second
- * 
+ *
  * TODO:
- * 
+ *
  * Change non-blocking to blocking
  * Clean up defines/localparams
  * Rate limits???
@@ -62,10 +62,10 @@ module angle_controller
 		PITCH_MIN =    16'hfe70, // -25
 		ROLL_MAX =     16'h0190, // 25
 		ROLL_MIN =     16'hfe70; // -25
-		
+
 	// scale factors (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	localparam signed
-		THROTTLE_SCALE = 16'h0001, // 1 
+		THROTTLE_SCALE = 16'h0001, // 1
 		YAW_SCALE =      16'h0001, // 1
 		ROLL_SCALE =     16'h0001, // 1
 		PITCH_SCALE =    16'h0001; // 1
@@ -144,7 +144,7 @@ module angle_controller
 			SCALING: begin
 				complete_signal = 1'b0;
 				active_signal = 1'b1;
-				
+
 				// the decimal point should be shifted...
 				scaled_throttle = mapped_throttle * THROTTLE_SCALE;
 				scaled_yaw = mapped_yaw * YAW_SCALE;
@@ -154,27 +154,27 @@ module angle_controller
 			LIMITING: begin
 				complete_signal = 1'b0;
 				active_signal = 1'b1;
-				
+
 				// apply rate limits
 				if(mapped_throttle > THROTTLE_MAX)
 					throttle_rate_out = THROTTLE_MAX;
 				else
 					throttle_rate_out = mapped_throttle;
-				
+
 				if(mapped_yaw > YAW_MAX)
 					yaw_rate_out = YAW_MAX;
 				else if(mapped_yaw < YAW_MIN)
 					yaw_rate_out = YAW_MIN;
 				else
 					yaw_rate_out = mapped_yaw;
-					
+
 				if(mapped_roll > ROLL_MAX)
 					roll_rate_out = ROLL_MAX;
 				else if(mapped_roll < ROLL_MIN)
 					roll_rate_out = ROLL_MIN;
 				else
 					roll_rate_out = mapped_roll;
-				
+
 				if(mapped_pitch > PITCH_MAX)
 					pitch_rate_out = PITCH_MAX;
 				else if(mapped_pitch < PITCH_MIN)

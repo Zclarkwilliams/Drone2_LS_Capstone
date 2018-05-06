@@ -50,18 +50,18 @@
 
 /*	Motor_Rate Module Defines:
  *
- *	All values assigned below are initially arbitrary and 
+ *	All values assigned below are initially arbitrary and
  *	must be tested and adjusted appropriately
  *
  */
- 
+
 //	Min and Max boundary values for to send to ESC's
 `define MOTOR_VAL_MIN					16'h0000
 `define MOTOR_VAL_MAX					16'h03E8
 //	Bias to add as a buffer to the motor equation
 //`define	MOTOR_RATE_BIAS				 	1'b0
 `define	MOTOR_RATE_BIAS				 	16'h0000
-//	Scaler to set proportions of yaw, roll, and pitch 
+//	Scaler to set proportions of yaw, roll, and pitch
 `define MOTOR_RATE_YAW_SCALER			3
 `define MOTOR_RATE_ROLL_SCALER			3
 `define MOTOR_RATE_PITCH_SCALER			3

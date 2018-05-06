@@ -85,14 +85,14 @@ Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-W
 `define I2C_SR_HGC   3'd2	//  Hardware General Call received, 1 General call in slave mode, 0 Normal
 
 // Status Register Bit Masks - From http://www.latticesemi.com/view_document?document_id=45881
-`define I2C_SR_MASK_TIP     8'h80 
-`define I2C_SR_MASK_BUSY    8'h40 
-`define I2C_SR_MASK_RARC    8'h20 
-`define I2C_SR_MASK_SRW     8'h10 
-`define I2C_SR_MASK_ARBL    8'h08 
-`define I2C_SR_MASK_TRRDY   8'h04 
-`define I2C_SR_MASK_TROE    8'h02 
-`define I2C_SR_MASK_HGC     8'h01 
+`define I2C_SR_MASK_TIP     8'h80
+`define I2C_SR_MASK_BUSY    8'h40
+`define I2C_SR_MASK_RARC    8'h20
+`define I2C_SR_MASK_SRW     8'h10
+`define I2C_SR_MASK_ARBL    8'h08
+`define I2C_SR_MASK_TRRDY   8'h04
+`define I2C_SR_MASK_TROE    8'h02
+`define I2C_SR_MASK_HGC     8'h01
 
 // Value aliases
 `define RUN_US_TIMER            1'b1         //  Flag that starts multi us timer
@@ -120,9 +120,9 @@ Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-W
 `define I2C_BUS_HGC_RECEIVED    1'b1         //  Received General Call
 `define I2C_BUS_HGC_NORMAL      1'b0         //  No General Call Received
 `define WB_SLAVE_ADDRESS        7'b10000_01  //  Wishbone bus slave address
-// 
+//
 //  State Definitions
-// 
+//
 // Initial default state
 
 `define I2C_STATE_RESET             0

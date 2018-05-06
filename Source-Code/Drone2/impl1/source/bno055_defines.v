@@ -419,9 +419,9 @@ Total: 46 bytes
 `define CLEAR_MS_TIMER          1'b0         //  Flag that stops/clears multi ms timer
 
 
-// 
+//
 //  State Definitions
-// 
+//
 // Initial default state of IMU FSM
 
 

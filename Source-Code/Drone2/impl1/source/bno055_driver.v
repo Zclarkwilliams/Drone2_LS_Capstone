@@ -41,13 +41,13 @@ module bno055_driver #(
 	output reg [15:0]quaternion_data_x,   //  Quaternion X-Axis                   Precision: Unit = 2^14 LSB
 	output reg [15:0]quaternion_data_y,   //  Quaternion Y-Axis                   Precision: Unit = 2^14 LSB
 	output reg [15:0]quaternion_data_z,   //  Quaternion Z-Axis                   Precision: Unit = 2^14 LSB
-	output reg [15:0]linear_accel_x,      //  Linear Acceleration X-Axis          Precision: 1 m/s^2 = 100 LSB      
-	output reg [15:0]linear_accel_y,      //  Linear Acceleration Y-Axis          Precision: 1 m/s^2 = 100 LSB           
-	output reg [15:0]linear_accel_z,      //  Linear Acceleration Z-Axis          Precision: 1 m/s^2 = 100 LSB   
-	output reg [15:0]gravity_accel_x,     //  Gravitational Acceleration X-Axis   Precision: 1 m/s^2 = 100 LSB   
-	output reg [15:0]gravity_accel_y,     //  Gravitational Acceleration Y-Axis   Precision: 1 m/s^2 = 100 LSB   
+	output reg [15:0]linear_accel_x,      //  Linear Acceleration X-Axis          Precision: 1 m/s^2 = 100 LSB
+	output reg [15:0]linear_accel_y,      //  Linear Acceleration Y-Axis          Precision: 1 m/s^2 = 100 LSB
+	output reg [15:0]linear_accel_z,      //  Linear Acceleration Z-Axis          Precision: 1 m/s^2 = 100 LSB
+	output reg [15:0]gravity_accel_x,     //  Gravitational Acceleration X-Axis   Precision: 1 m/s^2 = 100 LSB
+	output reg [15:0]gravity_accel_y,     //  Gravitational Acceleration Y-Axis   Precision: 1 m/s^2 = 100 LSB
 	output reg [15:0]gravity_accel_z,     //  Gravitational Acceleration Z-Axis   Precision: 1 m/s^2 = 100 LSB
-	output reg [7:0]temperature,          //  Temperature in degrees Celsius      Precision: 1 Deg C = 1 LSB   
+	output reg [7:0]temperature,          //  Temperature in degrees Celsius      Precision: 1 Deg C = 1 LSB
 	output reg [7:0]calib_status,         //  Calibration status register
 	output reg [15:0]x_velocity,          //  Linear velocity in the X direction, one byte signed integer
 	output reg [15:0]y_velocity,          //  Linear velocity in the Y direction, one byte signed integer
@@ -86,15 +86,15 @@ module bno055_driver #(
 	reg  rx_data_latch_strobe;                        //  Strobe data output register, latch onto current data in rx buffer
 	reg  next_imu_good;                               //  Next value of module imu_good bit
 	reg  i2c_number;								  //  The i2c module to call, 0 = i2c EFB #1, 1 = i2c EFB #2
-	
-	
+
+
 
 	//
 	//  Module body
 	//
 assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : data_rx_reg[led_view_index]); //  Inverted output for LEDS, since they are low active
 
-	
+
 	//  Instantiate i2c driver
 	i2c_module i2c(	.scl_1(scl_1),
 					.sda_1(sda_1),
@@ -149,7 +149,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 			end
 		end
 	end
-	
+
 	//  Assert valid strobe for one clock cycle as long as the final state of the FSM has been reached. Don't assert until actually in measurement mode and reading measurement data
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn)
@@ -163,62 +163,62 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 	//  Combine bytes from receive buffer and drive module outputs. Most outputs are 2 byte words, except temperature, calibration status, and x, y, z linear velocities.
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn) begin
-			accel_rate_x      <= 16'b0;     
-			accel_rate_y      <= 16'b0;     
-			accel_rate_z      <= 16'b0;     
-			magneto_rate_x    <= 16'b0;   
-			magneto_rate_y    <= 16'b0;   
-			magneto_rate_z    <= 16'b0;   
-			gyro_rate_x       <= 16'b0;      
-			gyro_rate_y       <= 16'b0;      
-			gyro_rate_z       <= 16'b0;      
-			euler_angle_x     <= 16'b0;    
-			euler_angle_y     <= 16'b0;    
-			euler_angle_z     <= 16'b0;    
+			accel_rate_x      <= 16'b0;
+			accel_rate_y      <= 16'b0;
+			accel_rate_z      <= 16'b0;
+			magneto_rate_x    <= 16'b0;
+			magneto_rate_y    <= 16'b0;
+			magneto_rate_z    <= 16'b0;
+			gyro_rate_x       <= 16'b0;
+			gyro_rate_y       <= 16'b0;
+			gyro_rate_z       <= 16'b0;
+			euler_angle_x     <= 16'b0;
+			euler_angle_y     <= 16'b0;
+			euler_angle_z     <= 16'b0;
 			quaternion_data_w <= 16'b0;
 			quaternion_data_x <= 16'b0;
 			quaternion_data_y <= 16'b0;
 			quaternion_data_z <= 16'b0;
-			linear_accel_x    <= 16'b0;   
-			linear_accel_y    <= 16'b0;   
-			linear_accel_z    <= 16'b0;   
-			gravity_accel_x   <= 16'b0;  
-			gravity_accel_y   <= 16'b0;  
-			gravity_accel_z   <= 16'b0;  
-			temperature       <= 8'b0;      
+			linear_accel_x    <= 16'b0;
+			linear_accel_y    <= 16'b0;
+			linear_accel_z    <= 16'b0;
+			gravity_accel_x   <= 16'b0;
+			gravity_accel_y   <= 16'b0;
+			gravity_accel_z   <= 16'b0;
+			temperature       <= 8'b0;
 			calib_status      <= 8'b0;
-			x_velocity        <= 8'b0;	
-			y_velocity        <= 8'b0;	
-			z_velocity        <= 8'b0;		
+			x_velocity        <= 8'b0;
+			y_velocity        <= 8'b0;
+			z_velocity        <= 8'b0;
 		end
 		else if(rx_data_latch_strobe) begin
-			accel_rate_x      <= {data_rx_reg[`ACC_DATA_X_MSB_INDEX],data_rx_reg[`ACC_DATA_X_LSB_INDEX]};     
-			accel_rate_y      <= {data_rx_reg[`ACC_DATA_Y_MSB_INDEX],data_rx_reg[`ACC_DATA_Y_LSB_INDEX]};     
-			accel_rate_z      <= {data_rx_reg[`ACC_DATA_Z_MSB_INDEX],data_rx_reg[`ACC_DATA_Z_LSB_INDEX]};     
-			magneto_rate_x    <= {data_rx_reg[`MAG_DATA_X_MSB_INDEX],data_rx_reg[`MAG_DATA_X_LSB_INDEX]};   
-			magneto_rate_y    <= {data_rx_reg[`MAG_DATA_Y_MSB_INDEX],data_rx_reg[`MAG_DATA_Y_LSB_INDEX]};   
-			magneto_rate_z    <= {data_rx_reg[`MAG_DATA_Z_MSB_INDEX],data_rx_reg[`MAG_DATA_Z_LSB_INDEX]};   
-			gyro_rate_x       <= {data_rx_reg[`GYR_DATA_X_MSB_INDEX],data_rx_reg[`GYR_DATA_X_LSB_INDEX]};      
-			gyro_rate_y       <= {data_rx_reg[`GYR_DATA_Y_MSB_INDEX],data_rx_reg[`GYR_DATA_Y_LSB_INDEX]};      
-			gyro_rate_z       <= {data_rx_reg[`GYR_DATA_Z_MSB_INDEX],data_rx_reg[`GYR_DATA_Z_LSB_INDEX]};      
-			euler_angle_x     <= {data_rx_reg[`EUL_DATA_X_MSB_INDEX],data_rx_reg[`EUL_DATA_X_LSB_INDEX]};    
-			euler_angle_y     <= {data_rx_reg[`EUL_DATA_Y_MSB_INDEX],data_rx_reg[`EUL_DATA_Y_LSB_INDEX]};    
-			euler_angle_z     <= {data_rx_reg[`EUL_DATA_Z_MSB_INDEX],data_rx_reg[`EUL_DATA_Z_LSB_INDEX]};    
+			accel_rate_x      <= {data_rx_reg[`ACC_DATA_X_MSB_INDEX],data_rx_reg[`ACC_DATA_X_LSB_INDEX]};
+			accel_rate_y      <= {data_rx_reg[`ACC_DATA_Y_MSB_INDEX],data_rx_reg[`ACC_DATA_Y_LSB_INDEX]};
+			accel_rate_z      <= {data_rx_reg[`ACC_DATA_Z_MSB_INDEX],data_rx_reg[`ACC_DATA_Z_LSB_INDEX]};
+			magneto_rate_x    <= {data_rx_reg[`MAG_DATA_X_MSB_INDEX],data_rx_reg[`MAG_DATA_X_LSB_INDEX]};
+			magneto_rate_y    <= {data_rx_reg[`MAG_DATA_Y_MSB_INDEX],data_rx_reg[`MAG_DATA_Y_LSB_INDEX]};
+			magneto_rate_z    <= {data_rx_reg[`MAG_DATA_Z_MSB_INDEX],data_rx_reg[`MAG_DATA_Z_LSB_INDEX]};
+			gyro_rate_x       <= {data_rx_reg[`GYR_DATA_X_MSB_INDEX],data_rx_reg[`GYR_DATA_X_LSB_INDEX]};
+			gyro_rate_y       <= {data_rx_reg[`GYR_DATA_Y_MSB_INDEX],data_rx_reg[`GYR_DATA_Y_LSB_INDEX]};
+			gyro_rate_z       <= {data_rx_reg[`GYR_DATA_Z_MSB_INDEX],data_rx_reg[`GYR_DATA_Z_LSB_INDEX]};
+			euler_angle_x     <= {data_rx_reg[`EUL_DATA_X_MSB_INDEX],data_rx_reg[`EUL_DATA_X_LSB_INDEX]};
+			euler_angle_y     <= {data_rx_reg[`EUL_DATA_Y_MSB_INDEX],data_rx_reg[`EUL_DATA_Y_LSB_INDEX]};
+			euler_angle_z     <= {data_rx_reg[`EUL_DATA_Z_MSB_INDEX],data_rx_reg[`EUL_DATA_Z_LSB_INDEX]};
 			quaternion_data_w <= {data_rx_reg[`QUA_DATA_W_MSB_INDEX],data_rx_reg[`QUA_DATA_W_LSB_INDEX]};
 			quaternion_data_x <= {data_rx_reg[`QUA_DATA_X_MSB_INDEX],data_rx_reg[`QUA_DATA_X_LSB_INDEX]};
 			quaternion_data_y <= {data_rx_reg[`QUA_DATA_Y_MSB_INDEX],data_rx_reg[`QUA_DATA_Y_LSB_INDEX]};
 			quaternion_data_z <= {data_rx_reg[`QUA_DATA_Z_MSB_INDEX],data_rx_reg[`QUA_DATA_Z_LSB_INDEX]};
-			linear_accel_x    <= {data_rx_reg[`LIN_DATA_X_MSB_INDEX],data_rx_reg[`LIN_DATA_X_LSB_INDEX]};   
-			linear_accel_y    <= {data_rx_reg[`LIN_DATA_Y_MSB_INDEX],data_rx_reg[`LIN_DATA_Y_LSB_INDEX]};   
-			linear_accel_z    <= {data_rx_reg[`LIN_DATA_Z_MSB_INDEX],data_rx_reg[`LIN_DATA_Z_LSB_INDEX]};   
-			gravity_accel_x   <= {data_rx_reg[`GRA_DATA_X_MSB_INDEX],data_rx_reg[`GRA_DATA_X_LSB_INDEX]};  
-			gravity_accel_y   <= {data_rx_reg[`GRA_DATA_Y_MSB_INDEX],data_rx_reg[`GRA_DATA_Y_LSB_INDEX]};  
-			gravity_accel_z   <= {data_rx_reg[`GRA_DATA_Z_MSB_INDEX],data_rx_reg[`GRA_DATA_Z_LSB_INDEX]};  
-			temperature       <= data_rx_reg[`TEMPERATURE_DATA_INDEX];      
+			linear_accel_x    <= {data_rx_reg[`LIN_DATA_X_MSB_INDEX],data_rx_reg[`LIN_DATA_X_LSB_INDEX]};
+			linear_accel_y    <= {data_rx_reg[`LIN_DATA_Y_MSB_INDEX],data_rx_reg[`LIN_DATA_Y_LSB_INDEX]};
+			linear_accel_z    <= {data_rx_reg[`LIN_DATA_Z_MSB_INDEX],data_rx_reg[`LIN_DATA_Z_LSB_INDEX]};
+			gravity_accel_x   <= {data_rx_reg[`GRA_DATA_X_MSB_INDEX],data_rx_reg[`GRA_DATA_X_LSB_INDEX]};
+			gravity_accel_y   <= {data_rx_reg[`GRA_DATA_Y_MSB_INDEX],data_rx_reg[`GRA_DATA_Y_LSB_INDEX]};
+			gravity_accel_z   <= {data_rx_reg[`GRA_DATA_Z_MSB_INDEX],data_rx_reg[`GRA_DATA_Z_LSB_INDEX]};
+			temperature       <= data_rx_reg[`TEMPERATURE_DATA_INDEX];
 			calib_status      <= data_rx_reg[`CALIBRATION_DATA_INDEX];
 			// Set these to 0 for now, just to have something connected, need to make it a velocity later
-			x_velocity        <= 8'b0;	
-			y_velocity        <= 8'b0;	
+			x_velocity        <= 8'b0;
+			y_velocity        <= 8'b0;
 			z_velocity        <= 8'b0;
 		end
 	end
@@ -263,7 +263,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 			next_return_state         = `BNO055_STATE_RESET;
 			next_go_flag              = `NOT_GO;
 			next_data_reg             = `BYTE_ALL_ZERO;
-			next_data_tx              = `BYTE_ALL_ZERO; 
+			next_data_tx              = `BYTE_ALL_ZERO;
 			next_read_write_in        = `I2C_READ;
 			next_led_view_index       = `FALSE;
 			next_wait_ms              = INIT_TIME; // Reset to Normal takes 650 ms for BNO055
@@ -281,7 +281,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 			next_bno055_state         = bno055_state;
 			next_return_state         = return_state;
 			next_data_reg             = data_reg;
-			next_data_tx              = data_tx; 
+			next_data_tx              = data_tx;
 			next_read_write_in        = read_write_in;
 			next_led_view_index       = led_view_index;
 			next_wait_ms              = wait_ms;
@@ -414,7 +414,7 @@ assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : da
 						next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
 					end
 				end
-				
+
 				// FSM Sub States - Repeated for each i2c transaction
 				`BNO055_SUB_STATE_START: begin //  Begin i2c transaction, wait for busy to be asserted
 					next_slave_address     = `BNO055_SLAVE_ADDRESS;

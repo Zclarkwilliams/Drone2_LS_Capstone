@@ -44,7 +44,7 @@
 	input [RATE_BIT_WIDTH-1:0] pitch_angle_error,
  	input start_signal,
 	input resetn,
-	input us_clk); 
+	input us_clk);
 
 	// working registers
 	reg wait_flag, start_flag;

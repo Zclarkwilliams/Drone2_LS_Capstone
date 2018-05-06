@@ -28,7 +28,7 @@ module i2c_module(
 	output reg  rstn_imu                   //  Low active reset signal to IMU hardware to trigger reset
 );
 
-	
+
 	reg  [7:0] addr;                                //  Wishbone address register
 	reg  [7:0] data_tx;                             //  Temp storage of data to be written
 	wire [7:0] data_rx;                             //  Temp storage of received data
@@ -45,7 +45,7 @@ module i2c_module(
 	reg  [(`I2C_STATE_BITS-1):0]next_i2c_cmd_state; //  Module FSM NEXT state
 	reg  [11:0]count_us;                            //  Count from 0 to value determined by clock rate, used to generate 1us delay trigger
 	reg  clear_waiting_us;                          //  Start multi-us counter from pre-set start value
-	reg  [23:0]count_wd_delay ;                     //  Countdown watchdog timer for hardware reset 
+	reg  [23:0]count_wd_delay ;                     //  Countdown watchdog timer for hardware reset
 	reg  wd_event_active;                           //  The current WD event state, active indicates a watchdog fault
 	reg  clear_watchdog;                            //  Reset watchdog to max value
 	wire irq1_out, irq2_out;                        //  IRQ output from EFB i2c modules
@@ -58,7 +58,7 @@ module i2c_module(
 	reg  [7:0]wd_event_count;                       //  Count of the number of times that the watchdog timer rest the system, only counts to 128 and freezes to prevent wrap around hiding events
 	reg  [7:0]next_wd_event_count;                  //  Next value of watchdog timer event count
 	reg [7:0]efb_registers[9:0][1:0];
-	
+
 	// Assign register values
 	task set_efb_reg_addresses;
 		begin
@@ -111,7 +111,7 @@ module i2c_module(
 	assign #0.100 cyc = stb; // Strobe and cycle are assigned the same value
 
 
-	
+
 	//  Generates a multiple of 1us length duration delay trigger
 	always@(posedge sys_clk, negedge clear_waiting_us, negedge rstn) begin
 		if(~rstn)
@@ -123,7 +123,7 @@ module i2c_module(
 		else
 			count_us       <= count_us;
 	end
-	
+
 
 	//  Generates a 30 ms watchdog timer
 	always@(posedge sys_clk, negedge rstn) begin
@@ -404,8 +404,8 @@ module i2c_module(
 					end
 				end
 
-				
-				
+
+
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 				// Start of WRITE sequence
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -834,7 +834,7 @@ module i2c_module(
 						if(data_rx && (data_rx[`I2C_SR_TRRDY] == `I2C_BUS_TRRDY_READY))
 							next_i2c_cmd_state = `I2C_STATE_R_READ_DATA1;
 					end
-					else begin                                        
+					else begin
 						next_we            = `I2C_WE_READ;
 						next_stb           = `I2C_CMD_START;
 						next_addr          = efb_registers[`I2C_SR_INDEX][i2c_number];
@@ -917,7 +917,7 @@ module i2c_module(
 							next_i2c_cmd_state = `I2C_STATE_R_READ_DATA2;
 						end
 					end
-					else begin                                        
+					else begin
 						next_we            = `I2C_WE_READ;
 						next_stb           = `I2C_CMD_START;
 						next_addr          = efb_registers[`I2C_SR_INDEX][i2c_number];
@@ -974,7 +974,7 @@ module i2c_module(
 							next_i2c_cmd_state = `I2C_STATE_WAIT;
 						end
 					end
-					else begin                                        
+					else begin
 						next_we            = `I2C_WE_READ;
 						next_stb           = `I2C_CMD_START;
 						next_addr          = efb_registers[`I2C_SR_INDEX][i2c_number];
@@ -983,7 +983,7 @@ module i2c_module(
 						next_i2c_cmd_state = `I2C_STATE_R_READ_CHK_SR5;
 					end
 				end
-				
+
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 				// Default case, shouldn't be triggered, but here for FSM safety
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//

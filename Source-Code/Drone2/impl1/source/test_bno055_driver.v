@@ -23,10 +23,10 @@ module bno055_module_tb();
 
 
 	bno055_driver bno055(
-		.scl1(scl1), 
-		.sda1(sda1), 
-		.scl2(scl2), 
-		.sda2(sda2), 
+		.scl1(scl1),
+		.sda1(sda1),
+		.scl2(scl2),
+		.sda2(sda2),
 		.rstn( (rstn) ),
 		.rstn_imu(rstn_imu),
 		.data_out(data_rx),
@@ -34,7 +34,7 @@ module bno055_module_tb();
 		.SCL_DEBUG_IN(SCL_DEBUG_IN),
 		.clk(clk)
 		); /* synthesis syn_hier=hard */;
-		
+
 // Generate a slave ACK every 9 i2c SCL posedges, regardless of what data is on the bus
 	always@(posedge scl1, negedge rstn) begin
 		if(~rstn) begin
