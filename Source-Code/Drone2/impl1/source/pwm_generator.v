@@ -42,7 +42,6 @@ module pwm_generator #(parameter INPUT_BIT_WIDTH = 8)
 	reg [15:0] period_counter;
 	reg [INPUT_BIT_WIDTH + 1:0] high_counter;
 	reg high_counter_en;
-	reg reset_latch;
 
 	// Latched PWM values
 	reg [INPUT_BIT_WIDTH + 1:0] m1_rate, m2_rate, m3_rate, m4_rate;
@@ -55,7 +54,6 @@ module pwm_generator #(parameter INPUT_BIT_WIDTH = 8)
 		.period_counter(period_counter),
 		.high_counter(high_counter),
 		.resetn(resetn),
-		.reset_latch(reset_latch),
 		.us_clk(us_clk));
 	pwm_generator_block pwm2 (
 		.motor_pwm(motor_2_pwm),
@@ -63,7 +61,6 @@ module pwm_generator #(parameter INPUT_BIT_WIDTH = 8)
 		.period_counter(period_counter),
 		.high_counter(high_counter),
 		.resetn(resetn),
-		.reset_latch(reset_latch),
 		.us_clk(us_clk));
 	pwm_generator_block pwm3 (
 		.motor_pwm(motor_3_pwm),
@@ -71,7 +68,6 @@ module pwm_generator #(parameter INPUT_BIT_WIDTH = 8)
 		.period_counter(period_counter),
 		.high_counter(high_counter),
 		.resetn(resetn),
-		.reset_latch(reset_latch),
 		.us_clk(us_clk));
 	pwm_generator_block pwm4 (
 		.motor_pwm(motor_4_pwm),
@@ -79,28 +75,22 @@ module pwm_generator #(parameter INPUT_BIT_WIDTH = 8)
 		.period_counter(period_counter),
 		.high_counter(high_counter),
 		.resetn(resetn),
-		.reset_latch(reset_latch),
 		.us_clk(us_clk));
 
 
 
 	// Control counters, latch new values
-	always @(posedge us_clk or negedge resetn or posedge resetn) begin
-		if (!resetn && !reset_latch) begin
+	always @(posedge us_clk or negedge resetn) begin
+		if (!resetn) begin
 			// Reset counters
 			period_counter <= 16'h0000;
 			high_counter <= 10'h000;
 			high_counter_en <= 1'b0;
-			// Set reset latch to continue pwm generation while held in reset
-			reset_latch <= 1'b1;
 			// Start with default values
 			m1_rate <= {8'h00};
 			m2_rate <= {8'h00};
 			m3_rate <= {8'h00};
 			m4_rate <= {8'h00};
-		end
-		else if (resetn && reset_latch) begin
-			reset_latch <= 1'b0;
 		end
 		else if (period_counter == `PWM_PERIOD_US) begin
 			// Reset counters
