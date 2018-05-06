@@ -62,7 +62,7 @@
 			end
 			CALC2: begin
 				if(!resetn)
-					next_state = WAIT;												else
+					next_state = WAIT;												else
 					next_state = CALC3;
 			end
 			CALC3: begin
@@ -73,7 +73,7 @@
 			end
 			COMPLETE: begin
 				if(wait_flag)
-					next_state = WAIT;				else
+					next_state = WAIT;				else
 					next_state = COMPLETE;
 			end
 		endcase
