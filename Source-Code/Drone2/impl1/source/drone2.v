@@ -156,7 +156,6 @@ module drone2 (
 		.us_clk(us_clk),
 		.resetn(resetn));
 
-	/*
 	angle_controller #(
 		.RATE_BIT_WIDTH(RATE_BIT_WIDTH),
 		.REC_VAL_BIT_WIDTH(REC_VAL_BIT_WIDTH),
@@ -177,9 +176,9 @@ module drone2 (
 		.pitch_actual(16'h0000),  // changed for testing
 		.roll_actual(16'h0000),  // changed for testing
 		.resetn(resetn),
+		.state(state),
 		.start_signal(1'b1), // changed for testing
 		.us_clk(us_clk));
-	*/
 
 /*
 	body_frame_controller #(
@@ -209,25 +208,27 @@ module drone2 (
 		.motor_2_rate(motor_2_rate),
 		.motor_3_rate(motor_3_rate),
 		.motor_4_rate(motor_4_rate),
-
-		// test connections
+/*		// test connections
 		.throttle_rate({4'h0, throttle_val, 4'h0}),
 		.yaw_rate({4'h0, yaw_val, 4'h0}),
 		.roll_rate({4'h0, roll_val, 4'h0}),
 		.pitch_rate({4'h0, pitch_val, 4'h0}),
+*/
 
-		/*
 		.throttle_rate(throttle_target_rate),
 		.yaw_rate(yaw_target_rate),
 		.roll_rate(roll_target_rate),
 		.pitch_rate(pitch_target_rate),
-		*/
+
 
 		.sys_clk(sys_clk),
 		.rst_n(resetn));
 
 	// For now when in reset all LEDs are on
-	assign led_data_out = (!resetn) ? 8'h00 : 8'hFF;
+	//assign led_data_out = (!resetn) ? 8'h00 : 8'hFF;
+	//assign led_data_out = ~throttle_target_rate[9:2];
+	//assign led_data_out = {3'b111, ~state};
+	assign led_data_out = ~throttle_val;
 
 	pwm_generator pwm_generator (
 		.motor_1_pwm(motor_1_pwm),
