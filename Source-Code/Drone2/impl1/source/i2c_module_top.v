@@ -82,7 +82,6 @@ module i2c_module(
 		end
 	endtask
 
-	//
 	//  Module body
 	//
 	// Connect the I2C module to this top module
@@ -789,7 +788,7 @@ module i2c_module(
 						next_i2c_cmd_state = `I2C_STATE_R_WAIT_SRW;
 					end
 				end
-				`I2C_STATE_R_SET_READ: begin           // Start of multi/single byte read
+				`I2C_STATE_R_SET_READ: begin           // Start of multi-byte read
 					if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
 						next_we            = `I2C_WE_READ;
 						next_stb           = `I2C_CMD_STOP;
@@ -838,7 +837,7 @@ module i2c_module(
 						next_ack_flag      = `FALSE;
 						next_data_latch    = `FALSE;
 						next_i2c_cmd_state = `I2C_STATE_R_SET_READ_STOP;
-						if(bytes_read_remain > 5'h01) // Won't have been decremented by this point, so not >= here
+						if(bytes_read_remain > 5'h01) // Won't have been decremented by this point, so removed = sign
 							next_i2c_cmd_state = `I2C_STATE_R_SET_READ; // Wait for another byte
 					end
 					else if( (ack == `TRUE) && (ack_flag == `TRUE) && (data_latch == 1'b0) ) begin //  byte is ready, read the byte
@@ -847,10 +846,10 @@ module i2c_module(
 						next_addr          = efb_registers[`I2C_RXDR_INDEX][i2c_number];
 						next_data_tx       = `BYTE_ALL_ZERO;
 						next_ack_flag      = `TRUE;
-						if(bytes_read_remain >= 5'h01) begin // Still bytes remaining, latch this byte
+						if(bytes_read_remain >= 5'h01) begin // This isn't the last byte
 							next_data_latch    = `TRUE;
 							next_i2c_cmd_state = `I2C_STATE_R_READ_DATA1;
-						end                                  // No more bytes left, don't strobe data latch
+						end
 						else begin
 							next_data_latch    = `FALSE;
 							next_i2c_cmd_state = `I2C_STATE_R_SET_READ_STOP;
@@ -866,12 +865,14 @@ module i2c_module(
 						next_i2c_cmd_state = `I2C_STATE_R_READ_DATA1;
 					end
 				end
-				`I2C_STATE_R_SET_READ_STOP: begin   //  Last byte read
+				`I2C_STATE_R_SET_READ_STOP: begin   //  Start of single-byte or last byte read
 													//  Read the register single byte and also signal stop, this is the last byte to read
 													//  I2C commands STO, RD, and ACK are sent, this will be the last byte received
 													//  I2C bit 'I2C_CMDR_ACK' is included here because the master must signal NACK to the slave
 													//  when it receives the byte, this indicates that this is the last byte to send
 													//  ACK = 1 => NACK from master to slave, ACK = 0 (Default) => ACK from master to slave
+													//  If master sends ACK the slave can send the value of the next register, and the next register,
+													//  and so on. Until the master sends NACK, then the process stops.
 					if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
 						next_we            = `I2C_WE_READ;
 						next_stb           = `I2C_CMD_STOP;
@@ -927,10 +928,10 @@ module i2c_module(
 						next_addr          = efb_registers[`I2C_RXDR_INDEX][i2c_number];
 						next_data_tx       = `BYTE_ALL_ZERO;
 						next_ack_flag      = `TRUE;
-						if(bytes_read_remain != 5'h00) begin //  If this was the last byte, latch onti it
+						if(bytes_read_remain != 5'h00) begin
 							next_data_latch    = `TRUE;
 							next_i2c_cmd_state = `I2C_STATE_R_READ_DATA2;
-						end                                  //  Otherwise this byte is discarded (Used in single byte reads, EFB doesn't always stop in time for single byte read)
+						end
 						else begin
 							next_data_latch    = `FALSE;
 							next_i2c_cmd_state = `I2C_STATE_R_READ_CHK_SR5;
@@ -955,7 +956,7 @@ module i2c_module(
 						next_data_tx       = `BYTE_ALL_ZERO;
 						next_ack_flag      = `FALSE;
 						next_i2c_cmd_state = `I2C_STATE_R_READ_CHK_SR5;
-						if(data_rx[`I2C_SR_BUSY] == `I2C_BUS_NOT_BUSY) begin // Don't include data_rx && here, when BUSY is deasserted none of the other bits are guaranteed valid, so 0x00 can also mean not busy, regardless of the other bits being 0
+						if(data_rx[`I2C_SR_BUSY] == `I2C_BUS_NOT_BUSY) begin // Don't include data_rx && here, when BUSY is deasserted none of the other bits are certain to be set to anything, so 0x00 means not busy
 							next_i2c_cmd_state = `I2C_STATE_WAIT;
 						end
 					end

@@ -91,8 +91,6 @@ module i2c_module(
 	//#0.100 forces delay during simulation to prevent mismatch with real synthesized behavior
 	assign #0.100 cyc = stb; // Strobe and cycle are assigned the same value
 
-
-
 	//  Generates a multiple of 1us length duration delay trigger
 	always@(posedge sys_clk, negedge clear_waiting_us, negedge rstn) begin
 		if(~rstn)
@@ -438,6 +436,7 @@ module i2c_module(
 						next_i2c_cmd_state = `I2C_STATE_WAIT_NOT_BUSY;
 					end
 				end
+
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 				// Start of WRITE sequence
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -658,6 +657,7 @@ module i2c_module(
 						next_i2c_cmd_state = `I2C_STATE_W_READ_CHK_SR4;
 					end
 				end
+
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 				// Start of READ sequence
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -1025,6 +1025,7 @@ module i2c_module(
 						next_i2c_cmd_state = `I2C_STATE_R_READ_CHK_SR5;
 					end
 				end
+
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 				// Default case, shouldn't be triggered, but here for FSM safety
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
