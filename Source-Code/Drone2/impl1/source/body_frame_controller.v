@@ -1,3 +1,6 @@
+`timescale 1ns / 1ns
+`default_nettype none
+
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
@@ -41,27 +44,31 @@
 	output wire [PID_RATE_BIT_WIDTH-1:0] roll_rate_out,
  	output wire [PID_RATE_BIT_WIDTH-1:0] pitch_rate_out,
 	output reg complete_signal,
- 	input [RATE_BIT_WIDTH-1:0] yaw_target,
- 	input [RATE_BIT_WIDTH-1:0] roll_target,
- 	input [RATE_BIT_WIDTH-1:0] pitch_target,
- 	input [IMU_VAL_BIT_WIDTH-1:0] roll_rotation,
- 	input [IMU_VAL_BIT_WIDTH-1:0] pitch_rotation,
- 	input [IMU_VAL_BIT_WIDTH-1:0] yaw_rotation,
-	input [RATE_BIT_WIDTH-1:0] roll_angle_error,
-	input [RATE_BIT_WIDTH-1:0] pitch_angle_error,
- 	input start_signal,
-	input resetn,
-	input us_clk); 
+ 	input wire [RATE_BIT_WIDTH-1:0] yaw_target,
+ 	input wire [RATE_BIT_WIDTH-1:0] roll_target,
+ 	input wire [RATE_BIT_WIDTH-1:0] pitch_target,
+ 	input wire [IMU_VAL_BIT_WIDTH-1:0] roll_rotation,
+ 	input wire [IMU_VAL_BIT_WIDTH-1:0] pitch_rotation,
+ 	input wire [IMU_VAL_BIT_WIDTH-1:0] yaw_rotation,
+	input wire [RATE_BIT_WIDTH-1:0] roll_angle_error,
+	input wire [RATE_BIT_WIDTH-1:0] pitch_angle_error,
+ 	input wire start_signal,
+	input wire resetn,
+	input wire us_clk);
+
+  // internal wires
+  wire yaw_active, roll_active, pitch_active;
+  wire yaw_complete, roll_complete, pitch_complete;
 
 	// working registers
 	reg wait_flag, start_flag;
 
 	// state names
 	localparam
-		WAITING  = 4'b0001,
-		STARTING = 4'b0010,
-		ACTIVE   = 4'b0100,
-		COMPLETE = 4'b1000;
+		STATE_WAITING  = 4'b0001,
+		STATE_STARTING = 4'b0010,
+		STATE_ACTIVE   = 4'b0100,
+		STATE_COMPLETE = 4'b1000;
 
 	// state variables
 	reg [3:0] state, next_state;
@@ -81,7 +88,7 @@
 	// update state
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn)
-			state <= WAITING;
+			state <= STATE_WAITING;
 		else
 			state <= next_state;
 	end
@@ -89,59 +96,62 @@
 
 	// next state logic
 	always @(*) begin
-		case (state)
-			WAITING: begin
-				if(!resetn)
-					next_state = WAITING;
-				else if(start_flag)
-					next_state = STARTING;
-				else
-					next_state = WAITING;
-			end
-			STARTING: begin
-				if(!resetn)
-					next_state = WAITING;
-				else if((yaw_active) && (pitch_active) && (roll_active))
-					next_state = ACTIVE;
-				else
-					next_state = STARTING;
-			end
-			ACTIVE: begin
-				if(!resetn)
-					next_state = WAITING;
-				else if((yaw_complete) && (pitch_complete) && (roll_complete))
-					next_state = COMPLETE;
-				else
-					next_state = ACTIVE;
-			end
-			COMPLETE: begin
-				next_state = WAITING;
-			end
-		endcase
+    if(!resetn) begin
+      next_state = STATE_WAITING;
+    end
+    else begin
+  		case (state)
+  			STATE_WAITING: begin
+  				if(start_flag)
+  					next_state = STATE_STARTING;
+  				else
+  					next_state = STATE_WAITING;
+  			end
+  			STATE_STARTING: begin
+  				if((yaw_active) && (pitch_active) && (roll_active))
+  					next_state = STATE_ACTIVE;
+  				else
+  					next_state = STATE_STARTING;
+  			end
+  			STATE_ACTIVE: begin
+  				if((yaw_complete) && (pitch_complete) && (roll_complete))
+  					next_state = STATE_COMPLETE;
+  				else
+  					next_state = STATE_ACTIVE;
+  			end
+  			STATE_COMPLETE: begin
+  				next_state = STATE_WAITING;
+  			end
+        default: begin
+          next_state = STATE_WAITING;
+        end
+  		endcase
+    end
 	end
-
-	// valid strobe logic
-	assign pid_complete = (state == COMPLETE) ? 1'b1 : 1'b0;
 
 	// sub-module control logic
 	always @(state) begin
 		case(state)
-			WAITING: begin
+			STATE_WAITING: begin
 				wait_flag = 1'b1;
 				complete_signal = 1'b0;
 			end
-			STARTING: begin
+			STATE_STARTING: begin
 				wait_flag = 1'b0;
 				complete_signal = 1'b0;
 			end
-			ACTIVE: begin
+			STATE_ACTIVE: begin
 				wait_flag = 1'b0;
 				complete_signal = 1'b0;
 			end
-			COMPLETE: begin
+			STATE_COMPLETE: begin
 				wait_flag = 1'b0;
 				complete_signal = 1'b1;
 			end
+      default: begin
+        wait_flag = 1'b1;
+        complete_signal = 1'b0;
+      end
 		endcase
 	end
 
