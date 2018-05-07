@@ -56,9 +56,9 @@
 	input wire resetn,
 	input wire us_clk);
 
-  // internal wires
-  wire yaw_active, roll_active, pitch_active;
-  wire yaw_complete, roll_complete, pitch_complete;
+  	// internal wires
+	wire yaw_active, roll_active, pitch_active;
+	wire yaw_complete, roll_complete, pitch_complete;
 
 	// working registers
 	reg wait_flag, start_flag;
@@ -148,10 +148,10 @@
 				wait_flag = 1'b0;
 				complete_signal = 1'b1;
 			end
-      default: begin
-        wait_flag = 1'b1;
-        complete_signal = 1'b0;
-      end
+			default: begin
+				wait_flag = 1'b1;
+				complete_signal = 1'b0;
+			end
 		endcase
 	end
 
@@ -205,3 +205,4 @@
 		.us_clk(us_clk));
 
 endmodule
+
