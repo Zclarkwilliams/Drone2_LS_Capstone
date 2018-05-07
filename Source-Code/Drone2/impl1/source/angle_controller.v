@@ -113,8 +113,10 @@ module angle_controller
 	always @(*) begin
 		case(state)
 			STATE_WAITING: begin
-				if(start_signal) next_state = STATE_MAPPING;
-				else next_state = STATE_WAITING;
+				if(start_signal)
+					next_state = STATE_MAPPING;
+				else
+					next_state = STATE_WAITING;
 			end
 			STATE_MAPPING: begin
 				next_state = STATE_SCALING;
@@ -155,7 +157,7 @@ module angle_controller
 					complete_signal <= 1'b0;
 					active_signal <= 1'b1;
 
-			// TODO Change these value ranges!
+					// TODO Change these value ranges!
 					// input value mapped from  0 - 250 to 0 - 62.5
 					mapped_throttle <= {6'b000000, latched_throttle, 2'b00}; // ???
 					// input values mapped from 0 - 250 to -31.25 - 31.25
@@ -177,10 +179,10 @@ module angle_controller
 					complete_signal <= 1'b0;
 					active_signal <= 1'b1;
 
+					//TODO: Add throttle min checking
 					// apply rate limits
 					if(scaled_throttle > THROTTLE_MAX)
 						throttle_rate_out <= THROTTLE_MAX;
-			// min checking?
 					else
 						throttle_rate_out <= scaled_throttle;
 

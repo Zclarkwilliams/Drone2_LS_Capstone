@@ -34,8 +34,8 @@
 		rotation_proportional, rotation_integral, rotation_derivative,
 		error_change, rotation_total;
 
-  reg signed [RATE_BIT_WIDTH-1:0]
-    latched_target_rotation, latched_actual_rotation, latched_angle_error;
+	reg signed [RATE_BIT_WIDTH-1:0]
+		latched_target_rotation, latched_actual_rotation, latched_angle_error;
 
 	// min and max rate_out values
 	localparam signed
