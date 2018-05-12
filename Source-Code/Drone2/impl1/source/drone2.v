@@ -39,9 +39,10 @@ module drone2 (
 	input wire yaw_pwm,
 	input wire roll_pwm,
 	input wire pitch_pwm,
+	input wire debug_leds_receiver_throttle_n,
 	input wire resetn,
 	output wire rstn_imu,
-	output wire [7:0]led_data_out,
+	output reg [7:0]led_data_out,
 	inout wire sda,
 	inout wire scl);
 
@@ -92,6 +93,7 @@ module drone2 (
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_3_rate;
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_4_rate;
 
+	wire [7:0] imu_debug_out;
 	wire imu_good;
 	wire imu_valid_strobe;
 
@@ -122,7 +124,7 @@ module drone2 (
 		.scl_2(scl_2),                    //  I2C EFB SDA wires, Secondary EFB
 		.sda_2(sda_2),                    //  I2C EFB SDA wires, Secondary EFB
 		.rstn(resetn),                   //  async negative reset signal 0 = reset, 1 = not resete
-		.led_data_out(led_data_out),     //  Module LED Status output
+		.led_data_out(imu_debug_out),     //  Module LED Status output
 		.sys_clk(sys_clk),               //  master clock
 		.rstn_imu(rstn_imu),             //  Low active reset signal to IMU hardware to trigger reset
 		.imu_good(imu_good),             //  The IMU is either in an error or initial bootup states, measurements not yet active
@@ -223,12 +225,6 @@ module drone2 (
 		.sys_clk(sys_clk),
 		.rst_n(resetn));
 
-	// For now when in reset all LEDs are on
-	//assign led_data_out = (!resetn) ? 8'h00 : 8'hFF;
-	//assign led_data_out = ~throttle_target_rate[9:2];
-	//assign led_data_out = {3'b111, ~state};
-	assign led_data_out = ~throttle_val;
-
 	pwm_generator pwm_generator (
 		.motor_1_pwm(motor_1_pwm),
 		.motor_2_pwm(motor_2_pwm),
@@ -251,6 +247,17 @@ module drone2 (
 
 		.us_clk(us_clk),
 		.resetn(resetn));
+
+	// Update on board LEDs, all inputs are active low
+	always @(posedge sys_clk) begin
+		if (!resetn)
+			led_data_out <= 8'hAA;
+		else if (!debug_leds_receiver_throttle_n)
+			led_data_out <= ~throttle_val;
+		else
+			led_data_out <= imu_debug_out;
+	end
+
 
 endmodule
 
