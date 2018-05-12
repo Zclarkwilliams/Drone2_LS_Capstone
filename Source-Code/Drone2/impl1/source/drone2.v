@@ -129,12 +129,12 @@ module drone2 (
 		.rstn_imu(rstn_imu),             //  Low active reset signal to IMU hardware to trigger reset
 		.imu_good(imu_good),             //  The IMU is either in an error or initial bootup states, measurements not yet active
 		.valid_strobe(imu_valid_strobe), //  Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
-		.gyro_rate_x(x_rotation_rate),   //  Rotation rate on X-Axis             Precision: Deg = 16 LSB
-		.gyro_rate_y(y_rotation_rate),   //  Rotation rate on Y-Axis             Precision: Deg = 16 LSB
-		.gyro_rate_z(z_rotation_rate),   //  Rotation rate on Z-Axis             Precision: Deg = 16 LSB
-		.euler_angle_x(x_rotation),      //  Euler angle X-Axis                  Precision: Deg = 16 LSB
-		.euler_angle_y(y_rotation),      //  Euler angle Y-Axis                  Precision: Deg = 16 LSB
-		.euler_angle_z(z_rotation),      //  Euler angle Z-Axis                  Precision: Deg = 16 LSB
+		.gyro_rate_x(x_rotation_rate),   //  Rotation rate on X-Axis (Pitch rate)Precision: 1 Dps = 16 LSB
+		.gyro_rate_y(y_rotation_rate),   //  Rotation rate on Y-Axis (Roll rate) Precision: 1 Dps = 16 LSB
+		.gyro_rate_z(z_rotation_rate),   //  Rotation rate on Z-Axis (Yaw rate)  Precision: 1 Dps = 16 LSB
+		.euler_angle_x(x_rotation),      //  Euler angle X-Axis       Pitch      Precision: 1 Deg = 16 LSB
+		.euler_angle_y(y_rotation),      //  Euler angle Y-Axis       Roll       Precision: 1 Deg = 16 LSB
+		.euler_angle_z(z_rotation),      //  Euler angle Z-Axis       Yaw        Precision: 1 Deg = 16 LSB
 		.linear_accel_x(x_linear_accel), //  Linear Acceleration X-Axis          Precision: 1 m/s^2 = 100 LSB
 		.linear_accel_y(y_linear_accel), //  Linear Acceleration Y-Axis          Precision: 1 m/s^2 = 100 LSB
 		.linear_accel_z(z_linear_accel), //  Linear Acceleration Z-Axis          Precision: 1 m/s^2 = 100 LSB
