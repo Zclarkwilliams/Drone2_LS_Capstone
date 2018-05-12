@@ -10,7 +10,8 @@
  */
 
 // Produce an error if the net type isn't defined
-`define default nettype none
+// This was incorrect, uncomment once files are fixed
+//`default_nettype none
 
 // Signal levels
 `define HIGH	1'b1
@@ -65,9 +66,10 @@
 `define	MOTOR_4_RATE_BIAS				 	$signed(16'h0000)
 
 //	Scaler to set proportions of yaw, roll, and pitch
-`define MOTOR_RATE_YAW_SCALER			1
-`define MOTOR_RATE_ROLL_SCALER			1
-`define MOTOR_RATE_PITCH_SCALER			1
+//  Shift to change impact of roll, pitch, and yaw
+`define MOTOR_RATE_YAW_SCALER			  2
+`define MOTOR_RATE_ROLL_SCALER			2
+`define MOTOR_RATE_PITCH_SCALER			2
 
 //	Mapping 16 bit motor rate output to 8 bit value for pwm conversion
 `define MAPPING_SHIFT_8BIT				8

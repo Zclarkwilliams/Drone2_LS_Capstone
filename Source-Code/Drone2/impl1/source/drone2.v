@@ -1,4 +1,6 @@
 `timescale 1ns / 1ns
+`default_nettype none
+`include "common_defines.v"
 
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
@@ -28,7 +30,6 @@
  * @scl: serial clock line to the IMU
  */
 
- `include "common_defines.v"
 
 module drone2 (
 	output wire motor_1_pwm,
@@ -43,8 +44,10 @@ module drone2 (
 	input wire resetn,
 	output wire rstn_imu,
 	output reg [7:0]led_data_out,
-	inout wire sda,
-	inout wire scl);
+	inout wire sda_1,
+	inout wire scl_1,
+	inout wire sda_2,
+	inout wire scl_2);
 
 	/* TODO: Figure out what these bit widths actually need to be
 	 *		 and move them to the common_defines.v file.
@@ -106,6 +109,8 @@ module drone2 (
 	wire bf_active;
 
 	wire sys_clk;
+  wire us_clk;
+
 	// TODO: Determine if we should stick with this clock rate (slower? faster?)
 	defparam OSCH_inst.NOM_FREQ = "38.00";
 	OSCH OSCH_inst (.STDBY(1'b0),
@@ -117,7 +122,6 @@ module drone2 (
 		.sys_clk(sys_clk),
 		.resetn(resetn));
 
-	/*
 	bno055_driver	i(
 		.scl_1(scl_1),                    //  I2C EFB SDA wires, Primary EFB
 		.sda_1(sda_1),                    //  I2C EFB SDA wires, Primary EFB
@@ -141,9 +145,8 @@ module drone2 (
 		.x_velocity(x_velocity),
 		.y_velocity(y_velocity),
 		.z_velocity(z_velocity)
-		);ode in the pull request reverted a lot of stuff related to the I2C EFB, was that intentional? The rate went back to 50kHz, only one EFB is used, the names were change
-	ode in the pull request reverted a lot of stuff related to the I2C EFB, was that intentional? The rate went back to 50kHz, only one EFB is used, the names were change
-	*/
+		);
+
 
 	receiver receiver (
 		.throttle_val(throttle_val),
@@ -156,6 +159,7 @@ module drone2 (
 		.pitch_pwm(pitch_pwm),
 		.us_clk(us_clk),
 		.resetn(resetn));
+
 
 	angle_controller #(
 		.RATE_BIT_WIDTH(RATE_BIT_WIDTH),
@@ -174,10 +178,9 @@ module drone2 (
 		.yaw_target(yaw_val),
 		.roll_target(roll_val),
 		.pitch_target(pitch_val),
-		.pitch_actual(16'h0000),  // changed for testing
-		.roll_actual(16'h0000),  // changed for testing
+		.pitch_actual(x_rotation),
+		.roll_actual(y_rotation),
 		.resetn(resetn),
-		.state(state),
 		.start_signal(1'b1), // changed for testing
 		.us_clk(us_clk));
 
@@ -209,47 +212,31 @@ module drone2 (
 		.motor_2_rate(motor_2_rate),
 		.motor_3_rate(motor_3_rate),
 		.motor_4_rate(motor_4_rate),
-/*		// test connections
-		.throttle_rate({4'h0, throttle_val, 4'h0}),
-		.yaw_rate({4'h0, yaw_val, 4'h0}),
-		.roll_rate({4'h0, roll_val, 4'h0}),
-		.pitch_rate({4'h0, pitch_val, 4'h0}),
-*/
 
+    // test connections, from angle controller
 		.throttle_rate(throttle_target_rate),
 		.yaw_rate(yaw_target_rate),
 		.roll_rate(roll_target_rate),
 		.pitch_rate(pitch_target_rate),
 
-
 		.sys_clk(sys_clk),
 		.rst_n(resetn));
+
 
 	pwm_generator pwm_generator (
 		.motor_1_pwm(motor_1_pwm),
 		.motor_2_pwm(motor_2_pwm),
 		.motor_3_pwm(motor_3_pwm),
 		.motor_4_pwm(motor_4_pwm),
-		.state_out(state_out),
-
-		/*
-		.motor_1_rate(throttle_val),
-		.motor_2_rate(roll_val),
-		.motor_3_rate(pitch_val),
-		.motor_4_rate(yaw_val),
-		*/
-
 		.motor_1_rate(motor_1_rate),
 		.motor_2_rate(motor_2_rate),
 		.motor_3_rate(motor_3_rate),
 		.motor_4_rate(motor_4_rate),
-
-
 		.us_clk(us_clk),
 		.resetn(resetn));
 
-	// Update on board LEDs, all inputs are active low
-	
+
+	// Update on board LEDs, all inputs are active low	
 	always @(posedge sys_clk) begin
 		if (!resetn)
 			led_data_out <= 8'hAA;
