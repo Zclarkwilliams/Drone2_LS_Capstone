@@ -177,9 +177,9 @@ module drone2 (
 		.throttle_target(throttle_val),
 		.yaw_target(yaw_val),
 		.roll_target(roll_val),
-		.roll_actual(y_rotation),
 		.pitch_target(pitch_val),
 		.pitch_actual(x_rotation),
+		.roll_actual(y_rotation),
 		.resetn(resetn),
 		.start_signal(1'b1), // changed for testing
 		.us_clk(us_clk));
@@ -236,7 +236,7 @@ module drone2 (
 		.resetn(resetn));
 
 
-	// Update on board LEDs, all inputs are active low	
+	// Update on board LEDs, all inputs are active low
 	always @(posedge sys_clk) begin
 		if (!resetn)
 			led_data_out <= 8'hAA;
@@ -245,7 +245,7 @@ module drone2 (
 		else
 			led_data_out <= imu_debug_out;
 	end
-	
+
 
 endmodule
 
