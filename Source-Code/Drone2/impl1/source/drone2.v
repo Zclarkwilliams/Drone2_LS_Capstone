@@ -124,7 +124,7 @@ module drone2 (
 		.scl_2(scl_2),                   //  I2C EFB SDA wires, Secondary EFB
 		.sda_2(sda_2),                   //  I2C EFB SDA wires, Secondary EFB
 		.rstn(resetn),                   //  async negative reset signal 0 = reset, 1 = not reset
-		//.led_data_out(led_data_out),     //  Module LED Status output -  //////////////////// Changed for testing, need to enable and feed LEDs somehow. /////////////////////
+		.led_data_out(led_data_out),     //  Module LED Status output -  //////////////////// Changed for testing, need to enable and feed LEDs somehow. /////////////////////
 		.sys_clk(sys_clk),               //  master clock
 		.rstn_imu(rstn_imu),             //  Low active reset signal to IMU hardware to trigger reset
 		.imu_good(imu_good),             //  The IMU is either in an error or initial bootup states, measurements not yet active
@@ -170,11 +170,11 @@ module drone2 (
 		.active_signal(ac_active),
 		.throttle_target(throttle_val),
 		.yaw_target(yaw_val),
-		.yaw_actual(x_rotation_rate),
+		.yaw_actual(x_rotation),
 		.roll_target(roll_val),
 		.pitch_target(pitch_val),
-		.pitch_actual(x_rotation_rate),
-		.roll_actual(y_rotation_rate),
+		.pitch_actual(x_rotation),
+		.roll_actual(y_rotation),
 		.resetn(resetn),
 		.state(state),
 		.start_signal(1'b1), // changed for testing
@@ -228,7 +228,7 @@ module drone2 (
 	//assign led_data_out = (!resetn) ? 8'h00 : 8'hFF;
 	//assign led_data_out = ~throttle_target_rate[9:2];
 	//assign led_data_out = {3'b111, ~state};
-	assign led_data_out = ~throttle_val;
+	//assign led_data_out = ~throttle_val;
 
 	pwm_generator pwm_generator (
 		.motor_1_pwm(motor_1_pwm),
