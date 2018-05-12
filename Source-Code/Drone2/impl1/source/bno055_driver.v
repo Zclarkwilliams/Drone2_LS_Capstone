@@ -23,7 +23,6 @@ module bno055_driver #(
 	inout wire sda_1,                     //  I2C EFB #1 SDA wire
 	inout wire sda_2,                     //  I2C EFB #2 SDA wire
 	input wire rstn,                      //  async negative reset signal 0 = reset, 1 = not reset
-	input wire SDA_DEBUG_IN, SCL_DEBUG_IN /* synthesis syn_force_pads=1 syn_noprune=1*/, //For capturing SDA and SCL in Reveal, no connections inside module
 	output wire [7:0]led_data_out,        //  Module LED Status output
 	input  wire sys_clk,                  //  master clock
 	output wire rstn_imu,                 //  Low active reset signal to IMU hardware to trigger reset
