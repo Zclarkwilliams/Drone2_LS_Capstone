@@ -249,6 +249,7 @@ module drone2 (
 		.resetn(resetn));
 
 	// Update on board LEDs, all inputs are active low
+	
 	always @(posedge sys_clk) begin
 		if (!resetn)
 			led_data_out <= 8'hAA;
@@ -257,7 +258,7 @@ module drone2 (
 		else
 			led_data_out <= imu_debug_out;
 	end
-
+	
 
 endmodule
 
