@@ -43,10 +43,10 @@ module drone2 (
 	input wire debug_leds_receiver_throttle_n,
 	input wire resetn,
 	output wire rstn_imu,
-	output reg [7:0]led_data_out,
+	output wire [7:0]led_data_out,
 	inout wire sda_1,
-	inout wire scl_1,
 	inout wire sda_2,
+	inout wire scl_1,
 	inout wire scl_2);
 
 	/* TODO: Figure out what these bit widths actually need to be
@@ -72,15 +72,15 @@ module drone2 (
 	wire [RATE_BIT_WIDTH-1:0] pitch_angle_error;
 
 	// values from the IMU
-	wire [IMU_VAL_BIT_WIDTH-1:0] x_velocity;
-	wire [IMU_VAL_BIT_WIDTH-1:0] y_velocity;
-	wire [IMU_VAL_BIT_WIDTH-1:0] z_velocity;
+	wire [IMU_VAL_BIT_WIDTH-1:0] x_linear_rate;
+	wire [IMU_VAL_BIT_WIDTH-1:0] y_linear_rate;
+	wire [IMU_VAL_BIT_WIDTH-1:0] z_linear_rate;
 	wire [IMU_VAL_BIT_WIDTH-1:0] x_rotation;
 	wire [IMU_VAL_BIT_WIDTH-1:0] y_rotation;
 	wire [IMU_VAL_BIT_WIDTH-1:0] z_rotation;
-	wire [IMU_VAL_BIT_WIDTH-1:0] x_accel;
-	wire [IMU_VAL_BIT_WIDTH-1:0] y_accel;
-	wire [IMU_VAL_BIT_WIDTH-1:0] z_accel;
+	wire [IMU_VAL_BIT_WIDTH-1:0] x_rotation_rate;
+	wire [IMU_VAL_BIT_WIDTH-1:0] y_rotation_rate;
+	wire [IMU_VAL_BIT_WIDTH-1:0] z_rotation_rate;
 	wire [IMU_VAL_BIT_WIDTH-1:0] x_linear_accel;
 	wire [IMU_VAL_BIT_WIDTH-1:0] y_linear_accel;
 	wire [IMU_VAL_BIT_WIDTH-1:0] z_linear_accel;
@@ -122,7 +122,7 @@ module drone2 (
 		.sys_clk(sys_clk),
 		.resetn(resetn));
 
-	bno055_driver	i(
+	bno055_driver imu (
 		.scl_1(scl_1),                    //  I2C EFB SDA wires, Primary EFB
 		.sda_1(sda_1),                    //  I2C EFB SDA wires, Primary EFB
 		.scl_2(scl_2),                    //  I2C EFB SDA wires, Secondary EFB
@@ -132,21 +132,19 @@ module drone2 (
 		.sys_clk(sys_clk),               //  master clock
 		.rstn_imu(rstn_imu),             //  Low active reset signal to IMU hardware to trigger reset
 		.imu_good(imu_good),             //  The IMU is either in an error or initial bootup states, measurements not yet active
-		.valid_strobe(imu_valid_strobe),     //  Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
-		.accel_rate_x(x_accel),          //  Accelerometer X-Axis                Precision: 1 m/s^2 = 100 LSB
-		.accel_rate_y(y_accel),          //  Accelerometer Y-Axis                Precision: 1 m/s^2 = 100 LSB
-		.accel_rate_z(z_accel),          //  Accelerometer Z-Axis                Precision: 1 m/s^2 = 100 LSB
+		.valid_strobe(imu_valid_strobe), //  Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
+		.gyro_rate_x(x_rotation_rate),   //  Rotation rate on X-Axis             Precision: Deg = 16 LSB
+		.gyro_rate_y(y_rotation_rate),   //  Rotation rate on Y-Axis             Precision: Deg = 16 LSB
+		.gyro_rate_z(z_rotation_rate),   //  Rotation rate on Z-Axis             Precision: Deg = 16 LSB
 		.euler_angle_x(x_rotation),      //  Euler angle X-Axis                  Precision: Deg = 16 LSB
 		.euler_angle_y(y_rotation),      //  Euler angle Y-Axis                  Precision: Deg = 16 LSB
 		.euler_angle_z(z_rotation),      //  Euler angle Z-Axis                  Precision: Deg = 16 LSB
 		.linear_accel_x(x_linear_accel), //  Linear Acceleration X-Axis          Precision: 1 m/s^2 = 100 LSB
 		.linear_accel_y(y_linear_accel), //  Linear Acceleration Y-Axis          Precision: 1 m/s^2 = 100 LSB
 		.linear_accel_z(z_linear_accel), //  Linear Acceleration Z-Axis          Precision: 1 m/s^2 = 100 LSB
-		.x_velocity(x_velocity),
-		.y_velocity(y_velocity),
-		.z_velocity(z_velocity)
-		);
-
+		.x_velocity(x_linear_rate),
+		.y_velocity(y_linear_rate),
+		.z_velocity(z_linear_rate));
 
 	receiver receiver (
 		.throttle_val(throttle_val),
@@ -176,10 +174,11 @@ module drone2 (
 		.active_signal(ac_active),
 		.throttle_target(throttle_val),
 		.yaw_target(yaw_val),
+		.yaw_actual(z_rotation),
 		.roll_target(roll_val),
+		.roll_actual(y_rotation),
 		.pitch_target(pitch_val),
 		.pitch_actual(x_rotation),
-		.roll_actual(y_rotation),
 		.resetn(resetn),
 		.start_signal(1'b1), // changed for testing
 		.us_clk(us_clk));
@@ -236,7 +235,7 @@ module drone2 (
 		.resetn(resetn));
 
 
-	// Update on board LEDs, all inputs are active low	
+	// Update on board LEDs, all inputs are active low
 	always @(posedge sys_clk) begin
 		if (!resetn)
 			led_data_out <= 8'hAA;
@@ -245,7 +244,7 @@ module drone2 (
 		else
 			led_data_out <= imu_debug_out;
 	end
-	
+
 
 endmodule
 
