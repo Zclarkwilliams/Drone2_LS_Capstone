@@ -162,8 +162,9 @@ module angle_controller
 					mapped_throttle <= {6'b000000, latched_throttle, 2'b00}; // ???
 					// input values mapped from 0 - 250 to -31.25 - 31.25
 					mapped_yaw <= $signed({6'b000000, latched_yaw, 2'b00}) - $signed(16'd500);
-					mapped_roll <= ($signed({6'b000000, latched_roll, 2'b00}) - $signed(500)) - $signed(roll_actual);
-					mapped_pitch <= ($signed({6'b000000, latched_pitch, 2'b00}) - $signed(500)) - $signed(pitch_actual);
+          // pitch value from IMU is flipped, add instead of subtract (do this in bfc too?)
+					mapped_roll <= ($signed({6'b000000, latched_roll, 2'b00}) - $signed(16'd500)) + $signed(roll_actual);
+					mapped_pitch <= ($signed({6'b000000, latched_pitch, 2'b00}) - $signed(16'd500)) - $signed(pitch_actual);
 				end
 				STATE_SCALING: begin
 					complete_signal <= 1'b0;
