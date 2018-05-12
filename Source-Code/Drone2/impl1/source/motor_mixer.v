@@ -166,7 +166,7 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 			motor_3_rate				<= `ALL_ZERO_2BYTE;
 			motor_4_rate				<= `ALL_ZERO_2BYTE;
 
-			motor_mixer_state			<= STATE_GET_RATES;
+			motor_mixer_state			<= STATE_SCALE_RATES;
 		end
 		else begin
 			case(motor_mixer_state)
@@ -175,7 +175,7 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 					roll_scale			<= (roll_rate  >>> `MOTOR_RATE_ROLL_SCALER);
 					pitch_scale			<= (pitch_rate >>> `MOTOR_RATE_PITCH_SCALER);
 					//	Throttle does not get scaled because it is equal across all motors
-					motor_mixer_state	<= STATE_SET_RATES;
+					motor_mixer_state	<= STATE_CONVERT_RATES;
 				end
 				STATE_CONVERT_RATES: 	begin
 				// If we don't have throttle input, we don't want to fire off any motors
@@ -264,7 +264,7 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 					motor_2_rate		<= motor_2_temp[9:2];
 					motor_3_rate		<= motor_3_temp[9:2];
 					motor_4_rate		<= motor_4_temp[9:2];
-					motor_mixer_state 	<= STATE_GET_RATES;
+					motor_mixer_state 	<= STATE_SCALE_RATES;
 				end
 				default begin
 					// This state should never be reached! If reached, act as a rst_n signal.
@@ -272,7 +272,7 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 					motor_2_rate		<= `ALL_ZERO_2BYTE;
 					motor_3_rate		<= `ALL_ZERO_2BYTE;
 					motor_4_rate		<= `ALL_ZERO_2BYTE;
-					motor_mixer_state	<= STATE_GET_RATES;
+					motor_mixer_state	<= STATE_SCALE_RATES;
 				end
 			endcase
 		end
