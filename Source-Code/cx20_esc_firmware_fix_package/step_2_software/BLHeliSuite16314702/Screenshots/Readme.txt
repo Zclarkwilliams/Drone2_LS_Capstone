@@ -1,1 +1,0 @@
-Default screen shot folder
