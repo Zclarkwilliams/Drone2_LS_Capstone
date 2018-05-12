@@ -59,10 +59,10 @@
 `define MOTOR_VAL_MAX					16'h03E8
 
 //	Bias to add as a buffer to the motor equation
-`define	MOTOR_1_RATE_BIAS				 	16'h0000
-`define	MOTOR_2_RATE_BIAS				 	16'h0000
-`define	MOTOR_3_RATE_BIAS				 	16'h0000
-`define	MOTOR_4_RATE_BIAS				 	16'h0000
+`define	MOTOR_1_RATE_BIAS				 	$signed(16'h0000)
+`define	MOTOR_2_RATE_BIAS				 	$signed(16'h0000)
+`define	MOTOR_3_RATE_BIAS				 	$signed(16'hFFF0)
+`define	MOTOR_4_RATE_BIAS				 	$signed(16'h0000)
 
 //	Scaler to set proportions of yaw, roll, and pitch
 `define MOTOR_RATE_YAW_SCALER			1
