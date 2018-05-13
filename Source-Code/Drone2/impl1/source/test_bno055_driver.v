@@ -21,7 +21,6 @@ module bno055_module_tb();
 	reg read_write_in = 1;
 	reg [3:0] i2c_count;
 	reg i2c_ack;
-	wire SDA_DEBUG_IN, SCL_DEBUG_IN;
 	reg [7:0]sda_byte;
 
 	integer i;
@@ -45,8 +44,6 @@ module bno055_module_tb();
 		.rstn( (rstn) ),
 		.rstn_imu(rstn_imu),
 		.led_data_out(data_rx),
-		.SDA_DEBUG_IN(SDA_DEBUG_IN),
-		.SCL_DEBUG_IN(SCL_DEBUG_IN),
 		.sys_clk(sys_clk)
 		); /* synthesis syn_hier=hard */;
 
