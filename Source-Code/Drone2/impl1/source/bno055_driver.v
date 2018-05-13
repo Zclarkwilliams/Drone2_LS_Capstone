@@ -23,12 +23,11 @@ module bno055_driver #(
 	inout wire sda_1,                     //  I2C EFB #1 SDA wire
 	inout wire sda_2,                     //  I2C EFB #2 SDA wire
 	input wire rstn,                      //  async negative reset signal 0 = reset, 1 = not reset
-	input wire SDA_DEBUG_IN, SCL_DEBUG_IN /* synthesis syn_force_pads=1 syn_noprune=1*/, //For capturing SDA and SCL in Reveal, no connections inside module
 	output wire [7:0]led_data_out,        //  Module LED Status output
 	input  wire sys_clk,                  //  master clock
 	output wire rstn_imu,                 //  Low active reset signal to IMU hardware to trigger reset
 	output reg  imu_good,                 //  The IMU is either in an error or initial bootup states, measurements not yet active
-	output reg  valid_strobe,             //  Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
+	output reg  imu_data_valid,           //  Bit that indicates that the IMU data is valid, goes low once at the end of a IMU poll and reoccurs every 10ms
 	output reg [15:0]accel_rate_x,        //  Accelerometer X-Axis                Precision: 1 m/s^2 = 100 LSB
 	output reg [15:0]accel_rate_y,        //  Accelerometer Y-Axis                Precision: 1 m/s^2 = 100 LSB
 	output reg [15:0]accel_rate_z,        //  Accelerometer Z-Axis                Precision: 1 m/s^2 = 100 LSB
@@ -86,7 +85,10 @@ module bno055_driver #(
 	reg  [5:0]next_led_view_index;                    //  Next value of LED View Index
 	reg  [7:0]data_rx_reg[`DATA_RX_BYTE_REG_CNT-1:0]; //  Store all measurement bytes from i2c read burst
 	reg  rstn_buffer;                                 //  Negedge clears received measurement buffer
-	reg  rx_data_latch_strobe;                        //  Strobe data output register, latch onto current data in rx buffer
+	reg  rx_data_latch;                               //  Latch current data in rx buffer into internal storage array
+	reg  next_rx_data_latch;                          //  Next value of rx_data_latch
+	reg  output_data_latch;                           //  Latch current data in internal storage array into output drivers
+	reg  next_output_data_latch;                      //  Next value of output_data_latch
 	reg  next_imu_good;                               //  Next value of module imu_good bit
 	reg  i2c_number;								  //  The i2c module to call, 0 = i2c EFB #1, 1 = i2c EFB #2
 	reg [7:0]calibration_reg[`CAL_DATA_REG_CNT-1:0];
@@ -96,6 +98,36 @@ module bno055_driver #(
 	reg increment_cal_restore_index;
 	reg calibrated_once;
 	reg next_calibrated_once;
+	
+	
+	reg [15:0]next_accel_rate_x;        //  Next value of Accelerometer X-Axis              
+	reg [15:0]next_accel_rate_y;        //  Next value of Accelerometer Y-Axis              
+	reg [15:0]next_accel_rate_z;        //  Next value of Accelerometer Z-Axis              
+	reg [15:0]next_magneto_rate_x;      //  Next value of Magnetometer X-Axis               
+	reg [15:0]next_magneto_rate_y;      //  Next value of Magnetometer Y-Axis               
+	reg [15:0]next_magneto_rate_z;      //  Next value of Magnetometer Z-Axis               
+	reg [15:0]next_gyro_rate_x;         //  Next value of Gyroscope X-Axis                  
+	reg [15:0]next_gyro_rate_y;         //  Next value of Gyroscope Y-Axis                  
+	reg [15:0]next_gyro_rate_z;         //  Next value of Gyroscope Z-Axis                  
+	reg [15:0]next_euler_angle_x;       //  Next value of Euler angle X-Axis                
+	reg [15:0]next_euler_angle_y;       //  Next value of Euler angle Y-Axis                
+	reg [15:0]next_euler_angle_z;       //  Next value of Euler angle Z-Axis                
+	reg [15:0]next_quaternion_data_w;   //  Next value of Quaternion X-Axis                 
+	reg [15:0]next_quaternion_data_x;   //  Next value of Quaternion X-Axis                 
+	reg [15:0]next_quaternion_data_y;   //  Next value of Quaternion Y-Axis                 
+	reg [15:0]next_quaternion_data_z;   //  Next value of Quaternion Z-Axis                 
+	reg [15:0]next_linear_accel_x;      //  Next value of Linear Acceleration X-Axis        
+	reg [15:0]next_linear_accel_y;      //  Next value of Linear Acceleration Y-Axis        
+	reg [15:0]next_linear_accel_z;      //  Next value of Linear Acceleration Z-Axis        
+	reg [15:0]next_gravity_accel_x;     //  Next value of Gravitational Acceleration X-Axis 
+	reg [15:0]next_gravity_accel_y;     //  Next value of Gravitational Acceleration Y-Axis 
+	reg [15:0]next_gravity_accel_z;     //  Next value of Gravitational Acceleration Z-Axis 
+	reg [7:0] next_temperature;         //  Next value of Temperature in degrees Celsius    
+	reg [7:0] next_calib_status;        //  Next value of Calibration status register       
+	reg [15:0]next_x_velocity;          //  Next value of Linear velocity in the X direction
+	reg [15:0]next_y_velocity;          //  Next value of Linear velocity in the Y direction
+	reg [15:0]next_z_velocity;          //  Next value of Linear velocity in the Z direction
+	
 
 	//
 	//  Module body
@@ -126,13 +158,13 @@ module bno055_driver #(
 	//  Generates a multiple of 1ms length duration delay trigger - Defaulted to 650 ms for BNO055 reset and boot time
 	always@(posedge sys_clk, negedge clear_waiting_ms, negedge rstn) begin
 		if(~rstn)
-			count_ms       <= 28'hFFFFFFF;
+			count_ms <= 28'hFFFFFFF;
 		else if( clear_waiting_ms == `CLEAR_MS_TIMER )
-			count_ms       <= (`WAIT_MS_DIVIDER*wait_ms);
+			count_ms <= (`WAIT_MS_DIVIDER*wait_ms);
 		else if( count_ms != 28'hFFFFFFF )
-			count_ms       <= (count_ms - 1'b1);
-		else
-			count_ms       <= count_ms;
+			count_ms <= (count_ms - 1'b1);
+		else         
+			count_ms <= count_ms;
 	end
 
 	always@(posedge sys_clk, negedge rstn_buffer, negedge rstn) begin
@@ -154,15 +186,6 @@ module bno055_driver #(
 				data_rx_reg_index              <= data_rx_reg_index + 1'b1;
 			end
 		end
-	end
-
-	always@(posedge sys_clk, negedge rstn) begin
-		if(~rstn)
-			valid_strobe      <= `LOW;
-		else if(rx_data_latch_strobe && (return_state == `BNO055_STATE_WAIT_10MS ) )  // Suppress strobes unless this was a measurement data poll
-			valid_strobe      <= `HIGH;
-		else
-			valid_strobe      <= `LOW;
 	end
 
 	task set_calibration_data_values;
@@ -205,7 +228,28 @@ module bno055_driver #(
 			calibration_reg[`MAG_RADIUS_MSB_INDEX    ] <= 8'd83;
 		end
 	endtask
-
+	
+	always@(posedge sys_clk, negedge rstn) begin
+		if(~rstn) begin
+			output_data_latch <= `FALSE;
+			imu_data_valid    <= `LOW;
+		end
+		else if (rx_data_latch) begin
+			output_data_latch <= `TRUE;
+			if(imu_good)  // Suppress valid bit toggle unless this was a measurement data poll (IMU fully initilized and functioning)
+				imu_data_valid <= `LOW;
+			else
+				imu_data_valid <= `LOW;
+		end
+		else begin
+			output_data_latch <= `FALSE;
+			if(imu_good)  // Hold valid bit high unless this was a measurement data poll (IMU fully initilized and functioning)
+				imu_data_valid <= `HIGH;
+			else
+				imu_data_valid <= `LOW;
+		end
+	end
+	
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn) begin
 			accel_rate_x      <= 16'b0;
@@ -237,35 +281,123 @@ module bno055_driver #(
 			z_velocity        <= 8'b0;
 			set_calibration_data_values();
 		end
-		else if(rx_data_latch_strobe) begin
-			accel_rate_x      <= {data_rx_reg[`ACC_DATA_X_MSB_INDEX],data_rx_reg[`ACC_DATA_X_LSB_INDEX]};
-			accel_rate_y      <= {data_rx_reg[`ACC_DATA_Y_MSB_INDEX],data_rx_reg[`ACC_DATA_Y_LSB_INDEX]};
-			accel_rate_z      <= {data_rx_reg[`ACC_DATA_Z_MSB_INDEX],data_rx_reg[`ACC_DATA_Z_LSB_INDEX]};
-			magneto_rate_x    <= {data_rx_reg[`MAG_DATA_X_MSB_INDEX],data_rx_reg[`MAG_DATA_X_LSB_INDEX]};
-			magneto_rate_y    <= {data_rx_reg[`MAG_DATA_Y_MSB_INDEX],data_rx_reg[`MAG_DATA_Y_LSB_INDEX]};
-			magneto_rate_z    <= {data_rx_reg[`MAG_DATA_Z_MSB_INDEX],data_rx_reg[`MAG_DATA_Z_LSB_INDEX]};
-			gyro_rate_x       <= {data_rx_reg[`GYR_DATA_X_MSB_INDEX],data_rx_reg[`GYR_DATA_X_LSB_INDEX]};
-			gyro_rate_y       <= {data_rx_reg[`GYR_DATA_Y_MSB_INDEX],data_rx_reg[`GYR_DATA_Y_LSB_INDEX]};
-			gyro_rate_z       <= {data_rx_reg[`GYR_DATA_Z_MSB_INDEX],data_rx_reg[`GYR_DATA_Z_LSB_INDEX]};
-			euler_angle_x     <= {data_rx_reg[`EUL_DATA_X_MSB_INDEX],data_rx_reg[`EUL_DATA_X_LSB_INDEX]};
-			euler_angle_y     <= {data_rx_reg[`EUL_DATA_Y_MSB_INDEX],data_rx_reg[`EUL_DATA_Y_LSB_INDEX]};
-			euler_angle_z     <= {data_rx_reg[`EUL_DATA_Z_MSB_INDEX],data_rx_reg[`EUL_DATA_Z_LSB_INDEX]};
-			quaternion_data_w <= {data_rx_reg[`QUA_DATA_W_MSB_INDEX],data_rx_reg[`QUA_DATA_W_LSB_INDEX]}; quaternion_data_x <= {data_rx_reg[`QUA_DATA_X_MSB_INDEX],data_rx_reg[`QUA_DATA_X_LSB_INDEX]};
-			quaternion_data_y <= {data_rx_reg[`QUA_DATA_Y_MSB_INDEX],data_rx_reg[`QUA_DATA_Y_LSB_INDEX]};
-			quaternion_data_z <= {data_rx_reg[`QUA_DATA_Z_MSB_INDEX],data_rx_reg[`QUA_DATA_Z_LSB_INDEX]};
-			linear_accel_x    <= {data_rx_reg[`LIN_DATA_X_MSB_INDEX],data_rx_reg[`LIN_DATA_X_LSB_INDEX]};
-			linear_accel_y    <= {data_rx_reg[`LIN_DATA_Y_MSB_INDEX],data_rx_reg[`LIN_DATA_Y_LSB_INDEX]};
-			linear_accel_z    <= {data_rx_reg[`LIN_DATA_Z_MSB_INDEX],data_rx_reg[`LIN_DATA_Z_LSB_INDEX]};
-			gravity_accel_x   <= {data_rx_reg[`GRA_DATA_X_MSB_INDEX],data_rx_reg[`GRA_DATA_X_LSB_INDEX]};
-			gravity_accel_y   <= {data_rx_reg[`GRA_DATA_Y_MSB_INDEX],data_rx_reg[`GRA_DATA_Y_LSB_INDEX]};
-			gravity_accel_z   <= {data_rx_reg[`GRA_DATA_Z_MSB_INDEX],data_rx_reg[`GRA_DATA_Z_LSB_INDEX]};
-			temperature       <= data_rx_reg[`TEMPERATURE_DATA_INDEX];
-			calib_status      <= data_rx_reg[`CALIBRATION_DATA_INDEX];
-			// Set these to 0 for now, just to have something connected, need to make it a velocity later
-			x_velocity        <= 8'b0;
-			y_velocity        <= 8'b0;
-			z_velocity        <= 8'b0;
+		else if(rx_data_latch) begin
+			if(next_calib_status != 8'h00) begin //Calibration status is non-zero, hold yaw angle, all others to 0
+				accel_rate_x      <= 16'b0;
+				accel_rate_y      <= 16'b0;
+				accel_rate_z      <= 16'b0;
+				magneto_rate_x    <= 16'b0;
+				magneto_rate_y    <= 16'b0;
+				magneto_rate_z    <= 16'b0;
+				gyro_rate_x       <= 16'b0;
+				gyro_rate_y       <= 16'b0;
+				gyro_rate_z       <= 16'b0;
+				euler_angle_x     <= 16'b0;
+				euler_angle_y     <= 16'b0;
+				euler_angle_z     <= euler_angle_z;
+				quaternion_data_w <= 16'b0;
+				quaternion_data_x <= 16'b0;
+				quaternion_data_y <= 16'b0;
+				quaternion_data_z <= 16'b0;
+				linear_accel_x    <= 16'b0;
+				linear_accel_y    <= 16'b0;
+				linear_accel_z    <= 16'b0;
+				gravity_accel_x   <= 16'b0;
+				gravity_accel_y   <= 16'b0;
+				gravity_accel_z   <= 16'b0;
+				temperature       <= next_temperature;
+				calib_status      <= next_calib_status;
+				// Set these to 0 for now, just to have something connected, need to make it a velocity later
+				x_velocity        <= 8'b0;
+				y_velocity        <= 8'b0;
+				z_velocity        <= 8'b0;
+			end
+			else begin // Calibration status is still good, output this data
+				accel_rate_x      <= next_accel_rate_x     ;
+				accel_rate_y      <= next_accel_rate_y     ;
+				accel_rate_z      <= next_accel_rate_z     ;
+				magneto_rate_x    <= next_magneto_rate_x   ;
+				magneto_rate_y    <= next_magneto_rate_y   ;
+				magneto_rate_z    <= next_magneto_rate_z   ;
+				gyro_rate_x       <= next_gyro_rate_x      ;
+				gyro_rate_y       <= next_gyro_rate_y      ;
+				gyro_rate_z       <= next_gyro_rate_z      ;
+				euler_angle_x     <= next_euler_angle_x    ;
+				euler_angle_y     <= next_euler_angle_y    ;
+				euler_angle_z     <= next_euler_angle_z    ;
+				quaternion_data_w <= next_quaternion_data_w;
+				quaternion_data_x <= next_quaternion_data_x;
+				quaternion_data_y <= next_quaternion_data_y;
+				quaternion_data_z <= next_quaternion_data_z;
+				linear_accel_x    <= next_linear_accel_x   ;
+				linear_accel_y    <= next_linear_accel_y   ;
+				linear_accel_z    <= next_linear_accel_z   ;
+				gravity_accel_x   <= next_gravity_accel_x  ;
+				gravity_accel_y   <= next_gravity_accel_y  ;
+				gravity_accel_z   <= next_gravity_accel_z  ;
+				temperature       <= next_temperature      ;
+				calib_status      <= next_calib_status     ;
+				// Set these to 0 for now, just to have something connected, need to make it a velocity later
+				x_velocity        <= 8'b0;
+				y_velocity        <= 8'b0;
+				z_velocity        <= 8'b0;
+			end
 			set_calibration_data_values();
+		end
+	end
+
+	always@(posedge sys_clk, negedge rstn) begin
+		if(~rstn) begin
+			next_accel_rate_x      <= 16'b0;
+			next_accel_rate_y      <= 16'b0;
+			next_accel_rate_z      <= 16'b0;
+			next_magneto_rate_x    <= 16'b0;
+			next_magneto_rate_y    <= 16'b0;
+			next_magneto_rate_z    <= 16'b0;
+			next_gyro_rate_x       <= 16'b0;
+			next_gyro_rate_y       <= 16'b0;
+			next_gyro_rate_z       <= 16'b0;
+			next_euler_angle_x     <= 16'b0;
+			next_euler_angle_y     <= 16'b0;
+			next_euler_angle_z     <= 16'b0;
+			next_quaternion_data_w <= 16'b0;
+			next_quaternion_data_x <= 16'b0;
+			next_quaternion_data_y <= 16'b0;
+			next_quaternion_data_z <= 16'b0;
+			next_linear_accel_x    <= 16'b0;
+			next_linear_accel_y    <= 16'b0;
+			next_linear_accel_z    <= 16'b0;
+			next_gravity_accel_x   <= 16'b0;
+			next_gravity_accel_y   <= 16'b0;
+			next_gravity_accel_z   <= 16'b0;
+			next_temperature       <= 8'b0;
+			next_calib_status      <= 8'b0;
+		end
+		else if(rx_data_latch) begin
+			next_accel_rate_x      <= {data_rx_reg[`ACC_DATA_X_MSB_INDEX],data_rx_reg[`ACC_DATA_X_LSB_INDEX]};
+			next_accel_rate_y      <= {data_rx_reg[`ACC_DATA_Y_MSB_INDEX],data_rx_reg[`ACC_DATA_Y_LSB_INDEX]};
+			next_accel_rate_z      <= {data_rx_reg[`ACC_DATA_Z_MSB_INDEX],data_rx_reg[`ACC_DATA_Z_LSB_INDEX]};
+			next_magneto_rate_x    <= {data_rx_reg[`MAG_DATA_X_MSB_INDEX],data_rx_reg[`MAG_DATA_X_LSB_INDEX]};
+			next_magneto_rate_y    <= {data_rx_reg[`MAG_DATA_Y_MSB_INDEX],data_rx_reg[`MAG_DATA_Y_LSB_INDEX]};
+			next_magneto_rate_z    <= {data_rx_reg[`MAG_DATA_Z_MSB_INDEX],data_rx_reg[`MAG_DATA_Z_LSB_INDEX]};
+			next_gyro_rate_x       <= {data_rx_reg[`GYR_DATA_X_MSB_INDEX],data_rx_reg[`GYR_DATA_X_LSB_INDEX]};
+			next_gyro_rate_y       <= {data_rx_reg[`GYR_DATA_Y_MSB_INDEX],data_rx_reg[`GYR_DATA_Y_LSB_INDEX]};
+			next_gyro_rate_z       <= {data_rx_reg[`GYR_DATA_Z_MSB_INDEX],data_rx_reg[`GYR_DATA_Z_LSB_INDEX]};
+			next_euler_angle_x     <= {data_rx_reg[`EUL_DATA_X_MSB_INDEX],data_rx_reg[`EUL_DATA_X_LSB_INDEX]};
+			next_euler_angle_y     <= {data_rx_reg[`EUL_DATA_Y_MSB_INDEX],data_rx_reg[`EUL_DATA_Y_LSB_INDEX]};
+			next_euler_angle_z     <= {data_rx_reg[`EUL_DATA_Z_MSB_INDEX],data_rx_reg[`EUL_DATA_Z_LSB_INDEX]};
+			next_quaternion_data_w <= {data_rx_reg[`QUA_DATA_W_MSB_INDEX],data_rx_reg[`QUA_DATA_W_LSB_INDEX]};
+			next_quaternion_data_x <= {data_rx_reg[`QUA_DATA_X_MSB_INDEX],data_rx_reg[`QUA_DATA_X_LSB_INDEX]};
+			next_quaternion_data_y <= {data_rx_reg[`QUA_DATA_Y_MSB_INDEX],data_rx_reg[`QUA_DATA_Y_LSB_INDEX]};
+			next_quaternion_data_z <= {data_rx_reg[`QUA_DATA_Z_MSB_INDEX],data_rx_reg[`QUA_DATA_Z_LSB_INDEX]};
+			next_linear_accel_x    <= {data_rx_reg[`LIN_DATA_X_MSB_INDEX],data_rx_reg[`LIN_DATA_X_LSB_INDEX]};
+			next_linear_accel_y    <= {data_rx_reg[`LIN_DATA_Y_MSB_INDEX],data_rx_reg[`LIN_DATA_Y_LSB_INDEX]};
+			next_linear_accel_z    <= {data_rx_reg[`LIN_DATA_Z_MSB_INDEX],data_rx_reg[`LIN_DATA_Z_LSB_INDEX]};
+			next_gravity_accel_x   <= {data_rx_reg[`GRA_DATA_X_MSB_INDEX],data_rx_reg[`GRA_DATA_X_LSB_INDEX]};
+			next_gravity_accel_y   <= {data_rx_reg[`GRA_DATA_Y_MSB_INDEX],data_rx_reg[`GRA_DATA_Y_LSB_INDEX]};
+			next_gravity_accel_z   <= {data_rx_reg[`GRA_DATA_Z_MSB_INDEX],data_rx_reg[`GRA_DATA_Z_LSB_INDEX]};
+			next_temperature       <= data_rx_reg[`TEMPERATURE_DATA_INDEX];
+			next_calib_status      <= data_rx_reg[`CALIBRATION_DATA_INDEX];
 		end
 	end
 //--------------------------------------------------------------------------------------------------------------------//
@@ -304,6 +436,8 @@ module bno055_driver #(
 			slave_address     <= next_slave_address;
 			imu_good          <= `FALSE;
 			calibrated_once   <= `FALSE;
+			rx_data_latch     <= `FALSE;
+			output_data_latch <= `FALSE;
 		end
 		else begin
 			data_reg          <= next_data_reg;
@@ -318,6 +452,8 @@ module bno055_driver #(
 			slave_address     <= next_slave_address;
 			imu_good          <= next_imu_good;
 			calibrated_once   <= next_calibrated_once;
+			rx_data_latch     <= next_rx_data_latch;
+			output_data_latch <= next_output_data_latch;
 		end
 	end
 
@@ -337,7 +473,7 @@ module bno055_driver #(
 			next_wait_ms              = INIT_TIME; // Reset to Normal takes 650 ms for BNO055
 			rstn_buffer               = `LOW;
 			next_target_read_count    = 1'b1;
-			rx_data_latch_strobe      = `LOW;
+			next_rx_data_latch      = `LOW;
 			i2c_number 			      = 1'b0; // Default to i2c EFB #1
 			next_slave_address        = slave_address;
 			increment_cal_restore_index = 1'b0;
@@ -357,7 +493,7 @@ module bno055_driver #(
 			next_wait_ms              = wait_ms;
 			rstn_buffer               = `HIGH;
 			next_target_read_count    = target_read_count;
-			rx_data_latch_strobe      = `LOW;
+			next_rx_data_latch      = `LOW;
 			i2c_number 			      = 1'b0; // Default to i2c EFB #1
 			next_slave_address        = `BNO055_SLAVE_ADDRESS;
 			next_calibrated_once      = calibrated_once;
@@ -572,7 +708,7 @@ module bno055_driver #(
 					next_data_reg          = `BYTE_ALL_ZERO;
 					next_data_tx           = `BYTE_ALL_ZERO;
 					if( (read_write_in == `I2C_READ)) //  Only latch data if this was a read
-						rx_data_latch_strobe  = `HIGH;
+						next_rx_data_latch  = `HIGH;
 					next_bno055_state      = return_state;
 				end
 
