@@ -7,6 +7,7 @@
  */
 
 /**
+ * TODO: Fill in these descriptions.
  * pwm_generator_block - Generates a single PWM signal.
  *
  * Parameters:

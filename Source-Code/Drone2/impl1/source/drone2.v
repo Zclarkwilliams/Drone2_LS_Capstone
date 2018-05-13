@@ -29,8 +29,6 @@
  * @sda: serial data line to the IMU
  * @scl: serial clock line to the IMU
  */
-
-
 module drone2 (
 	output wire motor_1_pwm,
 	output wire motor_2_pwm,
@@ -122,6 +120,8 @@ module drone2 (
 		.sys_clk(sys_clk),
 		.resetn(resetn));
 
+	// TODO: Determing if we need these comments here.  They mirror the exact
+	//		 comments from the module.
 	bno055_driver imu (
 		.scl_1(scl_1),                    //  I2C EFB SDA wires, Primary EFB
 		.sda_1(sda_1),                    //  I2C EFB SDA wires, Primary EFB

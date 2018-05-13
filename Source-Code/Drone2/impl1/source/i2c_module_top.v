@@ -8,6 +8,10 @@
 `include "common_defines.v"
 `include "i2c_module_defines.v"
 
+// TODO: Make this module look like all of the others with the header comment
+// 		 describing the inouts, inputs, and outputs instead of after the
+// 		 variable.
+
 module i2c_module(
 	inout  wire scl_1, scl_2,                   //  I2C EFB #1 and #2 SCL wires
 	inout  wire sda_1, sda_2,                   //  I2C EFB #1 and #2 SDA wires
