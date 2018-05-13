@@ -41,3 +41,5 @@ LOCATE COMP "motor_1_pwm" SITE "P9" ;
 LOCATE COMP "motor_2_pwm" SITE "M8" ;
 LOCATE COMP "motor_3_pwm" SITE "T9" ;
 LOCATE COMP "motor_4_pwm" SITE "N9" ;
+LOCATE COMP "debug_leds_receiver_throttle_n" SITE "N2" ;
+IOBUF PORT "resetn" PULLMODE=DOWN IO_TYPE=LVCMOS25 ;

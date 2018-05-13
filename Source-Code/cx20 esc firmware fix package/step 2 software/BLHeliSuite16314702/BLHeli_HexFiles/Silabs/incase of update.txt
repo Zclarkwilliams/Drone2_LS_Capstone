@@ -1,1 +1,0 @@
-copy esc.cfg and hex files to BLHeliSuite16314702\BLHeli_HexFiles\Silabs

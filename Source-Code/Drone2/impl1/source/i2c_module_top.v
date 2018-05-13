@@ -9,8 +9,8 @@
 `include "i2c_module_defines.v"
 
 module i2c_module(
-	inout  scl_1, scl_2,                   //  I2C EFB #1 and #2 SCL wires
-	inout  sda_1, sda_2,                   //  I2C EFB #1 and #2 SDA wires
+	inout  wire scl_1, scl_2,                   //  I2C EFB #1 and #2 SCL wires
+	inout  wire sda_1, sda_2,                   //  I2C EFB #1 and #2 SDA wires
 	input  wire rstn,                      //  Async negative global reset signal 0 = reset, 1 = not reset
 	input  wire [5:0] target_read_count,   //  The number of bytes to for the continuous read burst - Max value is 31 bytes
 	output reg  [7:0] module_data_out,     //  Received data byte for i2c read cycles

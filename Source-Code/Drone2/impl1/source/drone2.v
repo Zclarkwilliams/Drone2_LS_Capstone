@@ -1,4 +1,6 @@
 `timescale 1ns / 1ns
+`default_nettype none
+`include "common_defines.v"
 
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
@@ -28,7 +30,6 @@
  * @scl: serial clock line to the IMU
  */
 
- `include "common_defines.v"
 
 module drone2 (
 	output wire motor_1_pwm,
@@ -39,12 +40,13 @@ module drone2 (
 	input wire yaw_pwm,
 	input wire roll_pwm,
 	input wire pitch_pwm,
+	input wire debug_leds_receiver_throttle_n,
 	input wire resetn,
 	output wire rstn_imu,
-	output wire [7:0]led_data_out,
+	output reg [7:0]led_data_out,
 	inout wire sda_1,
-	inout wire sda_2,
 	inout wire scl_1,
+	inout wire sda_2,
 	inout wire scl_2);
 
 	/* TODO: Figure out what these bit widths actually need to be
@@ -94,6 +96,7 @@ module drone2 (
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_3_rate;
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_4_rate;
 
+	wire [7:0] imu_debug_out;
 	wire imu_good;
 	wire iimu_data_valid;
 
@@ -106,6 +109,8 @@ module drone2 (
 	wire bf_active;
 
 	wire sys_clk;
+  wire us_clk;
+
 	// TODO: Determine if we should stick with this clock rate (slower? faster?)
 	defparam OSCH_inst.NOM_FREQ = "38.00";
 	OSCH OSCH_inst (.STDBY(1'b0),
@@ -117,14 +122,13 @@ module drone2 (
 		.sys_clk(sys_clk),
 		.resetn(resetn));
 
-
 	bno055_driver	i(
-		.scl_1(scl_1),                   //  I2C EFB SDA wires, Primary EFB
-		.sda_1(sda_1),                   //  I2C EFB SDA wires, Primary EFB
-		.scl_2(scl_2),                   //  I2C EFB SDA wires, Secondary EFB
-		.sda_2(sda_2),                   //  I2C EFB SDA wires, Secondary EFB
-		.rstn(resetn),                   //  async negative reset signal 0 = reset, 1 = not reset
-		.led_data_out(led_data_out),     //  Module LED Status output -  //////////////////// Changed for testing, need to enable and feed LEDs somehow. /////////////////////
+		.scl_1(scl_1),                    //  I2C EFB SDA wires, Primary EFB
+		.sda_1(sda_1),                    //  I2C EFB SDA wires, Primary EFB
+		.scl_2(scl_2),                    //  I2C EFB SDA wires, Secondary EFB
+		.sda_2(sda_2),                    //  I2C EFB SDA wires, Secondary EFB
+		.rstn(resetn),                   //  async negative reset signal 0 = reset, 1 = not resete
+		.led_data_out(imu_debug_out),     //  Module LED Status output
 		.sys_clk(sys_clk),               //  master clock
 		.rstn_imu(rstn_imu),             //  Low active reset signal to IMU hardware to trigger reset
 		.imu_good(imu_good),             //  The IMU is either in an error or initial bootup states, measurements not yet active
@@ -155,6 +159,7 @@ module drone2 (
 		.us_clk(us_clk),
 		.resetn(resetn));
 
+
 	angle_controller #(
 		.RATE_BIT_WIDTH(RATE_BIT_WIDTH),
 		.REC_VAL_BIT_WIDTH(REC_VAL_BIT_WIDTH),
@@ -176,8 +181,7 @@ module drone2 (
 		.pitch_actual(x_rotation),
 		.roll_actual(y_rotation),
 		.resetn(resetn),
-		.state(state),
-		.start_signal(1'b1), // changed for testing, should be imu_data_valid
+		.start_signal(1'b1), // changed for testing
 		.us_clk(us_clk));
 
 /*
@@ -208,50 +212,40 @@ module drone2 (
 		.motor_2_rate(motor_2_rate),
 		.motor_3_rate(motor_3_rate),
 		.motor_4_rate(motor_4_rate),
-/*		// test connections
-		.throttle_rate({4'h0, throttle_val, 4'h0}),
-		.yaw_rate({4'h0, yaw_val, 4'h0}),
-		.roll_rate({4'h0, roll_val, 4'h0}),
-		.pitch_rate({4'h0, pitch_val, 4'h0}),
-*/
 
+    // test connections, from angle controller
 		.throttle_rate(throttle_target_rate),
 		.yaw_rate(yaw_target_rate),
 		.roll_rate(roll_target_rate),
 		.pitch_rate(pitch_target_rate),
 
-
 		.sys_clk(sys_clk),
 		.rst_n(resetn));
 
-	// For now when in reset all LEDs are on
-	//assign led_data_out = (!resetn) ? 8'h00 : 8'hFF;
-	//assign led_data_out = ~throttle_target_rate[9:2];
-	//assign led_data_out = {3'b111, ~state};
-	//assign led_data_out = ~throttle_val;
 
 	pwm_generator pwm_generator (
 		.motor_1_pwm(motor_1_pwm),
 		.motor_2_pwm(motor_2_pwm),
 		.motor_3_pwm(motor_3_pwm),
 		.motor_4_pwm(motor_4_pwm),
-		.state_out(state_out),
-
-		/*
-		.motor_1_rate(throttle_val),
-		.motor_2_rate(roll_val),
-		.motor_3_rate(pitch_val),
-		.motor_4_rate(yaw_val),
-		*/
-
 		.motor_1_rate(motor_1_rate),
 		.motor_2_rate(motor_2_rate),
 		.motor_3_rate(motor_3_rate),
 		.motor_4_rate(motor_4_rate),
-
-
 		.us_clk(us_clk),
 		.resetn(resetn));
+
+
+	// Update on board LEDs, all inputs are active low	
+	always @(posedge sys_clk) begin
+		if (!resetn)
+			led_data_out <= 8'hAA;
+		else if (!debug_leds_receiver_throttle_n)
+			led_data_out <= ~throttle_val;
+		else
+			led_data_out <= imu_debug_out;
+	end
+	
 
 endmodule
 
