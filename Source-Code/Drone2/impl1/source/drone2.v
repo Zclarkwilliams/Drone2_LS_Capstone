@@ -109,7 +109,7 @@ module drone2 (
 	wire bf_active;
 
 	wire sys_clk;
-  wire us_clk;
+	wire us_clk;
 
 	// TODO: Determine if we should stick with this clock rate (slower? faster?)
 	defparam OSCH_inst.NOM_FREQ = "38.00";
