@@ -218,7 +218,7 @@ module drone2 (
 		.roll_rate(roll_target_rate),
 		.pitch_rate(pitch_target_rate),
 
-		.sys_clk(sys_clk),
+		.sys_clk(us_clk),
 		.rst_n(resetn));
 
 	pwm_generator pwm_generator (
