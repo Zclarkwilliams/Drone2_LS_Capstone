@@ -44,6 +44,8 @@
 	output wire [PID_RATE_BIT_WIDTH-1:0] roll_rate_out,
  	output wire [PID_RATE_BIT_WIDTH-1:0] pitch_rate_out,
 	output reg complete_signal,
+	// Debug led output wire
+	output wire [15:0] DEBUG_WIRE,
  	input wire [RATE_BIT_WIDTH-1:0] yaw_target,
  	input wire [RATE_BIT_WIDTH-1:0] roll_target,
  	input wire [RATE_BIT_WIDTH-1:0] pitch_target,
@@ -161,6 +163,7 @@
 		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
 		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH))
 	yaw_pid (
+		//.DEBUG_WIRE(DEBUG_WIRE),
 		.rate_out(yaw_rate_out),
 		.pid_complete(yaw_complete),
 		.pid_active(yaw_active),
@@ -177,6 +180,7 @@
 		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
 		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH))
 	pitch_pid (
+		//.DEBUG_WIRE(DEBUG_WIRE),
 		.rate_out(pitch_rate_out),
 		.pid_complete(pitch_complete),
 		.pid_active(pitch_active),
@@ -193,6 +197,7 @@
 		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
 		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH))
 	roll_pid (
+		.DEBUG_WIRE(DEBUG_WIRE),
 		.rate_out(roll_rate_out),
 		.pid_complete(roll_complete),
 		.pid_active(roll_active),
