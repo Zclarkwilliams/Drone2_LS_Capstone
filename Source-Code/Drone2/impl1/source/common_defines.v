@@ -48,12 +48,14 @@
 `define YAW_DEFAULT_PULSE_TIME_HIGH_US		 16'd1500
 `define ROLL_DEFAULT_PULSE_TIME_HIGH_US		 16'd1500
 `define PITCH_DEFAULT_PULSE_TIME_HIGH_US	 16'd1500
+`define AUX1_DEFAULT_PULSE_TIME_HIGH_US	 	 16'd1500
+`define AUX2_DEFAULT_PULSE_TIME_HIGH_US	 	 16'd1500
+`define SWAB_DEFAULT_PULSE_TIME_HIGH_US	 	 16'd1500
 
-/*	Motor_Rate Module Defines:
+/************************************************************ *
+ *	Motor_Rate Module Defines:
  *
- *	All values assigned below are initially arbitrary and
- *	must be tested and adjusted appropriately
- */
+ ************************************************************/
 
 //	Min and Max boundary values for to send to ESC's
 `define MOTOR_VAL_MIN					16'h0002
@@ -76,4 +78,3 @@
 
 //	Value to add to value before bit shift rounding to help rounding error
 `define MOTOR_RATE_ROUND_UP_VAL 		8'd127
-
