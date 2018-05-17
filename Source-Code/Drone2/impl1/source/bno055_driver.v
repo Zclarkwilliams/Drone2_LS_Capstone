@@ -27,7 +27,7 @@ module bno055_driver #(
 	input  wire sys_clk,                  //  master clock
 	output wire rstn_imu,                 //  Low active reset signal to IMU hardware to trigger reset
 	output reg  imu_good,                 //  The IMU is either in an error or initial bootup states, measurements not yet active
-	output reg  imu_data_valid,           //  Bit that indicates that the IMU data is valid, goes low once at the end of a IMU poll and reoccurs every 10ms
+	output reg  imu_data_valid,           //  Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
 	output reg [15:0]accel_rate_x,        //  Accelerometer X-Axis                Precision: 1 m/s^2 = 100 LSB
 	output reg [15:0]accel_rate_y,        //  Accelerometer Y-Axis                Precision: 1 m/s^2 = 100 LSB
 	output reg [15:0]accel_rate_z,        //  Accelerometer Z-Axis                Precision: 1 m/s^2 = 100 LSB
@@ -100,33 +100,33 @@ module bno055_driver #(
 	reg next_calibrated_once;
 	
 	
-	reg [15:0]next_accel_rate_x;        //  Next value of Accelerometer X-Axis              
-	reg [15:0]next_accel_rate_y;        //  Next value of Accelerometer Y-Axis              
-	reg [15:0]next_accel_rate_z;        //  Next value of Accelerometer Z-Axis              
-	reg [15:0]next_magneto_rate_x;      //  Next value of Magnetometer X-Axis               
-	reg [15:0]next_magneto_rate_y;      //  Next value of Magnetometer Y-Axis               
-	reg [15:0]next_magneto_rate_z;      //  Next value of Magnetometer Z-Axis               
-	reg [15:0]next_gyro_rate_x;         //  Next value of Gyroscope X-Axis                  
-	reg [15:0]next_gyro_rate_y;         //  Next value of Gyroscope Y-Axis                  
-	reg [15:0]next_gyro_rate_z;         //  Next value of Gyroscope Z-Axis                  
-	reg [15:0]next_euler_angle_x;       //  Next value of Euler angle X-Axis                
-	reg [15:0]next_euler_angle_y;       //  Next value of Euler angle Y-Axis                
-	reg [15:0]next_euler_angle_z;       //  Next value of Euler angle Z-Axis                
-	reg [15:0]next_quaternion_data_w;   //  Next value of Quaternion X-Axis                 
-	reg [15:0]next_quaternion_data_x;   //  Next value of Quaternion X-Axis                 
-	reg [15:0]next_quaternion_data_y;   //  Next value of Quaternion Y-Axis                 
-	reg [15:0]next_quaternion_data_z;   //  Next value of Quaternion Z-Axis                 
-	reg [15:0]next_linear_accel_x;      //  Next value of Linear Acceleration X-Axis        
-	reg [15:0]next_linear_accel_y;      //  Next value of Linear Acceleration Y-Axis        
-	reg [15:0]next_linear_accel_z;      //  Next value of Linear Acceleration Z-Axis        
-	reg [15:0]next_gravity_accel_x;     //  Next value of Gravitational Acceleration X-Axis 
-	reg [15:0]next_gravity_accel_y;     //  Next value of Gravitational Acceleration Y-Axis 
-	reg [15:0]next_gravity_accel_z;     //  Next value of Gravitational Acceleration Z-Axis 
-	reg [7:0] next_temperature;         //  Next value of Temperature in degrees Celsius    
-	reg [7:0] next_calib_status;        //  Next value of Calibration status register       
-	reg [15:0]next_x_velocity;          //  Next value of Linear velocity in the X direction
-	reg [15:0]next_y_velocity;          //  Next value of Linear velocity in the Y direction
-	reg [15:0]next_z_velocity;          //  Next value of Linear velocity in the Z direction
+	reg [15:0]next_accel_rate_x,        //  Accelerometer X-Axis                Precision: 1 m/s^2 = 100 LSB
+	reg [15:0]next_accel_rate_y,        //  Accelerometer Y-Axis                Precision: 1 m/s^2 = 100 LSB
+	reg [15:0]next_accel_rate_z,        //  Accelerometer Z-Axis                Precision: 1 m/s^2 = 100 LSB
+	reg [15:0]next_magneto_rate_x,      //  Magnetometer X-Axis                 Precision: 1uT = 16 LSB
+	reg [15:0]next_magneto_rate_y,      //  Magnetometer Y-Axis                 Precision: 1uT = 16 LSB
+	reg [15:0]next_magneto_rate_z,      //  Magnetometer Z-Axis                 Precision: 1uT = 16 LSB
+	reg [15:0]next_gyro_rate_x,         //  Gyroscope X-Axis                    Precision: Dps = 16 LSB
+	reg [15:0]next_gyro_rate_y,         //  Gyroscope Y-Axis                    Precision: Dps = 16 LSB
+	reg [15:0]next_gyro_rate_z,         //  Gyroscope Z-Axis                    Precision: Dps = 16 LSB
+	reg [15:0]next_euler_angle_x,       //  Euler angle X-Axis                  Precision: Deg = 16 LSB
+	reg [15:0]next_euler_angle_y,       //  Euler angle Y-Axis                  Precision: Deg = 16 LSB
+	reg [15:0]next_euler_angle_z,       //  Euler angle Z-Axis                  Precision: Deg = 16 LSB
+	reg [15:0]next_quaternion_data_w,   //  Quaternion X-Axis                   Precision: Unit = 2^14 LSB
+	reg [15:0]next_quaternion_data_x,   //  Quaternion X-Axis                   Precision: Unit = 2^14 LSB
+	reg [15:0]next_quaternion_data_y,   //  Quaternion Y-Axis                   Precision: Unit = 2^14 LSB
+	reg [15:0]next_quaternion_data_z,   //  Quaternion Z-Axis                   Precision: Unit = 2^14 LSB
+	reg [15:0]next_linear_accel_x,      //  Linear Acceleration X-Axis          Precision: 1 m/s^2 = 100 LSB
+	reg [15:0]next_linear_accel_y,      //  Linear Acceleration Y-Axis          Precision: 1 m/s^2 = 100 LSB
+	reg [15:0]next_linear_accel_z,      //  Linear Acceleration Z-Axis          Precision: 1 m/s^2 = 100 LSB
+	reg [15:0]next_gravity_accel_x,     //  Gravitational Acceleration X-Axis   Precision: 1 m/s^2 = 100 LSB
+	reg [15:0]next_gravity_accel_y,     //  Gravitational Acceleration Y-Axis   Precision: 1 m/s^2 = 100 LSB
+	reg [15:0]next_gravity_accel_z,     //  Gravitational Acceleration Z-Axis   Precision: 1 m/s^2 = 100 LSB
+	reg [7:0] next_temperature,         //  Temperature in degrees Celsius      Precision: 1 Deg C = 1 LSB
+	reg [7:0] next_calib_status,        //  Calibration status register         Bits DDCCBBAA : AA=System, BB=Gyroscope, CC=Accelerometer, DD=Magnetometer
+	reg [15:0]next_x_velocity,          //  Linear velocity in the X direction, one byte signed integer
+	reg [15:0]next_y_velocity,          //  Linear velocity in the Y direction, one byte signed integer
+	reg [15:0]next_z_velocity           //  Linear velocity in the Z direction, one byte signed integer
 	
 
 	//
@@ -236,14 +236,14 @@ module bno055_driver #(
 		end
 		else if (rx_data_latch) begin
 			output_data_latch <= `TRUE;
-			if(imu_good)  // Suppress valid bit toggle unless this was a measurement data poll (IMU fully initilized and functioning)
-				imu_data_valid <= `LOW;
+			if(return_state == `BNO055_STATE_WAIT_10MS)  // Suppress valid bit unless this was a measurement data poll
+				imu_data_valid <= `HIGH;
 			else
 				imu_data_valid <= `LOW;
 		end
 		else begin
 			output_data_latch <= `FALSE;
-			if(imu_good)  // Hold valid bit high unless this was a measurement data poll (IMU fully initilized and functioning)
+			if(return_state == `BNO055_STATE_WAIT_10MS )  // Suppress valid bit unless this was a measurement data poll
 				imu_data_valid <= `HIGH;
 			else
 				imu_data_valid <= `LOW;
@@ -282,66 +282,34 @@ module bno055_driver #(
 			set_calibration_data_values();
 		end
 		else if(rx_data_latch) begin
-			if(next_calib_status != 8'h00) begin //Calibration status is non-zero, hold yaw angle, all others to 0
-				accel_rate_x      <= 16'b0;
-				accel_rate_y      <= 16'b0;
-				accel_rate_z      <= 16'b0;
-				magneto_rate_x    <= 16'b0;
-				magneto_rate_y    <= 16'b0;
-				magneto_rate_z    <= 16'b0;
-				gyro_rate_x       <= 16'b0;
-				gyro_rate_y       <= 16'b0;
-				gyro_rate_z       <= 16'b0;
-				euler_angle_x     <= 16'b0;
-				euler_angle_y     <= 16'b0;
-				euler_angle_z     <= euler_angle_z;
-				quaternion_data_w <= 16'b0;
-				quaternion_data_x <= 16'b0;
-				quaternion_data_y <= 16'b0;
-				quaternion_data_z <= 16'b0;
-				linear_accel_x    <= 16'b0;
-				linear_accel_y    <= 16'b0;
-				linear_accel_z    <= 16'b0;
-				gravity_accel_x   <= 16'b0;
-				gravity_accel_y   <= 16'b0;
-				gravity_accel_z   <= 16'b0;
-				temperature       <= next_temperature;
-				calib_status      <= next_calib_status;
-				// Set these to 0 for now, just to have something connected, need to make it a velocity later
-				x_velocity        <= 8'b0;
-				y_velocity        <= 8'b0;
-				z_velocity        <= 8'b0;
-			end
-			else begin // Calibration status is still good, output this data
-				accel_rate_x      <= next_accel_rate_x     ;
-				accel_rate_y      <= next_accel_rate_y     ;
-				accel_rate_z      <= next_accel_rate_z     ;
-				magneto_rate_x    <= next_magneto_rate_x   ;
-				magneto_rate_y    <= next_magneto_rate_y   ;
-				magneto_rate_z    <= next_magneto_rate_z   ;
-				gyro_rate_x       <= next_gyro_rate_x      ;
-				gyro_rate_y       <= next_gyro_rate_y      ;
-				gyro_rate_z       <= next_gyro_rate_z      ;
-				euler_angle_x     <= next_euler_angle_x    ;
-				euler_angle_y     <= next_euler_angle_y    ;
-				euler_angle_z     <= next_euler_angle_z    ;
-				quaternion_data_w <= next_quaternion_data_w;
-				quaternion_data_x <= next_quaternion_data_x;
-				quaternion_data_y <= next_quaternion_data_y;
-				quaternion_data_z <= next_quaternion_data_z;
-				linear_accel_x    <= next_linear_accel_x   ;
-				linear_accel_y    <= next_linear_accel_y   ;
-				linear_accel_z    <= next_linear_accel_z   ;
-				gravity_accel_x   <= next_gravity_accel_x  ;
-				gravity_accel_y   <= next_gravity_accel_y  ;
-				gravity_accel_z   <= next_gravity_accel_z  ;
-				temperature       <= next_temperature      ;
-				calib_status      <= next_calib_status     ;
-				// Set these to 0 for now, just to have something connected, need to make it a velocity later
-				x_velocity        <= 8'b0;
-				y_velocity        <= 8'b0;
-				z_velocity        <= 8'b0;
-			end
+			accel_rate_x      <= next_accel_rate_x      ;
+			accel_rate_y      <= next_accel_rate_y      ;
+			accel_rate_z      <= next_accel_rate_z      ;
+			magneto_rate_x    <= next_magneto_rate_x    ;
+			magneto_rate_y    <= next_magneto_rate_y    ;
+			magneto_rate_z    <= next_magneto_rate_z    ;
+			gyro_rate_x       <= next_gyro_rate_x       ;
+			gyro_rate_y       <= next_gyro_rate_y       ;
+			gyro_rate_z       <= next_gyro_rate_z       ;
+			euler_angle_x     <= next_euler_angle_x     ;
+			euler_angle_y     <= next_euler_angle_y     ;
+			euler_angle_z     <= next_euler_angle_z     ;
+			quaternion_data_w <= next_quaternion_data_w ;
+			quaternion_data_x <= next_quaternion_data_x ;
+			quaternion_data_y <= next_quaternion_data_y ;
+			quaternion_data_z <= next_quaternion_data_z ;
+			linear_accel_x    <= next_linear_accel_x    ;
+			linear_accel_y    <= next_linear_accel_y    ;
+			linear_accel_z    <= next_linear_accel_z    ;
+			gravity_accel_x   <= next_gravity_accel_x   ;
+			gravity_accel_y   <= next_gravity_accel_y   ;
+			gravity_accel_z   <= next_gravity_accel_z   ;
+			temperature       <= next_temperature       ;
+			calib_status      <= next_calib_status      ;
+			// Set these to 0 for now, just to have something connected, need to make it a velocity later
+			x_velocity        <= 8'b0;
+			y_velocity        <= 8'b0;
+			z_velocity        <= 8'b0;
 			set_calibration_data_values();
 		end
 	end
@@ -452,7 +420,7 @@ module bno055_driver #(
 			slave_address     <= next_slave_address;
 			imu_good          <= next_imu_good;
 			calibrated_once   <= next_calibrated_once;
-			rx_data_latch     <= next_rx_data_latch;
+			next_rx_data_latch <= next_rx_data_latch;
 			output_data_latch <= next_output_data_latch;
 		end
 	end

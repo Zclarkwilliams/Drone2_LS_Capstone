@@ -43,7 +43,7 @@ module drone2 (
 	input wire debug_leds_receiver_throttle_n,
 	input wire resetn,
 	output wire rstn_imu,
-	output reg [7:0] led_data_out,
+	output wire [7:0]led_data_out,
 	inout wire sda_1,
 	inout wire sda_2,
 	inout wire scl_1,
@@ -98,7 +98,7 @@ module drone2 (
 
 	wire [7:0] imu_debug_out;
 	wire imu_good;
-	wire imu_data_valid;
+	wire imu_valid_strobe;
 
 	// status signals from angle_controller
 	wire ac_valid_strobe;
@@ -132,7 +132,7 @@ module drone2 (
 		.sys_clk(sys_clk),               //  master clock
 		.rstn_imu(rstn_imu),             //  Low active reset signal to IMU hardware to trigger reset
 		.imu_good(imu_good),             //  The IMU is either in an error or initial bootup states, measurements not yet active
-		.imu_data_valid(imu_data_valid), //  Bit that indicates that the IMU data presented is valid, deasserted momentarily at 10ms polling interval and IMU burst read completion
+		.valid_strobe(imu_valid_strobe), //  Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
 		.gyro_rate_x(x_rotation_rate),   //  Rotation rate on X-Axis (Pitch rate)Precision: 1 Dps = 16 LSB
 		.gyro_rate_y(y_rotation_rate),   //  Rotation rate on Y-Axis (Roll rate) Precision: 1 Dps = 16 LSB
 		.gyro_rate_z(z_rotation_rate),   //  Rotation rate on Z-Axis (Yaw rate)  Precision: 1 Dps = 16 LSB
@@ -180,7 +180,7 @@ module drone2 (
 		.pitch_actual(x_rotation),
 		.roll_actual(y_rotation),
 		.resetn(resetn),
-		.start_signal(1'b1), // changed for testing, should be imu_data_valid
+		.start_signal(1'b1), // changed for testing
 		.us_clk(us_clk));
 
 /*
