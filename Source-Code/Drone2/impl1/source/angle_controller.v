@@ -46,7 +46,6 @@ module angle_controller
 	input wire [REC_VAL_BIT_WIDTH-1:0] yaw_target,
 	input wire [REC_VAL_BIT_WIDTH-1:0] pitch_target,
 	input wire [REC_VAL_BIT_WIDTH-1:0] roll_target,
-	input wire [RATE_BIT_WIDTH-1:0] yaw_actual /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
 	input wire [RATE_BIT_WIDTH-1:0] pitch_actual,
 	input wire [RATE_BIT_WIDTH-1:0] roll_actual,
 	input wire resetn,
