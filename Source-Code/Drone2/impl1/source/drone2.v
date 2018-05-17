@@ -177,9 +177,9 @@ module drone2 (
 		.throttle_target(throttle_val),
 		.yaw_target(yaw_val),
 		.roll_target(roll_val),
+		.roll_actual(y_rotation),
 		.pitch_target(pitch_val),
 		.pitch_actual(x_rotation),
-		.roll_actual(y_rotation),
 		.resetn(resetn),
 		.start_signal(1'b1), // changed for testing
 		.us_clk(us_clk));
@@ -221,6 +221,7 @@ module drone2 (
 
 		.sys_clk(sys_clk),
 		.rst_n(resetn));
+
 
 	pwm_generator pwm_generator (
 		.motor_1_pwm(motor_1_pwm),
