@@ -27,14 +27,14 @@
 
 module pwm_generator_block #(parameter INPUT_BIT_WIDTH = 10)
 							(output wire motor_pwm,
-							 output wire [2:0] state_out,
+							 //output wire [2:0] state_out,
 							 input wire [INPUT_BIT_WIDTH-1:0] motor_val,
 							 input wire [15:0] period_counter,
 							 input wire [INPUT_BIT_WIDTH-1:0] high_counter,
 							 input wire resetn,
 							 input wire us_clk);
 
-	assign state_out = state;
+	//assign state_out = state;
 
 	localparam // State names
 		STATE_MIN_COUNT = 3'b001,
