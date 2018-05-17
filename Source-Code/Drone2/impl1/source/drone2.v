@@ -197,10 +197,9 @@ module drone2 (
 		.yaw_actual(z_rotation),
 		.roll_actual(y_rotation),
 		.pitch_actual(x_rotation),
-		.start_signal(imu_data_valid), // changed for testing, should be imu_data_valid
+		.start_signal(imu_data_valid),
 		.resetn(resetn),
 		.us_clk(us_clk));
-
 
 	body_frame_controller #(
 		.RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
