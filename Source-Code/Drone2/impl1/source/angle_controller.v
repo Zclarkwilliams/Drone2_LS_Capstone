@@ -90,6 +90,23 @@ module angle_controller
 	// state variables
 	reg [4:0] state, next_state;
 
+	reg start_flag = 1'b0;
+	
+	// latch start signal
+	always @(posedge start_signal or posedge us_clk or negedge resetn) begin
+		if(!resetn)
+			start_flag <= 1'b0;
+		else if(start_signal && !start_flag)
+			start_flag <= 1'b1;
+		else if(!start_signal && start_flag) begin
+			if(state != STATE_WAITING) begin
+				start_flag <= 1'b0;
+			end
+		end
+		else
+			start_flag <= start_flag;
+	end
+
 	// update state
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
@@ -114,7 +131,7 @@ module angle_controller
 	always @(*) begin
 		case(state)
 			STATE_WAITING: begin
-				if(start_signal)
+				if(start_flag)
 					next_state = STATE_MAPPING;
 				else
 					next_state = STATE_WAITING;
