@@ -30,10 +30,16 @@ module receiver (output wire [`PWM_VALUE_BIT_WIDTH - 1:0] throttle_val,
 				 output wire [`PWM_VALUE_BIT_WIDTH - 1:0] yaw_val,
 				 output wire [`PWM_VALUE_BIT_WIDTH - 1:0] roll_val,
 				 output wire [`PWM_VALUE_BIT_WIDTH - 1:0] pitch_val,
+				 output wire [`PWM_VALUE_BIT_WIDTH - 1:0] aux1_val,
+				 output wire [`PWM_VALUE_BIT_WIDTH - 1:0] aux2_val,
+				 output wire [`PWM_VALUE_BIT_WIDTH - 1:0] swa_swb_val,
 				 input wire throttle_pwm,
 				 input wire yaw_pwm,
 				 input wire roll_pwm,
 				 input wire pitch_pwm,
+				 input wire aux1_pwm,
+				 input wire aux2_pwm,
+				 input wire swa_swb_pwm,
 				 input wire us_clk,
 				 input wire resetn);
 
@@ -41,7 +47,10 @@ module receiver (output wire [`PWM_VALUE_BIT_WIDTH - 1:0] throttle_val,
 	wire [`PWM_TIME_BIT_WIDTH - 1:0] throttle_pwm_pulse_length_us,
 									 yaw_pwm_pulse_length_us,
 									 roll_pwm_pulse_length_us,
-									 pitch_pwm_pulse_length_us;
+									 pitch_pwm_pulse_length_us,
+									 aux1_pwm_pulse_length_us,
+									 aux2_pwm_pulse_length_us,
+									 swa_swb_pwm_pulse_length_us;
 
 	// THROTTLE input/output module instances
 	pwm_reader #(`THROTTLE_DEFAULT_PULSE_TIME_HIGH_US) throttle_reader (
@@ -91,5 +100,43 @@ module receiver (output wire [`PWM_VALUE_BIT_WIDTH - 1:0] throttle_val,
 		.value_out(pitch_val),
 		.us_clk(us_clk));
 
+	// AUX1 input/output module instances
+	pwm_reader #(`AUX1_DEFAULT_PULSE_TIME_HIGH_US) 
+	aux1_reader (
+		.pwm(aux1_pwm),
+		.pwm_pulse_length_us(aux1_pwm_pulse_length_us),
+		.us_clk(us_clk),
+		.resetn(resetn));
+
+	pwm_to_value aux1_pwm_to_value (
+		.pwm_time_high_us(aux1_pwm_pulse_length_us),
+		.value_out(aux1_val),
+		.us_clk(us_clk));
+		
+	// AUX2 input/output module instances	
+	pwm_reader #(`AUX2_DEFAULT_PULSE_TIME_HIGH_US) 
+	aux2_reader (
+		.pwm(aux2_pwm),
+		.pwm_pulse_length_us(aux2_pwm_pulse_length_us),
+		.us_clk(us_clk),
+		.resetn(resetn));
+
+	pwm_to_value aux2_pwm_to_value (
+		.pwm_time_high_us(aux2_pwm_pulse_length_us),
+		.value_out(aux2_val),
+		.us_clk(us_clk));
+
+	// SWA/SWB input/output module instances	
+	pwm_reader #(`SWAB_DEFAULT_PULSE_TIME_HIGH_US) 
+	swa_swb_reader (
+		.pwm(swa_swb_pwm),
+		.pwm_pulse_length_us(swa_swb_pwm_pulse_length_us),
+		.us_clk(us_clk),
+		.resetn(resetn));
+
+	pwm_to_value swab_pwm_to_value (
+		.pwm_time_high_us(swa_swb_pwm_pulse_length_us),
+		.value_out(swa_swb_val),
+		.us_clk(us_clk));
 endmodule
 
