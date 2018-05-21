@@ -61,7 +61,7 @@
   	// internal wires
 	wire yaw_active, roll_active, pitch_active;
 	wire yaw_complete, roll_complete, pitch_complete;
-
+	
 	// working registers
 	reg wait_flag, start_flag;
 
@@ -74,6 +74,10 @@
 
 	// state variables
 	reg [3:0] state, next_state;
+
+	// debug wires
+	wire [15:0] DEBUG_WIRE_YAW, DEBUG_WIRE_ROLL, DEBUG_WIRE_PITCH;
+	assign DEBUG_WIRE = (!resetn) ? 16'h0 : DEBUG_WIRE_PITCH;
 
 	// latch start signal
 	always @(posedge start_signal or posedge us_clk or negedge resetn) begin
@@ -163,7 +167,7 @@
 		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
 		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH))
 	yaw_pid (
-		//.DEBUG_WIRE(DEBUG_WIRE),
+		.DEBUG_WIRE(DEBUG_WIRE_YAW),
 		.rate_out(yaw_rate_out),
 		.pid_complete(yaw_complete),
 		.pid_active(yaw_active),
@@ -180,7 +184,7 @@
 		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
 		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH))
 	pitch_pid (
-		//.DEBUG_WIRE(DEBUG_WIRE),
+		.DEBUG_WIRE(DEBUG_WIRE_PITCH),
 		.rate_out(pitch_rate_out),
 		.pid_complete(pitch_complete),
 		.pid_active(pitch_active),
@@ -197,7 +201,7 @@
 		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
 		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH))
 	roll_pid (
-		.DEBUG_WIRE(DEBUG_WIRE),
+		.DEBUG_WIRE(DEBUG_WIRE_ROLL),
 		.rate_out(roll_rate_out),
 		.pid_complete(roll_complete),
 		.pid_active(roll_active),
