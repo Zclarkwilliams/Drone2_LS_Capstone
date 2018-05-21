@@ -44,6 +44,9 @@ module drone2 (
 	input wire yaw_pwm,
 	input wire roll_pwm,
 	input wire pitch_pwm,
+	input wire aux1_pwm,
+	input wire aux2_pwm,
+	input wire swa_swb_pwm,
 	input wire machxo3_switch_reset_n,
 	// DEBUG IO
 	input wire DEBUG_LED_SWITCH_N,
@@ -167,11 +170,17 @@ module drone2 (
 		.yaw_val(yaw_val),
 		.roll_val(roll_val),
 		.pitch_val(pitch_val),
+		.aux1_val(aux1_val),
+		.aux2_val(aux2_val),
+		.swa_swb_val(swa_swb_val),
 		// Inputs
 		.throttle_pwm(throttle_pwm),
 		.yaw_pwm(yaw_pwm),
 		.roll_pwm(roll_pwm),
 		.pitch_pwm(pitch_pwm),
+		.aux1_pwm(aux1_pwm),
+		.aux2_pwm(aux2_pwm),
+		.swa_swb_pwm(swa_swb_pwm),
 		.us_clk(us_clk),
 		.resetn(resetn));
 
@@ -266,8 +275,8 @@ module drone2 (
 			DEBUG_LEDs	 <= throttle_target_rate;
 			end
 		else begin
-			led_data_out <= ~x_rotation;
-			DEBUG_LEDs	 <= x_rotation_rate;
+			led_data_out <= ~aux1_val;
+			DEBUG_LEDs	 <= aux2_val;
 			end
 	end
 
