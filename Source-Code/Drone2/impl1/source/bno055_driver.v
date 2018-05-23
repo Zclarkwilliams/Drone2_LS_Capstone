@@ -23,9 +23,9 @@ module bno055_driver #(
 	inout wire sda_1,                     //  I2C EFB #1 SDA wire
 	inout wire sda_2,                     //  I2C EFB #2 SDA wire
 	input wire rstn,                      //  async negative reset signal 0 = reset, 1 = not reset
-	//input wire SDA_DEBUG_IN, SCL_DEBUG_IN /* synthesis syn_force_pads=1 syn_noprune=1*/, //For capturing SDA and SCL in Reveal, no connections inside module
 	output wire [7:0]led_data_out,        //  Module LED Status output
 	input  wire sys_clk,                  //  master clock
+	input wire ac_active,
 	output wire rstn_imu,                 //  Low active reset signal to IMU hardware to trigger reset
 	output reg  imu_good,                 //  The IMU is either in an error or initial bootup states, measurements not yet active
 	output reg  valid_strobe,             //  Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
@@ -96,6 +96,7 @@ module bno055_driver #(
 	reg increment_cal_restore_index;
 	reg calibrated_once;
 	reg next_calibrated_once;
+	reg next_valid_strobe;
 
 	//
 	//  Module body
@@ -156,6 +157,7 @@ module bno055_driver #(
 		end
 	end
 
+/*
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn)
 			valid_strobe      <= `LOW;
@@ -166,6 +168,7 @@ module bno055_driver #(
 		else
 			valid_strobe      <= `HIGH;
 	end
+*/
 
 	task set_calibration_data_values;
 	/*
@@ -307,6 +310,7 @@ module bno055_driver #(
 			slave_address     <= next_slave_address;
 			imu_good          <= `FALSE;
 			calibrated_once   <= `FALSE;
+			valid_strobe      <= `LOW;
 		end
 		else begin
 			data_reg          <= next_data_reg;
@@ -321,6 +325,7 @@ module bno055_driver #(
 			slave_address     <= next_slave_address;
 			imu_good          <= next_imu_good;
 			calibrated_once   <= next_calibrated_once;
+			valid_strobe      <= next_valid_strobe;
 		end
 	end
 
@@ -345,6 +350,7 @@ module bno055_driver #(
 			next_slave_address        = slave_address;
 			increment_cal_restore_index = 1'b0;
 			clear_cal_restore_index     = 1'b0;
+			next_valid_strobe           = `LOW;
 		end
 		else begin
 			// Default to preserve these values, can be altered in lower steps
@@ -366,6 +372,7 @@ module bno055_driver #(
 			next_calibrated_once      = calibrated_once;
 			increment_cal_restore_index = 1'b0;
 			clear_cal_restore_index     = 1'b1;
+			next_valid_strobe           = valid_strobe;
 			case(bno055_state)
 				`BNO055_STATE_RESET: begin
 					next_imu_good      = `FALSE;
@@ -534,6 +541,7 @@ module bno055_driver #(
 					next_read_write_in     = `I2C_READ;
 					next_target_read_count = `DATA_RX_BYTE_REG_CNT;
 					next_led_view_index    = (`DATA_RX_BYTE_REG_CNT-1); //  Calibration status will be in the last byte buffer, index 45
+					next_valid_strobe      = `LOW;
 				end
 				`BNO055_STATE_WAIT_10MS: begin 	// Wait 10 ms between polls to maintain 10Hz polling rate
 												//wait time is i2c time + time spent here, for a total of 10ms,
@@ -546,6 +554,8 @@ module bno055_driver #(
 					next_data_tx       = `BYTE_ALL_ZERO;
 					next_go_flag       = `NOT_GO;
 					next_bno055_state  = `BNO055_STATE_WAIT_10MS;
+					if(ac_active)
+						next_valid_strobe = `LOW;
 					rstn_buffer        = `LOW; //  Clear the RX data buffer index starting next state's read burst
 					if((count_ms[27] == 1'b1) ) begin // Wait for count_ms wrapped around to 0x3FFFFFF
 						next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
@@ -575,7 +585,8 @@ module bno055_driver #(
 					next_data_reg          = `BYTE_ALL_ZERO;
 					next_data_tx           = `BYTE_ALL_ZERO;
 					if( (read_write_in == `I2C_READ)) //  Only latch data if this was a read
-						rx_data_latch_strobe  = `HIGH;
+						rx_data_latch_strobe  = `HIGH;	
+					next_valid_strobe      = `HIGH;
 					next_bno055_state      = return_state;
 				end
 
