@@ -160,9 +160,11 @@ module bno055_driver #(
 		if(~rstn)
 			valid_strobe      <= `LOW;
 		else if(rx_data_latch_strobe && (return_state == `BNO055_STATE_WAIT_10MS ) )  // Suppress strobes unless this was a measurement data poll
-			valid_strobe      <= `HIGH;
-		else
 			valid_strobe      <= `LOW;
+		else if(return_state != `BNO055_STATE_WAIT_10MS )
+			valid_strobe      <= `LOW;
+		else
+			valid_strobe      <= `HIGH;
 	end
 
 	task set_calibration_data_values;
