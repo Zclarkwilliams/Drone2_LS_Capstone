@@ -67,9 +67,9 @@ module angle_controller
 	// scale factors (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	localparam signed
 		THROTTLE_SCALE = 16'h0001, // 1
-		YAW_SCALE =      16'h0001, // 1
-		ROLL_SCALE =     16'h0001, // 1
-		PITCH_SCALE =    16'h0001; // 1
+		YAW_SCALE =      16'h0006, // 1
+		ROLL_SCALE =     16'h0006, // 1
+		PITCH_SCALE =    16'h0006; // 1
 
 	// TODO: Remove unused variables
 	// working registers
@@ -179,20 +179,20 @@ module angle_controller
 					// input value mapped from  0 - 250 to 0 - 62.5
 					mapped_throttle <= {6'b000000, latched_throttle, 2'b00}; // ???
 					// input values mapped from 0 - 250 to -31.25 - 31.25
-					mapped_yaw <= $signed({6'b000000, latched_yaw, 2'b00}) - $signed(16'd500);
+					mapped_yaw <= $signed({7'b0000000, latched_yaw, 1'b0}) - $signed(16'd250);
           // pitch value from IMU is flipped, add instead of subtract (do this in bfc too?)
-					mapped_roll <= ($signed({6'b000000, latched_roll, 2'b00}) - $signed(16'd500)) + $signed(roll_actual);
-					mapped_pitch <= ($signed({6'b000000, latched_pitch, 2'b00}) - $signed(16'd500)) - $signed(pitch_actual);
+					mapped_roll <= ($signed({7'b0000000, latched_roll, 1'b0}) - $signed(16'd250)) + $signed(roll_actual);
+					mapped_pitch <= ($signed({7'b0000000, latched_pitch, 1'b0}) - $signed(16'd250)) - $signed(pitch_actual);
 				end
 				STATE_SCALING: begin
 					complete_signal <= 1'b0;
 					active_signal <= 1'b1;
 
 					// the decimal point should be shifted...
-					scaled_throttle <= mapped_throttle * THROTTLE_SCALE;
-					scaled_yaw <= mapped_yaw * YAW_SCALE;
-					scaled_roll <= mapped_roll * ROLL_SCALE;
-					scaled_pitch <= mapped_pitch * PITCH_SCALE;
+					scaled_throttle <= (mapped_throttle * THROTTLE_SCALE);
+					scaled_yaw <= (mapped_yaw * YAW_SCALE) >>> 4;
+					scaled_roll <= (mapped_roll * ROLL_SCALE) >>> 4;
+					scaled_pitch <= (mapped_pitch * PITCH_SCALE) >>> 4;
 				end
 				STATE_LIMITING: begin
 					complete_signal <= 1'b0;
