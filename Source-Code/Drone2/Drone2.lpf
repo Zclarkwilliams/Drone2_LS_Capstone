@@ -79,3 +79,4 @@ LOCATE COMP "swa_swb_pwm" SITE "B6" ;
 LOCATE COMP "aux2_pwm" SITE "B5" ;
 IOBUF PORT "aux1_pwm" IO_TYPE=LVCMOS33 ;
 IOBUF PORT "aux2_pwm" IO_TYPE=LVCMOS33 ;
+LOCATE COMP "imu_data_valid_monitor" SITE "A13" ;

@@ -51,6 +51,7 @@ module drone2 (
 	// DEBUG IO
 	input wire DEBUG_LED_SWITCH_N,
 	output reg [15:0] DEBUG_LEDs,
+	output wire imu_data_valid_monitor,
 	// Serial IO
 	inout wire sda_1,
 	inout wire sda_2,
@@ -263,6 +264,7 @@ module drone2 (
 		.us_clk(us_clk),
 		.resetn(resetn));
 
+	assign imu_data_valid_monitor = imu_data_valid;
 
 	// Update on board LEDs, all inputs are active low
 	always @(posedge sys_clk) begin
