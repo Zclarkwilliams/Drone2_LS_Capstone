@@ -208,10 +208,10 @@ module drone2 (
 		.yaw_actual(z_rotation),
 		.roll_actual(y_rotation),
 		.pitch_actual(x_rotation),
-		.start_signal(imu_data_valid),
+		.start_signal(1'b1),//imu_data_valid),
 		.resetn(resetn),
 		.us_clk(us_clk));
-
+/*
 	body_frame_controller #(
 		.RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
 		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH),
@@ -236,7 +236,7 @@ module drone2 (
 		.start_signal(ac_valid_strobe),
 		.resetn(resetn),
 		.us_clk(us_clk));
-
+*/
 	motor_mixer motor_mixer (
 		// Outputs
 		.motor_1_rate(motor_1_rate),
@@ -245,11 +245,11 @@ module drone2 (
 		.motor_4_rate(motor_4_rate),
 		// Inputs
 		.throttle_rate(throttle_target_rate),
-		.yaw_rate(yaw_rate),
-		.roll_rate(roll_rate),
-		.pitch_rate(pitch_rate),
+		.yaw_rate(yaw_target_rate),
+		.roll_rate(roll_target_rate),
+		.pitch_rate(pitch_target_rate),
 		.sys_clk(sys_clk),
-		.rst_n(resetn));
+		.resetn(resetn));
 
 	pwm_generator pwm_generator (
 		// Outputs
@@ -278,8 +278,8 @@ module drone2 (
 			DEBUG_LEDs	 <= throttle_target_rate;
 			end
 		else begin
-			led_data_out <= ~aux1_val;
-			DEBUG_LEDs	 <= aux2_val;
+			led_data_out <= ~roll_val;
+			DEBUG_LEDs	 <= y_rotation;
 			end
 	end
 

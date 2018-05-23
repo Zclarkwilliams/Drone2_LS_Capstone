@@ -63,9 +63,9 @@
 
 //	Bias to add as a buffer to the motor equation
 `define	MOTOR_1_RATE_BIAS				 	$signed(16'h0000)
-`define	MOTOR_2_RATE_BIAS				 	$signed(16'h002F)
-`define	MOTOR_3_RATE_BIAS				 	$signed(16'h002F)
-`define	MOTOR_4_RATE_BIAS				 	$signed(16'hFFFB)
+`define	MOTOR_2_RATE_BIAS				 	$signed(16'h0000)
+`define	MOTOR_3_RATE_BIAS				 	$signed(16'h0000)
+`define	MOTOR_4_RATE_BIAS				 	$signed(16'h0000)
 
 //	Scaler to set proportions of yaw, roll, and pitch
 //  Shift to change impact of roll, pitch, and yaw

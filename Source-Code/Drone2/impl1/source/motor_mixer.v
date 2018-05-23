@@ -18,7 +18,7 @@
  * @motor_4_rate: rate to run motor 4
  *
  * Inputs:
- * @rst_n:			system reset
+ * @resetn:			system reset
  * @sys_clk: 		system clock
  * @yaw_rate: 		yaw rate (rad/s) in fixed point 2's complement
  * @roll_rate: 		roll rate (rad/s) in fixed point 2's complement
@@ -31,7 +31,7 @@
  *
  *		motor_mixer  #(BIT_WIDTH,
  *					   MOTOR_RATE_BIT_WIDTH)
- *		motor_mixer	(.rst_n(resetn),
+ *		motor_mixer	(.resetn(resetn),
  *					 .sys_clk(sys_clk),
  *					 .yaw_rate(yaw_rate),
  *					 .roll_rate(roll_rate),
@@ -76,7 +76,7 @@
 
 module motor_mixer	#(parameter BIT_WIDTH = 16,
 					  parameter MOTOR_RATE_BIT_WIDTH = 8)
-					(input  wire rst_n,
+					(input  wire resetn,
 					 input  wire sys_clk,
 					 input wire signed [BIT_WIDTH-1:0] yaw_rate,
 					 input wire signed [BIT_WIDTH-1:0] roll_rate,
@@ -129,8 +129,8 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 	reg [BIT_WIDTH-1:0] motor_3_temp;
 	reg [BIT_WIDTH-1:0] motor_4_temp;
 
-	always @(posedge sys_clk or negedge rst_n) begin
-		if (!rst_n) begin //On reset input LOW set all variables to zero
+	always @(posedge sys_clk or negedge resetn) begin
+		if (!resetn) begin //On reset input LOW set all variables to zero
 			yaw_scale					<= `ALL_ZERO_2BYTE;
 			roll_scale					<= `ALL_ZERO_2BYTE;
 			pitch_scale					<= `ALL_ZERO_2BYTE;
@@ -258,7 +258,7 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 					motor_mixer_state 	<= STATE_SCALE_RATES;
 				end
 				default begin
-					// This state should never be reached! If reached, act as a rst_n signal.
+					// This state should never be reached! If reached, act as a resetn signal.
 					motor_1_rate		<= `ALL_ZERO_2BYTE;
 					motor_2_rate		<= `ALL_ZERO_2BYTE;
 					motor_3_rate		<= `ALL_ZERO_2BYTE;
