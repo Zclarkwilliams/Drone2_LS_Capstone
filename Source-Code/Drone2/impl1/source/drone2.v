@@ -163,7 +163,8 @@ module drone2 (
 		.linear_accel_z(z_linear_accel),  //  Linear Acceleration Z-Axis          Precision: 1 m/s^2 = 100 LSB
 		.x_velocity(x_linear_rate),
 		.y_velocity(y_linear_rate),
-		.z_velocity(z_linear_rate));
+		.z_velocity(z_linear_rate),
+		.ac_active(ac_active));
 
 	receiver receiver (
 		// Outputs
