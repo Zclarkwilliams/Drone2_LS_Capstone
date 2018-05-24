@@ -101,8 +101,7 @@ module bno055_driver #(
 	//
 	//  Module body
 	//
-	assign led_data_out = ~( (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : data_rx_reg[led_view_index]); //  Inverted output for LEDS, since they are low active
-
+	assign led_data_out = (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : data_rx_reg[led_view_index]; //  Inverted output for LEDS, since they are low active
 
 	//  Instantiate i2c driver
 	i2c_module i2c(	.scl_1(scl_1),
