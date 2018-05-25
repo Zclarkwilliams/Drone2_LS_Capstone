@@ -14,30 +14,27 @@
  * Outputs:
  *
  */
- module pid #(parameter RATE_BIT_WIDTH = 16,
- 			  parameter PID_RATE_BIT_WIDTH = 16,
-			  parameter IMU_VAL_BIT_WIDTH = 16,
-			  parameter signed RATE_MIN = 16'h8000,
+ module pid #(parameter signed RATE_MIN = 16'h8000,
 			  parameter signed RATE_MAX = 16'h7FFF)
- 			 (output reg [PID_RATE_BIT_WIDTH-1:0] rate_out,
+ 			 (output reg [`PID_RATE_BIT_WIDTH-1:0] rate_out,
  			  output reg pid_complete,
 			  output reg pid_active,
 			  output wire [15:0] DEBUG_WIRE, /*DEBUG LEDs*/
-			  input wire signed [RATE_BIT_WIDTH-1:0] target_rotation,
- 			  input wire signed [IMU_VAL_BIT_WIDTH-1:0] actual_rotation,
-			  input wire signed [RATE_BIT_WIDTH-1:0] angle_error,
+			  input wire signed [`RATE_BIT_WIDTH-1:0] target_rotation,
+ 			  input wire signed [`IMU_VAL_BIT_WIDTH-1:0] actual_rotation,
+			  input wire signed [`RATE_BIT_WIDTH-1:0] angle_error,
 			  input wire start_flag,
 			  input wire wait_flag,
 			  input wire resetn,
 			  input wire us_clk);
 
 	// working registers
-	reg signed [RATE_BIT_WIDTH-1:0]
+	reg signed [`RATE_BIT_WIDTH-1:0]
 		scaled_rotation, rotation_error, prev_rotation_error,
 		rotation_proportional, rotation_integral, rotation_derivative,
 		error_change, rotation_total;
 
-	reg signed [RATE_BIT_WIDTH-1:0]
+	reg signed [`RATE_BIT_WIDTH-1:0]
 		latched_target_rotation, latched_actual_rotation, latched_angle_error;
 
 	// proportionality constants

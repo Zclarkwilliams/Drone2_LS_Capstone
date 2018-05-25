@@ -12,10 +12,6 @@
  * Takes in target rotation rates and actual rotation rates and outputs control
  * values to motor mixer.
  *
- * Parameters:
- * @RATE_BIT_WIDTH - Size of values from angle controller
- * @IMU_VAL_BIT_WIDTH - Size of values from IMU
- *
  * Outputs:
  * @yaw_rate_out - yaw rate to motor mixer
  * @roll_rate_out - roll rate to motor mixer
@@ -36,24 +32,21 @@
  * @resetn - global reset signal
  * @us_clk - 1MHz clock
  */
- module body_frame_controller #(
-	parameter RATE_BIT_WIDTH = 16,
-	parameter IMU_VAL_BIT_WIDTH = 16,
-	parameter PID_RATE_BIT_WIDTH = 16)
- 	(output wire [PID_RATE_BIT_WIDTH-1:0] yaw_rate_out,
-	output wire [PID_RATE_BIT_WIDTH-1:0] roll_rate_out,
- 	output wire [PID_RATE_BIT_WIDTH-1:0] pitch_rate_out,
+ module body_frame_controller (
+ 	output wire [`PID_RATE_BIT_WIDTH-1:0] yaw_rate_out,
+	output wire [`PID_RATE_BIT_WIDTH-1:0] roll_rate_out,
+ 	output wire [`PID_RATE_BIT_WIDTH-1:0] pitch_rate_out,
 	output reg complete_signal,
 	// Debug led output wire
 	output wire [15:0] DEBUG_WIRE,
- 	input wire [RATE_BIT_WIDTH-1:0] yaw_target,
- 	input wire [RATE_BIT_WIDTH-1:0] roll_target,
- 	input wire [RATE_BIT_WIDTH-1:0] pitch_target,
- 	input wire [IMU_VAL_BIT_WIDTH-1:0] roll_rotation,
- 	input wire [IMU_VAL_BIT_WIDTH-1:0] pitch_rotation,
- 	input wire [IMU_VAL_BIT_WIDTH-1:0] yaw_rotation,
-	input wire [RATE_BIT_WIDTH-1:0] roll_angle_error,
-	input wire [RATE_BIT_WIDTH-1:0] pitch_angle_error,
+ 	input wire [`RATE_BIT_WIDTH-1:0] yaw_target,
+ 	input wire [`RATE_BIT_WIDTH-1:0] roll_target,
+ 	input wire [`RATE_BIT_WIDTH-1:0] pitch_target,
+ 	input wire [`IMU_VAL_BIT_WIDTH-1:0] roll_rotation,
+ 	input wire [`IMU_VAL_BIT_WIDTH-1:0] pitch_rotation,
+ 	input wire [`IMU_VAL_BIT_WIDTH-1:0] yaw_rotation,
+	input wire [`RATE_BIT_WIDTH-1:0] roll_angle_error,
+	input wire [`RATE_BIT_WIDTH-1:0] pitch_angle_error,
  	input wire start_signal,
 	input wire resetn,
 	input wire us_clk);
@@ -61,7 +54,7 @@
   	// internal wires
 	wire yaw_active, roll_active, pitch_active;
 	wire yaw_complete, roll_complete, pitch_complete;
-	
+
 	// working registers
 	reg wait_flag, start_flag;
 
@@ -162,11 +155,7 @@
 	end
 
 	// pid instantiations
-	pid #(
-		.RATE_BIT_WIDTH(RATE_BIT_WIDTH),
-		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
-		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH))
-	yaw_pid (
+	pid yaw_pid (
 		.DEBUG_WIRE(DEBUG_WIRE_YAW),
 		.rate_out(yaw_rate_out),
 		.pid_complete(yaw_complete),
@@ -179,11 +168,7 @@
 		.resetn(resetn),
 		.us_clk(us_clk));
 
-	pid #(
-		.RATE_BIT_WIDTH(RATE_BIT_WIDTH),
-		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
-		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH))
-	pitch_pid (
+	pid pitch_pid (
 		.DEBUG_WIRE(DEBUG_WIRE_PITCH),
 		.rate_out(pitch_rate_out),
 		.pid_complete(pitch_complete),
@@ -196,11 +181,7 @@
 		.resetn(resetn),
 		.us_clk(us_clk));
 
-	pid #(
-		.RATE_BIT_WIDTH(RATE_BIT_WIDTH),
-		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
-		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH))
-	roll_pid (
+	pid roll_pid (
 		.DEBUG_WIRE(DEBUG_WIRE_ROLL),
 		.rate_out(roll_rate_out),
 		.pid_complete(roll_complete),
