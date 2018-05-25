@@ -21,8 +21,8 @@ module bno055_module_tb();
 	reg read_write_in = 1;
 	reg [3:0] i2c_count;
 	reg i2c_ack;
-	wire SDA_DEBUG_IN, SCL_DEBUG_IN;
 	reg [7:0]sda_byte;
+	reg ac_active;
 
 	integer i;
 	integer j;
@@ -44,9 +44,9 @@ module bno055_module_tb();
 		.sda_2(sda_2),
 		.rstn( (rstn) ),
 		.rstn_imu(rstn_imu),
+		.ac_active(ac_active),
+		.valid_strobe(valid_strobe),
 		.led_data_out(data_rx),
-		.SDA_DEBUG_IN(SDA_DEBUG_IN),
-		.SCL_DEBUG_IN(SCL_DEBUG_IN),
 		.sys_clk(sys_clk)
 		); /* synthesis syn_hier=hard */;
 
@@ -71,6 +71,17 @@ module bno055_module_tb();
 			end
 		end
 	end
+	
+	always@(posedge scl1, negedge rstn) begin
+		if (~rstn)
+			ac_active <= `LOW;
+		else if(~valid_strobe)
+			ac_active <= `HIGH;
+		else
+			ac_active <= `LOW;
+		
+	
+	end
 
 	assign ( pull1, strong0 ) scl1 = 1'b1;
 	assign ( pull1, strong0 ) sda1 = (i2c_ack == 1'b1) ? 1'b0: 1'b1;
@@ -84,7 +95,7 @@ module bno055_module_tb();
 				$display("efb_registers %1d EFB#%1d = %h", i[4:0], (j[4:0]+1), bno055.i2c.efb_registers[i][j]);
 			end
 		end
-		#1_000_000_000;
+		#1_000_00000;
 		$stop;
 		end
 endmodule
