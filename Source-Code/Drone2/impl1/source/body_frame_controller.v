@@ -57,14 +57,14 @@
 
 	// working registers
 	reg wait_flag, start_flag;
-	reg [RATE_BIT_WIDTH-1:0]	latched_yaw_target;
-	reg [RATE_BIT_WIDTH-1:0]	latched_roll_target;
-	reg [RATE_BIT_WIDTH-1:0]	latched_pitch_target;
-	reg [IMU_VAL_BIT_WIDTH-1:0]	latched_yaw_rotation;
-	reg [IMU_VAL_BIT_WIDTH-1:0]	latched_roll_rotation;
-	reg [IMU_VAL_BIT_WIDTH-1:0]	latched_pitch_rotation;
-	reg [RATE_BIT_WIDTH-1:0]	latched_roll_angle_error;
-	reg [RATE_BIT_WIDTH-1:0]	latched_pitch_angle_error;
+	reg [`RATE_BIT_WIDTH-1:0]	latched_yaw_target;
+	reg [`RATE_BIT_WIDTH-1:0]	latched_roll_target;
+	reg [`RATE_BIT_WIDTH-1:0]	latched_pitch_target;
+	reg [`IMU_VAL_BIT_WIDTH-1:0]	latched_yaw_rotation;
+	reg [`IMU_VAL_BIT_WIDTH-1:0]	latched_roll_rotation;
+	reg [`IMU_VAL_BIT_WIDTH-1:0]	latched_pitch_rotation;
+	reg [`RATE_BIT_WIDTH-1:0]	latched_roll_angle_error;
+	reg [`RATE_BIT_WIDTH-1:0]	latched_pitch_angle_error;
 
 	// state names
 	localparam
