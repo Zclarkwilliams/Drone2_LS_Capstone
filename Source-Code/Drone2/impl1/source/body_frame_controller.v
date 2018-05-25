@@ -57,6 +57,14 @@
 
 	// working registers
 	reg wait_flag, start_flag;
+	reg [RATE_BIT_WIDTH-1:0]	latched_yaw_target;
+	reg [RATE_BIT_WIDTH-1:0]	latched_roll_target;
+	reg [RATE_BIT_WIDTH-1:0]	latched_pitch_target;
+	reg [IMU_VAL_BIT_WIDTH-1:0]	latched_yaw_rotation;
+	reg [IMU_VAL_BIT_WIDTH-1:0]	latched_roll_rotation;
+	reg [IMU_VAL_BIT_WIDTH-1:0]	latched_pitch_rotation;
+	reg [RATE_BIT_WIDTH-1:0]	latched_roll_angle_error;
+	reg [RATE_BIT_WIDTH-1:0]	latched_pitch_angle_error;
 
 	// state names
 	localparam
@@ -74,14 +82,50 @@
 
 	// latch start signal
 	always @(posedge start_signal or posedge us_clk or negedge resetn) begin
-		if(!resetn)
-			start_flag <= 1'b0;
-		else if(start_signal && !start_flag)
-			start_flag <= 1'b1;
-		else if(!start_signal && start_flag)
-			start_flag <= 1'b0;
-		else
-			start_flag <= start_flag;
+		if(!resetn) begin
+			start_flag					<= 1'b0;
+			latched_yaw_target			<= 16'h0000;
+            latched_roll_target			<= 16'h0000;
+            latched_pitch_target		<= 16'h0000;
+            latched_yaw_rotation		<= 16'h0000;
+            latched_roll_rotation		<= 16'h0000;
+            latched_pitch_rotation		<= 16'h0000;
+            latched_roll_angle_error	<= 16'h0000;
+            latched_pitch_angle_error	<= 16'h0000;
+		end
+		else if(start_signal && !start_flag) begin
+			start_flag 					<= 1'b1;
+			latched_yaw_target			<= yaw_target;
+            latched_roll_target			<= roll_target;
+            latched_pitch_target		<= pitch_target;
+            latched_yaw_rotation		<= yaw_rotation;
+            latched_roll_rotation		<= roll_rotation;
+            latched_pitch_rotation		<= pitch_rotation;
+            latched_roll_angle_error	<= roll_angle_error;
+            latched_pitch_angle_error	<= pitch_angle_error;
+		end
+		else if(!start_signal && start_flag) begin
+			start_flag					<= 1'b0;
+			latched_yaw_target			<= latched_yaw_target;
+            latched_roll_target			<= latched_roll_target;
+            latched_pitch_target		<= latched_pitch_target;
+            latched_yaw_rotation		<= latched_yaw_rotation;
+            latched_roll_rotation		<= latched_roll_rotation;
+            latched_pitch_rotation		<= latched_pitch_rotation;
+            latched_roll_angle_error	<= latched_roll_angle_error;
+            latched_pitch_angle_error	<= latched_pitch_angle_error;
+		end
+		else begin
+			start_flag 					<= start_flag;
+			latched_yaw_target			<= latched_yaw_target;
+            latched_roll_target			<= latched_roll_target;
+            latched_pitch_target		<= latched_pitch_target;
+            latched_yaw_rotation		<= latched_yaw_rotation;
+            latched_roll_rotation		<= latched_roll_rotation;
+            latched_pitch_rotation		<= latched_pitch_rotation;
+            latched_roll_angle_error	<= latched_roll_angle_error;
+            latched_pitch_angle_error	<= latched_pitch_angle_error;
+		end
 	end
 
 	// update state
@@ -160,8 +204,8 @@
 		.rate_out(yaw_rate_out),
 		.pid_complete(yaw_complete),
 		.pid_active(yaw_active),
-		.target_rotation(yaw_target),
-		.actual_rotation(yaw_rotation),
+		.target_rotation(latched_yaw_target),
+		.actual_rotation(latched_yaw_rotation),
 		.angle_error(16'h0000),
 		.start_flag(start_flag),
 		.wait_flag(wait_flag),
@@ -173,9 +217,9 @@
 		.rate_out(pitch_rate_out),
 		.pid_complete(pitch_complete),
 		.pid_active(pitch_active),
-		.target_rotation(pitch_target),
-		.actual_rotation(pitch_rotation),
-		.angle_error(pitch_angle_error),
+		.target_rotation(latched_pitch_target),
+		.actual_rotation(latched_pitch_rotation),
+		.angle_error(latched_pitch_angle_error),
 		.start_flag(start_flag),
 		.wait_flag(wait_flag),
 		.resetn(resetn),
@@ -186,9 +230,9 @@
 		.rate_out(roll_rate_out),
 		.pid_complete(roll_complete),
 		.pid_active(roll_active),
-		.target_rotation(roll_target),
-		.actual_rotation(roll_rotation),
-		.angle_error(roll_angle_error),
+		.target_rotation(latched_roll_target),
+		.actual_rotation(latched_roll_rotation),
+		.angle_error(latched_roll_angle_error),
 		.start_flag(start_flag),
 		.wait_flag(wait_flag),
 		.resetn(resetn),

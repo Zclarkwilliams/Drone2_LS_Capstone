@@ -60,19 +60,11 @@
 
 	// update state
 	always @(posedge us_clk or negedge resetn) begin
-		if(!resetn) begin
+		if(!resetn)
 			state <= STATE_WAIT;
-      latched_target_rotation <= 16'h0000;
-      latched_actual_rotation <= 16'h0000;
-      latched_angle_error     <= 16'h0000;
-    end
-    else begin
+		else
 			state <= next_state;
-      latched_target_rotation <= target_rotation;
-      latched_actual_rotation <= actual_rotation;
-      latched_angle_error     <= angle_error;
-    end
-  end
+	end
 
   // calculation / output logic
 	always @(posedge us_clk or negedge resetn) begin
