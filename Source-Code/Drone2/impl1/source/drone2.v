@@ -58,49 +58,41 @@ module drone2 (
 	inout wire scl_1,
 	inout wire scl_2);
 
-	/* TODO: Figure out what these bit widths actually need to be
-	 *		 and move them to the common_defines.v file.
-	 */
-	localparam REC_VAL_BIT_WIDTH = 8;   // values from receiver
-	localparam PID_RATE_BIT_WIDTH = 16; // values from body frame controller
-	localparam RATE_BIT_WIDTH = 16;     // values from angle controller
-	localparam IMU_VAL_BIT_WIDTH = 16;  // values from IMU
-
 	// values from receiver to angle_controller
-	wire [REC_VAL_BIT_WIDTH-1:0] throttle_val;
-	wire [REC_VAL_BIT_WIDTH-1:0] yaw_val;
-	wire [REC_VAL_BIT_WIDTH-1:0] roll_val;
-	wire [REC_VAL_BIT_WIDTH-1:0] pitch_val;
-	wire [REC_VAL_BIT_WIDTH-1:0] aux1_val;
-	wire [REC_VAL_BIT_WIDTH-1:0] aux2_val;
-	wire [REC_VAL_BIT_WIDTH-1:0] swa_swb_val;
+	wire [`REC_VAL_BIT_WIDTH-1:0] throttle_val;
+	wire [`REC_VAL_BIT_WIDTH-1:0] yaw_val;
+	wire [`REC_VAL_BIT_WIDTH-1:0] roll_val;
+	wire [`REC_VAL_BIT_WIDTH-1:0] pitch_val;
+	wire [`REC_VAL_BIT_WIDTH-1:0] aux1_val;
+	wire [`REC_VAL_BIT_WIDTH-1:0] aux2_val;
+	wire [`REC_VAL_BIT_WIDTH-1:0] swa_swb_val;
 
 	// values from angle_controller to body_frame_controller
-	wire [RATE_BIT_WIDTH-1:0] throttle_target_rate;
-	wire [RATE_BIT_WIDTH-1:0] yaw_target_rate;
-	wire [RATE_BIT_WIDTH-1:0] roll_target_rate;
-	wire [RATE_BIT_WIDTH-1:0] pitch_target_rate;
-	wire [RATE_BIT_WIDTH-1:0] roll_angle_error;
-	wire [RATE_BIT_WIDTH-1:0] pitch_angle_error;
+	wire [`RATE_BIT_WIDTH-1:0] throttle_target_rate;
+	wire [`RATE_BIT_WIDTH-1:0] yaw_target_rate;
+	wire [`RATE_BIT_WIDTH-1:0] roll_target_rate;
+	wire [`RATE_BIT_WIDTH-1:0] pitch_target_rate;
+	wire [`RATE_BIT_WIDTH-1:0] roll_angle_error;
+	wire [`RATE_BIT_WIDTH-1:0] pitch_angle_error;
 
 	// values from the IMU
-	wire [IMU_VAL_BIT_WIDTH-1:0] x_linear_rate;
-	wire [IMU_VAL_BIT_WIDTH-1:0] y_linear_rate;
-	wire [IMU_VAL_BIT_WIDTH-1:0] z_linear_rate;
-	wire [IMU_VAL_BIT_WIDTH-1:0] x_rotation;
-	wire [IMU_VAL_BIT_WIDTH-1:0] y_rotation;
-	wire [IMU_VAL_BIT_WIDTH-1:0] z_rotation;
-	wire [IMU_VAL_BIT_WIDTH-1:0] x_rotation_rate;
-	wire [IMU_VAL_BIT_WIDTH-1:0] y_rotation_rate;
-	wire [IMU_VAL_BIT_WIDTH-1:0] z_rotation_rate;
-	wire [IMU_VAL_BIT_WIDTH-1:0] x_linear_accel;
-	wire [IMU_VAL_BIT_WIDTH-1:0] y_linear_accel;
-	wire [IMU_VAL_BIT_WIDTH-1:0] z_linear_accel;
+	wire [`IMU_VAL_BIT_WIDTH-1:0] x_linear_rate;
+	wire [`IMU_VAL_BIT_WIDTH-1:0] y_linear_rate;
+	wire [`IMU_VAL_BIT_WIDTH-1:0] z_linear_rate;
+	wire [`IMU_VAL_BIT_WIDTH-1:0] x_rotation;
+	wire [`IMU_VAL_BIT_WIDTH-1:0] y_rotation;
+	wire [`IMU_VAL_BIT_WIDTH-1:0] z_rotation;
+	wire [`IMU_VAL_BIT_WIDTH-1:0] x_rotation_rate;
+	wire [`IMU_VAL_BIT_WIDTH-1:0] y_rotation_rate;
+	wire [`IMU_VAL_BIT_WIDTH-1:0] z_rotation_rate;
+	wire [`IMU_VAL_BIT_WIDTH-1:0] x_linear_accel;
+	wire [`IMU_VAL_BIT_WIDTH-1:0] y_linear_accel;
+	wire [`IMU_VAL_BIT_WIDTH-1:0] z_linear_accel;
 
 	// values from the body_frame_controller to the motor_mixer
-	wire [PID_RATE_BIT_WIDTH-1:0] yaw_rate;
-	wire [PID_RATE_BIT_WIDTH-1:0] roll_rate;
-	wire [PID_RATE_BIT_WIDTH-1:0] pitch_rate;
+	wire [`PID_RATE_BIT_WIDTH-1:0] yaw_rate;
+	wire [`PID_RATE_BIT_WIDTH-1:0] roll_rate;
+	wire [`PID_RATE_BIT_WIDTH-1:0] pitch_rate;
 
 	// values from motor_mixer to pwm_generator
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0] motor_1_rate;
@@ -186,11 +178,7 @@ module drone2 (
 		.us_clk(us_clk),
 		.resetn(resetn));
 
-	angle_controller #(
-		.RATE_BIT_WIDTH(RATE_BIT_WIDTH),
-		.REC_VAL_BIT_WIDTH(REC_VAL_BIT_WIDTH),
-		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH))
-	angle_controller (
+	angle_controller ac (
 		// Outputs
 		.throttle_rate_out(throttle_target_rate),
 		.yaw_rate_out(yaw_target_rate),
@@ -212,11 +200,7 @@ module drone2 (
 		.resetn(resetn),
 		.us_clk(us_clk));
 /*
-	body_frame_controller #(
-		.RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH),
-		.IMU_VAL_BIT_WIDTH(IMU_VAL_BIT_WIDTH),
-		.PID_RATE_BIT_WIDTH(PID_RATE_BIT_WIDTH))
-	body_frame_controller (
+	body_frame_controller bfc (
 		// Outpus
 		.yaw_rate_out(yaw_rate),
 		.roll_rate_out(roll_rate),

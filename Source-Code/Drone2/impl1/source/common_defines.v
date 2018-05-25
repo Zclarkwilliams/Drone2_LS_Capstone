@@ -43,6 +43,11 @@
 
 `define MOTOR_RATE_BIT_WIDTH 4'd8
 
+`define REC_VAL_BIT_WIDTH	4'd8	// Sized to hold outputs of receiver
+`define PID_RATE_BIT_WIDTH	5'd16	// Sized to hold values from body frame controller
+`define	RATE_BIT_WIDTH		5'd16	// Sized to hold values from the angle controller
+`define IMU_VAL_BIT_WIDTH	5'd16	// Sized to hold values from the bno055_driver
+
 // Default values (on reset or error) for pwm pulse high values in microseconds
 `define THROTTLE_DEFAULT_PULSE_TIME_HIGH_US  16'd1000
 `define YAW_DEFAULT_PULSE_TIME_HIGH_US		 16'd1500

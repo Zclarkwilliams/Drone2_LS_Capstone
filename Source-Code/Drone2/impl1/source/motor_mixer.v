@@ -7,10 +7,6 @@
 /**
  * module motor_mixer - takes finalized rates and converts them to motor rates
  *
- * Parameters:
- * @RATE_BIT_WIDTH: Number of bits for throttle/yaw/roll/pitch val inputs
- * @MOTOR_RATE_BIT_WIDTH: Number of bits for motor outputs
- *
  * Outputs:
  * @motor_1_rate: rate to run motor 1
  * @motor_2_rate: rate to run motor 2
@@ -74,18 +70,17 @@
 `timescale 1ns / 1ns
 `include "common_defines.v"
 
-module motor_mixer	#(parameter BIT_WIDTH = 16,
-					  parameter MOTOR_RATE_BIT_WIDTH = 8)
-					(input  wire resetn,
-					 input  wire sys_clk,
-					 input wire signed [BIT_WIDTH-1:0] yaw_rate,
-					 input wire signed [BIT_WIDTH-1:0] roll_rate,
-					 input wire signed [BIT_WIDTH-1:0] pitch_rate,
-					 input wire signed [BIT_WIDTH-1:0] throttle_rate,
-					 output reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_1_rate,
-					 output reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_2_rate,
-					 output reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_3_rate,
-					 output reg  [MOTOR_RATE_BIT_WIDTH-1:0] motor_4_rate);
+module motor_mixer (
+	input  wire resetn,
+	input  wire sys_clk,
+	input wire signed [`RATE_BIT_WIDTH-1:0] yaw_rate,
+	input wire signed [`RATE_BIT_WIDTH-1:0] roll_rate,
+	input wire signed [`RATE_BIT_WIDTH-1:0] pitch_rate,
+	input wire signed [`RATE_BIT_WIDTH-1:0] throttle_rate,
+	output reg  [`MOTOR_RATE_BIT_WIDTH-1:0] motor_1_rate,
+	output reg  [`MOTOR_RATE_BIT_WIDTH-1:0] motor_2_rate,
+	output reg  [`MOTOR_RATE_BIT_WIDTH-1:0] motor_3_rate,
+	output reg  [`MOTOR_RATE_BIT_WIDTH-1:0] motor_4_rate);
 
 	/*	Params for states and state size	*/
 	localparam STATE_BIT_WIDTH = 3;
@@ -99,35 +94,35 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 	reg	 [STATE_BIT_WIDTH-1:0] motor_mixer_state;
 
 	/*	Motor specific variables per axis	*/
-	reg  [BIT_WIDTH-1:0] yaw_scale;
-	reg  [BIT_WIDTH-1:0] roll_scale;
-	reg  [BIT_WIDTH-1:0] pitch_scale;
-	reg	 [BIT_WIDTH-1:0] n_throttle_rate;
+	reg  [`RATE_BIT_WIDTH-1:0] yaw_scale;
+	reg  [`RATE_BIT_WIDTH-1:0] roll_scale;
+	reg  [`RATE_BIT_WIDTH-1:0] pitch_scale;
+	reg	 [`RATE_BIT_WIDTH-1:0] n_throttle_rate;
 
-	reg  [BIT_WIDTH-1:0] m1_yaw_rate;
-	reg  [BIT_WIDTH-1:0] m2_yaw_rate;
-	reg  [BIT_WIDTH-1:0] m3_yaw_rate;
-	reg  [BIT_WIDTH-1:0] m4_yaw_rate;
+	reg  [`RATE_BIT_WIDTH-1:0] m1_yaw_rate;
+	reg  [`RATE_BIT_WIDTH-1:0] m2_yaw_rate;
+	reg  [`RATE_BIT_WIDTH-1:0] m3_yaw_rate;
+	reg  [`RATE_BIT_WIDTH-1:0] m4_yaw_rate;
 
-	reg	 [BIT_WIDTH-1:0] m1_roll_rate;
-	reg	 [BIT_WIDTH-1:0] m2_roll_rate;
-	reg	 [BIT_WIDTH-1:0] m3_roll_rate;
-	reg	 [BIT_WIDTH-1:0] m4_roll_rate;
+	reg	 [`RATE_BIT_WIDTH-1:0] m1_roll_rate;
+	reg	 [`RATE_BIT_WIDTH-1:0] m2_roll_rate;
+	reg	 [`RATE_BIT_WIDTH-1:0] m3_roll_rate;
+	reg	 [`RATE_BIT_WIDTH-1:0] m4_roll_rate;
 
-	reg	 [BIT_WIDTH-1:0] m1_pitch_rate;
-	reg	 [BIT_WIDTH-1:0] m2_pitch_rate;
-	reg	 [BIT_WIDTH-1:0] m3_pitch_rate;
-	reg	 [BIT_WIDTH-1:0] m4_pitch_rate;
+	reg	 [`RATE_BIT_WIDTH-1:0] m1_pitch_rate;
+	reg	 [`RATE_BIT_WIDTH-1:0] m2_pitch_rate;
+	reg	 [`RATE_BIT_WIDTH-1:0] m3_pitch_rate;
+	reg	 [`RATE_BIT_WIDTH-1:0] m4_pitch_rate;
 
-	reg [BIT_WIDTH-1:0] motor_1_output;
-	reg [BIT_WIDTH-1:0] motor_2_output;
-	reg [BIT_WIDTH-1:0] motor_3_output;
-	reg [BIT_WIDTH-1:0] motor_4_output;
+	reg [`RATE_BIT_WIDTH-1:0] motor_1_output;
+	reg [`RATE_BIT_WIDTH-1:0] motor_2_output;
+	reg [`RATE_BIT_WIDTH-1:0] motor_3_output;
+	reg [`RATE_BIT_WIDTH-1:0] motor_4_output;
 
-	reg [BIT_WIDTH-1:0] motor_1_temp;
-	reg [BIT_WIDTH-1:0] motor_2_temp;
-	reg [BIT_WIDTH-1:0] motor_3_temp;
-	reg [BIT_WIDTH-1:0] motor_4_temp;
+	reg [`RATE_BIT_WIDTH-1:0] motor_1_temp;
+	reg [`RATE_BIT_WIDTH-1:0] motor_2_temp;
+	reg [`RATE_BIT_WIDTH-1:0] motor_3_temp;
+	reg [`RATE_BIT_WIDTH-1:0] motor_4_temp;
 
 	always @(posedge sys_clk or negedge resetn) begin
 		if (!resetn) begin //On reset input LOW set all variables to zero
