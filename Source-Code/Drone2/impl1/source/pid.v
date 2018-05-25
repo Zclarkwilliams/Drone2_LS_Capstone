@@ -16,7 +16,9 @@
  */
  module pid #(parameter RATE_BIT_WIDTH = 16,
  			  parameter PID_RATE_BIT_WIDTH = 16,
-			  parameter IMU_VAL_BIT_WIDTH = 16)
+			  parameter IMU_VAL_BIT_WIDTH = 16,
+			  parameter signed RATE_MIN = 16'h8000,
+			  parameter signed RATE_MAX = 16'h7FFF)
  			 (output reg [PID_RATE_BIT_WIDTH-1:0] rate_out,
  			  output reg pid_complete,
 			  output reg pid_active,
@@ -38,11 +40,6 @@
 	reg signed [RATE_BIT_WIDTH-1:0]
 		latched_target_rotation, latched_actual_rotation, latched_angle_error;
 
-	// min and max rate_out values
-	localparam signed
-		RATE_MIN = 16'h8000,
-		RATE_MAX = 16'h7FFF;
-
 	// proportionality constants
 	localparam signed
 		K_p = 16'h0001,
@@ -61,7 +58,6 @@
 	// state variables
 	reg [5:0] state, next_state;
 
-	
 	//Debug wire assign to monitor values on 16 led daughter board
 	assign DEBUG_WIRE = rotation_total;
 
