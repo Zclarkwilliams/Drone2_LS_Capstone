@@ -179,21 +179,21 @@ module motor_mixer	#(parameter BIT_WIDTH = 16,
 				end
 				STATE_CONVERT_RATES: 	begin
 					//	Set up motor_1 rates for only addition
-					m1_yaw_rate			<= (~yaw_scale + 1'b1);
+					m1_yaw_rate			<= {((~yaw_scale[15:4]) + 1'b1), yaw_scale[3:0]};
 					m1_roll_rate		<= roll_scale;
 					m1_pitch_rate		<= pitch_scale;
 					//	Set up motor_2 rates for only addition
 					m2_yaw_rate			<= yaw_scale;
-					m2_roll_rate		<= (~roll_scale + 1'b1);
+					m2_roll_rate		<= {((~roll_scale[15:4]) + 1'b1), roll_scale[3:0]};
 					m2_pitch_rate		<= pitch_scale;
 					//	Set up motor_3 rates for only addition
-					m3_yaw_rate			<= (~yaw_scale + 1'b1);
-					m3_roll_rate		<= (~roll_scale + 1'b1);
-					m3_pitch_rate		<= (~pitch_scale + 1'b1);
+					m3_yaw_rate			<= {((~yaw_scale[15:4]) + 1'b1), yaw_scale[3:0]};
+					m3_roll_rate		<= {((~roll_scale[15:4]) + 1'b1), roll_scale[3:0]};
+					m3_pitch_rate		<= {((~pitch_scale[15:4]) + 1'b1), pitch_scale[3:0]};
 					//	Set up motor_4 rates for only addition
 					m4_yaw_rate			<= yaw_scale;
 					m4_roll_rate		<= roll_scale;
-					m4_pitch_rate		<= (~pitch_scale + 1'b1);
+					m4_pitch_rate		<= {((~pitch_scale[15:4]) + 1'b1), pitch_scale[3:0]};
 					//	Throttle will be identicle to all motors
 					n_throttle_rate		<= throttle_rate;
 					//	Proceed to next state
