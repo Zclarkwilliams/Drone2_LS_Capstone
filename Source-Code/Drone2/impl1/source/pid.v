@@ -14,9 +14,7 @@
  * Outputs:
  *
  */
- module pid #(parameter signed RATE_MIN = 16'h8000,
-			  parameter signed RATE_MAX = 16'h7FFF)
- 			 (output reg [`PID_RATE_BIT_WIDTH-1:0] rate_out,
+ module pid  (output reg [`PID_RATE_BIT_WIDTH-1:0] rate_out,
  			  output reg pid_complete,
 			  output reg pid_active,
 			  output wire [15:0] DEBUG_WIRE, /*DEBUG LEDs*/
@@ -27,7 +25,15 @@
 			  input wire wait_flag,
 			  input wire resetn,
 			  input wire us_clk);
-
+			  
+	
+	
+	parameter signed RATE_MIN = 16'h8000;
+	parameter signed RATE_MAX = 16'h7FFF;
+	parameter signed K_p = 16'h0001;
+	parameter signed K_i = 16'h0001;
+	parameter signed K_d = 16'h0001;
+			  
 	// working registers
 	reg signed [`RATE_BIT_WIDTH-1:0]
 		scaled_rotation, rotation_error, prev_rotation_error,
@@ -37,11 +43,6 @@
 	reg signed [`RATE_BIT_WIDTH-1:0]
 		latched_target_rotation, latched_actual_rotation, latched_angle_error;
 
-	// proportionality constants
-	localparam signed
-		K_p = 16'h0001,
-		K_i = 16'h0001,
-		K_d = 16'h0001;
 
 	// state names
 	localparam
@@ -160,3 +161,4 @@
 	end
 
 endmodule
+

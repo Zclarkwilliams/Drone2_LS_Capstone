@@ -72,6 +72,23 @@
 		STATE_STARTING = 4'b0010,
 		STATE_ACTIVE   = 4'b0100,
 		STATE_COMPLETE = 4'b1000;
+		
+	//PID controller parameters
+	localparam signed ROLL_RATE_MIN  = 16'h8000;
+	localparam signed ROLL_RATE_MAX  = 16'h7FFF;
+	localparam signed ROLL_K_P       = 16'h0001;
+	localparam signed ROLL_K_I       = 16'h0001;
+	localparam signed ROLL_K_D       = 16'h0001;
+	localparam signed PITCH_RATE_MIN = 16'h8000;
+	localparam signed PITCH_RATE_MAX = 16'h7FFF;
+	localparam signed PITCH_K_P      = 16'h0001;
+	localparam signed PITCH_K_I      = 16'h0001;
+	localparam signed PITCH_K_D      = 16'h0001;
+	localparam signed YAW_RATE_MIN   = 16'h8000;
+	localparam signed YAW_RATE_MAX   = 16'h7FFF;
+	localparam signed YAW_K_P        = 16'h0001;
+	localparam signed YAW_K_I        = 16'h0001;
+	localparam signed YAW_K_D        = 16'h0001;
 
 	// state variables
 	reg [3:0] state, next_state;
@@ -199,7 +216,12 @@
 	end
 
 	// pid instantiations
-	pid yaw_pid (
+	pid #(	YAW_RATE_MIN,
+			YAW_RATE_MAX,
+			YAW_K_P,
+			YAW_K_I,
+			YAW_K_D
+		 )  yaw_pid (
 		.DEBUG_WIRE(DEBUG_WIRE_YAW),
 		.rate_out(yaw_rate_out),
 		.pid_complete(yaw_complete),
@@ -212,7 +234,12 @@
 		.resetn(resetn),
 		.us_clk(us_clk));
 
-	pid pitch_pid (
+	pid #(	PITCH_RATE_MIN,
+			PITCH_RATE_MAX,
+			PITCH_K_P,
+			PITCH_K_I,
+			PITCH_K_D
+		 )  pitch_pid (
 		.DEBUG_WIRE(DEBUG_WIRE_PITCH),
 		.rate_out(pitch_rate_out),
 		.pid_complete(pitch_complete),
@@ -225,7 +252,12 @@
 		.resetn(resetn),
 		.us_clk(us_clk));
 
-	pid roll_pid (
+	pid #(	ROLL_RATE_MIN,
+			ROLL_RATE_MAX,
+			ROLL_K_P,
+			ROLL_K_I,
+			ROLL_K_D
+		 )  roll_pid (
 		.DEBUG_WIRE(DEBUG_WIRE_ROLL),
 		.rate_out(roll_rate_out),
 		.pid_complete(roll_complete),
