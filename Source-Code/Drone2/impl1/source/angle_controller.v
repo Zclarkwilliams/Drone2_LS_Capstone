@@ -180,7 +180,7 @@ module angle_controller (
 					mapped_throttle <= {6'b000000, latched_throttle, 2'b00}; // ???
 					// input values mapped from 0 - 250 to -31.25 - 31.25
 					mapped_yaw <= $signed({7'b0000000, latched_yaw, 1'b0}) - $signed(16'd250);
-          // pitch value from IMU is flipped, add instead of subtract (do this in bfc too?)
+					// roll value from IMU is flipped, add instead of subtract (do this in bfc too?)
 					mapped_roll <= ($signed({7'b0000000, latched_roll, 1'b0}) - $signed(16'd250)) + $signed(roll_actual);
 					mapped_pitch <= ($signed({7'b0000000, latched_pitch, 1'b0}) - $signed(16'd250)) - $signed(pitch_actual);
 				end
