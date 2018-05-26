@@ -32,26 +32,29 @@
  * @resetn - global reset signal
  * @us_clk - 1MHz clock
  */
- module body_frame_controller (
- 	output wire [`PID_RATE_BIT_WIDTH-1:0] yaw_rate_out,
+
+`include "common_defines.v"
+
+module body_frame_controller (
+	output wire [`PID_RATE_BIT_WIDTH-1:0] yaw_rate_out,
 	output wire [`PID_RATE_BIT_WIDTH-1:0] roll_rate_out,
- 	output wire [`PID_RATE_BIT_WIDTH-1:0] pitch_rate_out,
+	output wire [`PID_RATE_BIT_WIDTH-1:0] pitch_rate_out,
 	output reg complete_signal,
 	// Debug led output wire
 	output wire [15:0] DEBUG_WIRE,
- 	input wire [`RATE_BIT_WIDTH-1:0] yaw_target,
- 	input wire [`RATE_BIT_WIDTH-1:0] roll_target,
- 	input wire [`RATE_BIT_WIDTH-1:0] pitch_target,
- 	input wire [`IMU_VAL_BIT_WIDTH-1:0] roll_rotation,
- 	input wire [`IMU_VAL_BIT_WIDTH-1:0] pitch_rotation,
- 	input wire [`IMU_VAL_BIT_WIDTH-1:0] yaw_rotation,
+	input wire [`RATE_BIT_WIDTH-1:0] yaw_target,
+	input wire [`RATE_BIT_WIDTH-1:0] roll_target,
+	input wire [`RATE_BIT_WIDTH-1:0] pitch_target,
+	input wire [`IMU_VAL_BIT_WIDTH-1:0] roll_rotation,
+	input wire [`IMU_VAL_BIT_WIDTH-1:0] pitch_rotation,
+	input wire [`IMU_VAL_BIT_WIDTH-1:0] yaw_rotation,
 	input wire [`RATE_BIT_WIDTH-1:0] roll_angle_error,
 	input wire [`RATE_BIT_WIDTH-1:0] pitch_angle_error,
- 	input wire start_signal,
+	input wire start_signal,
 	input wire resetn,
 	input wire us_clk);
 
-  	// internal wires
+	// internal wires
 	wire yaw_active, roll_active, pitch_active;
 	wire yaw_complete, roll_complete, pitch_complete;
 

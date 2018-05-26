@@ -29,26 +29,26 @@
  *		Optimize resource usage?
  *		Update this header description to look like other files
  */
-module angle_controller
-	#(parameter RATE_BIT_WIDTH = 16,  // size of target output values
-	parameter IMU_VAL_BIT_WIDTH = 16, // size of input from IMU
-	parameter REC_VAL_BIT_WIDTH = 8)  // size of input from receiver
-	(output reg [RATE_BIT_WIDTH-1:0] throttle_rate_out,
-	output reg [RATE_BIT_WIDTH-1:0] yaw_rate_out,
-	output reg [RATE_BIT_WIDTH-1:0] pitch_rate_out,
-	output reg [RATE_BIT_WIDTH-1:0] roll_rate_out,
-	output reg [RATE_BIT_WIDTH-1:0] pitch_angle_error,
-	output reg [RATE_BIT_WIDTH-1:0] roll_angle_error,
+
+`include "common_defines.v"
+
+module angle_controller (
+	output reg [`RATE_BIT_WIDTH-1:0] throttle_rate_out,
+	output reg [`RATE_BIT_WIDTH-1:0] yaw_rate_out,
+	output reg [`RATE_BIT_WIDTH-1:0] pitch_rate_out,
+	output reg [`RATE_BIT_WIDTH-1:0] roll_rate_out,
+	output reg [`RATE_BIT_WIDTH-1:0] pitch_angle_error,
+	output reg [`RATE_BIT_WIDTH-1:0] roll_angle_error,
 	output reg complete_signal,
 	output reg active_signal,
 	//output reg [4:0] state,
-	input wire [REC_VAL_BIT_WIDTH-1:0] throttle_target,
-	input wire [REC_VAL_BIT_WIDTH-1:0] yaw_target,
-	input wire [REC_VAL_BIT_WIDTH-1:0] pitch_target,
-	input wire [REC_VAL_BIT_WIDTH-1:0] roll_target,
-	input wire [RATE_BIT_WIDTH-1:0] yaw_actual /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
-	input wire [RATE_BIT_WIDTH-1:0] pitch_actual,
-	input wire [RATE_BIT_WIDTH-1:0] roll_actual,
+	input wire [`REC_VAL_BIT_WIDTH-1:0] throttle_target,
+	input wire [`REC_VAL_BIT_WIDTH-1:0] yaw_target,
+	input wire [`REC_VAL_BIT_WIDTH-1:0] pitch_target,
+	input wire [`REC_VAL_BIT_WIDTH-1:0] roll_target,
+	input wire [`RATE_BIT_WIDTH-1:0] yaw_actual /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
+	input wire [`RATE_BIT_WIDTH-1:0] pitch_actual,
+	input wire [`RATE_BIT_WIDTH-1:0] roll_actual,
 	input wire resetn,
 	input wire start_signal,
 	input wire us_clk);
@@ -73,10 +73,10 @@ module angle_controller
 
 	// TODO: Remove unused variables
 	// working registers
-	reg signed [RATE_BIT_WIDTH-1:0] mapped_throttle, mapped_yaw, mapped_roll, mapped_pitch;
-	reg signed [RATE_BIT_WIDTH-1:0] new_mapped_throttle, new_mapped_yaw, new_mapped_roll, new_mapped_pitch;
-	reg signed [RATE_BIT_WIDTH-1:0] scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
-	reg signed [REC_VAL_BIT_WIDTH-1:0] latched_throttle, latched_yaw, latched_pitch, latched_roll;
+	reg signed [`RATE_BIT_WIDTH-1:0] mapped_throttle, mapped_yaw, mapped_roll, mapped_pitch;
+	reg signed [`RATE_BIT_WIDTH-1:0] new_mapped_throttle, new_mapped_yaw, new_mapped_roll, new_mapped_pitch;
+	reg signed [`RATE_BIT_WIDTH-1:0] scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
+	reg signed [`REC_VAL_BIT_WIDTH-1:0] latched_throttle, latched_yaw, latched_pitch, latched_roll;
 
 
 	// state names
