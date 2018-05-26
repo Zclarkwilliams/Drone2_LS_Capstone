@@ -76,7 +76,7 @@ module angle_controller
 	reg signed [RATE_BIT_WIDTH-1:0] mapped_throttle, mapped_yaw, mapped_roll, mapped_pitch;
 	reg signed [RATE_BIT_WIDTH-1:0] new_mapped_throttle, new_mapped_yaw, new_mapped_roll, new_mapped_pitch;
 	reg signed [RATE_BIT_WIDTH-1:0] scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
-	reg signed [REC_VAL_BIT_WIDTH-1:0] latched_throttle, latched_yaw, latched_pitch, latched_roll;
+	reg [REC_VAL_BIT_WIDTH-1:0] latched_throttle, latched_yaw, latched_pitch, latched_roll;
 
 
 	// state names
@@ -91,7 +91,7 @@ module angle_controller
 	reg [4:0] state, next_state;
 
 	reg start_flag = 1'b0;
-
+	
 	// latch start signal
 	always @(posedge start_signal or posedge us_clk or negedge resetn) begin
 		if(!resetn)
