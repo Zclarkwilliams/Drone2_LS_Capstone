@@ -36,20 +36,20 @@
 `include "common_defines.v"
 
 module body_frame_controller (
-	output wire [`PID_RATE_BIT_WIDTH-1:0] yaw_rate_out,
-	output wire [`PID_RATE_BIT_WIDTH-1:0] roll_rate_out,
-	output wire [`PID_RATE_BIT_WIDTH-1:0] pitch_rate_out,
+	output wire signed [`PID_RATE_BIT_WIDTH-1:0] yaw_rate_out,
+	output wire signed [`PID_RATE_BIT_WIDTH-1:0] roll_rate_out,
+	output wire signed [`PID_RATE_BIT_WIDTH-1:0] pitch_rate_out,
 	output reg complete_signal,
 	// Debug led output wire
 	output wire [15:0] DEBUG_WIRE,
-	input wire [`RATE_BIT_WIDTH-1:0] yaw_target,
-	input wire [`RATE_BIT_WIDTH-1:0] roll_target,
-	input wire [`RATE_BIT_WIDTH-1:0] pitch_target,
-	input wire [`IMU_VAL_BIT_WIDTH-1:0] roll_rotation,
-	input wire [`IMU_VAL_BIT_WIDTH-1:0] pitch_rotation,
-	input wire [`IMU_VAL_BIT_WIDTH-1:0] yaw_rotation,
-	input wire [`RATE_BIT_WIDTH-1:0] roll_angle_error,
-	input wire [`RATE_BIT_WIDTH-1:0] pitch_angle_error,
+	input wire signed [`RATE_BIT_WIDTH-1:0] yaw_target,
+	input wire signed [`RATE_BIT_WIDTH-1:0] roll_target,
+	input wire signed [`RATE_BIT_WIDTH-1:0] pitch_target,
+	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] roll_rotation,
+	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] pitch_rotation,
+	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] yaw_rotation,
+	input wire signed [`RATE_BIT_WIDTH-1:0] roll_angle_error,
+	input wire signed [`RATE_BIT_WIDTH-1:0] pitch_angle_error,
 	input wire start_signal,
 	input wire resetn,
 	input wire us_clk);
@@ -60,14 +60,14 @@ module body_frame_controller (
 
 	// working registers
 	reg wait_flag, start_flag;
-	reg [`RATE_BIT_WIDTH-1:0]	 latched_yaw_target;
-	reg [`RATE_BIT_WIDTH-1:0]	 latched_roll_target;
-	reg [`RATE_BIT_WIDTH-1:0]	 latched_pitch_target;
-	reg [`IMU_VAL_BIT_WIDTH-1:0] latched_yaw_rotation;
-	reg [`IMU_VAL_BIT_WIDTH-1:0] latched_roll_rotation;
-	reg [`IMU_VAL_BIT_WIDTH-1:0] latched_pitch_rotation;
-	reg [`RATE_BIT_WIDTH-1:0]	 latched_roll_angle_error;
-	reg [`RATE_BIT_WIDTH-1:0]	 latched_pitch_angle_error;
+	reg signed [`RATE_BIT_WIDTH-1:0]	 latched_yaw_target;
+	reg signed [`RATE_BIT_WIDTH-1:0]	 latched_roll_target;
+	reg signed [`RATE_BIT_WIDTH-1:0]	 latched_pitch_target;
+	reg signed [`IMU_VAL_BIT_WIDTH-1:0] latched_yaw_rotation;
+	reg signed [`IMU_VAL_BIT_WIDTH-1:0] latched_roll_rotation;
+	reg signed [`IMU_VAL_BIT_WIDTH-1:0] latched_pitch_rotation;
+	reg signed [`RATE_BIT_WIDTH-1:0]	 latched_roll_angle_error;
+	reg signed [`RATE_BIT_WIDTH-1:0]	 latched_pitch_angle_error;
 
 	// state names
 	localparam

@@ -23,7 +23,7 @@
 			  parameter K_I = 16'h0001,
 			  parameter K_D = 16'h0001,
 		  	  parameter IMU_SCALAR = 4'h1)
- 			 (output reg [`PID_RATE_BIT_WIDTH-1:0] rate_out,
+ 			 (output reg signed [`PID_RATE_BIT_WIDTH-1:0] rate_out,
  			  output reg pid_complete,
 			  output reg pid_active,
 			  output wire [15:0] DEBUG_WIRE, /*DEBUG LEDs*/
