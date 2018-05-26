@@ -140,7 +140,8 @@ module body_frame_controller (
             latched_roll_target			<= roll_target;
             latched_pitch_target		<= pitch_target;
             latched_yaw_rotation		<= yaw_rotation;
-            latched_roll_rotation		<= roll_rotation;
+			// Roll is flipped from the IMU so correct it here
+            latched_roll_rotation		<= ~roll_rotation + 1'b1;
             latched_pitch_rotation		<= pitch_rotation;
             latched_roll_angle_error	<= roll_angle_error;
             latched_pitch_angle_error	<= pitch_angle_error;
