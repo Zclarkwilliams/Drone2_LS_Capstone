@@ -14,7 +14,16 @@
  * Outputs:
  *
  */
- module pid  (output reg [`PID_RATE_BIT_WIDTH-1:0] rate_out,
+ module pid #(parameter signed RATE_MIN = 16'h8000,
+	 		  parameter signed RATE_MAX = 16'h7FFF,
+			  parameter K_P_SHIFT = 4'h1,
+			  parameter K_I_SHIFT = 4'h1,
+			  parameter K_D_SHIFT = 4'h1,
+			  parameter K_P = 16'h0001,
+			  parameter K_I = 16'h0001,
+			  parameter K_D = 16'h0001,
+		  	  parameter IMU_SCALAR = 4'h1)
+ 			 (output reg [`PID_RATE_BIT_WIDTH-1:0] rate_out,
  			  output reg pid_complete,
 			  output reg pid_active,
 			  output wire [15:0] DEBUG_WIRE, /*DEBUG LEDs*/
@@ -25,15 +34,7 @@
 			  input wire wait_flag,
 			  input wire resetn,
 			  input wire us_clk);
-			  
-	
-	
-	parameter signed RATE_MIN = 16'h8000;
-	parameter signed RATE_MAX = 16'h7FFF;
-	parameter signed K_p = 16'h0001;
-	parameter signed K_i = 16'h0001;
-	parameter signed K_d = 16'h0001;
-			  
+
 	// working registers
 	reg signed [`RATE_BIT_WIDTH-1:0]
 		scaled_rotation, rotation_error, prev_rotation_error,
@@ -84,19 +85,19 @@
 					pid_active <= 1'b1;
 					pid_complete <= 1'b0;
 					prev_rotation_error <= rotation_error;
-					rotation_error <= ($signed(target_rotation) - $signed(actual_rotation));
-					rotation_integral <= ($signed(K_i) * $signed(angle_error));
+					rotation_error <= ($signed(target_rotation) - ($signed(actual_rotation) >>> IMU_SCALAR));
+					rotation_integral <= ($signed(K_I) * $signed(angle_error)) >>> K_I_SHIFT;
 				end
 				STATE_CALC2: begin
 					pid_active <= 1'b1;
 					pid_complete <= 1'b0;
-					rotation_proportional <= ($signed(K_p) * $signed(rotation_error));
+					rotation_proportional <= ($signed(K_P) * $signed(rotation_error)) >>> K_P_SHIFT;
 					error_change <= ($signed(prev_rotation_error) - $signed(rotation_error));
 				end
 				STATE_CALC3: begin
 					pid_active <= 1'b1;
 					pid_complete <= 1'b0;
-					rotation_derivative <= ($signed(K_d) * $signed(error_change));
+					rotation_derivative <= ($signed(K_D) * $signed(error_change)) >>> K_D_SHIFT;
 				end
 				STATE_CALC4: begin
 					pid_active <= 1'b1;
