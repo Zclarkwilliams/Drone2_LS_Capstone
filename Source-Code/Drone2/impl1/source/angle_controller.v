@@ -33,12 +33,12 @@
 `include "common_defines.v"
 
 module angle_controller (
-	output reg [`RATE_BIT_WIDTH-1:0] throttle_rate_out,
-	output reg [`RATE_BIT_WIDTH-1:0] yaw_rate_out,
-	output reg [`RATE_BIT_WIDTH-1:0] pitch_rate_out,
-	output reg [`RATE_BIT_WIDTH-1:0] roll_rate_out,
-	output reg [`RATE_BIT_WIDTH-1:0] pitch_angle_error,
-	output reg [`RATE_BIT_WIDTH-1:0] roll_angle_error,
+	output reg signed [`RATE_BIT_WIDTH-1:0] throttle_rate_out,
+	output reg signed [`RATE_BIT_WIDTH-1:0] yaw_rate_out,
+	output reg signed [`RATE_BIT_WIDTH-1:0] pitch_rate_out,
+	output reg signed [`RATE_BIT_WIDTH-1:0] roll_rate_out,
+	output reg signed [`RATE_BIT_WIDTH-1:0] pitch_angle_error,
+	output reg signed [`RATE_BIT_WIDTH-1:0] roll_angle_error,
 	output reg complete_signal,
 	output reg active_signal,
 	//output reg [4:0] state,
@@ -46,9 +46,9 @@ module angle_controller (
 	input wire [`REC_VAL_BIT_WIDTH-1:0] yaw_target,
 	input wire [`REC_VAL_BIT_WIDTH-1:0] pitch_target,
 	input wire [`REC_VAL_BIT_WIDTH-1:0] roll_target,
-	input wire [`RATE_BIT_WIDTH-1:0] yaw_actual /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
-	input wire [`RATE_BIT_WIDTH-1:0] pitch_actual,
-	input wire [`RATE_BIT_WIDTH-1:0] roll_actual,
+	input wire signed [`RATE_BIT_WIDTH-1:0] yaw_actual /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
+	input wire signed [`RATE_BIT_WIDTH-1:0] pitch_actual,
+	input wire signed [`RATE_BIT_WIDTH-1:0] roll_actual,
 	input wire resetn,
 	input wire start_signal,
 	input wire us_clk);
