@@ -63,8 +63,8 @@
  ************************************************************/
 
 //	Min and Max boundary values for to send to ESC's
-`define MOTOR_VAL_MIN					16'h0002
-`define MOTOR_VAL_MAX					16'h03E8
+`define MOTOR_VAL_MIN					$signed(16'h0020)
+`define MOTOR_VAL_MAX					$signed(16'h0FA0)
 
 //	Bias to add as a buffer to the motor equation
 `define	MOTOR_1_RATE_BIAS				 	$signed(16'h0000)
@@ -74,9 +74,9 @@
 
 //	Scaler to set proportions of yaw, roll, and pitch
 //  Shift to change impact of roll, pitch, and yaw
-`define MOTOR_RATE_YAW_SCALER			2
-`define MOTOR_RATE_ROLL_SCALER			2
-`define MOTOR_RATE_PITCH_SCALER			2
+`define MOTOR_RATE_YAW_SCALER	1
+`define MOTOR_RATE_ROLL_SCALER	1
+`define MOTOR_RATE_PITCH_SCALER	1
 
 //	Mapping 16 bit motor rate output to 8 bit value for pwm conversion
 `define MAPPING_SHIFT_8BIT				8

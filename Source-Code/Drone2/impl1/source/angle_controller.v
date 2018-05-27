@@ -29,26 +29,26 @@
  *		Optimize resource usage?
  *		Update this header description to look like other files
  */
-module angle_controller
-	#(parameter RATE_BIT_WIDTH = 16,  // size of target output values
-	parameter IMU_VAL_BIT_WIDTH = 16, // size of input from IMU
-	parameter REC_VAL_BIT_WIDTH = 8)  // size of input from receiver
-	(output reg [RATE_BIT_WIDTH-1:0] throttle_rate_out,
-	output reg [RATE_BIT_WIDTH-1:0] yaw_rate_out,
-	output reg [RATE_BIT_WIDTH-1:0] pitch_rate_out,
-	output reg [RATE_BIT_WIDTH-1:0] roll_rate_out,
-	output reg [RATE_BIT_WIDTH-1:0] pitch_angle_error,
-	output reg [RATE_BIT_WIDTH-1:0] roll_angle_error,
+
+`include "common_defines.v"
+
+module angle_controller (
+	output reg signed [`RATE_BIT_WIDTH-1:0] throttle_rate_out,
+	output reg signed [`RATE_BIT_WIDTH-1:0] yaw_rate_out,
+	output reg signed [`RATE_BIT_WIDTH-1:0] pitch_rate_out,
+	output reg signed [`RATE_BIT_WIDTH-1:0] roll_rate_out,
+	output reg signed [`RATE_BIT_WIDTH-1:0] pitch_angle_error,
+	output reg signed [`RATE_BIT_WIDTH-1:0] roll_angle_error,
 	output reg complete_signal,
 	output reg active_signal,
 	//output reg [4:0] state,
-	input wire [REC_VAL_BIT_WIDTH-1:0] throttle_target,
-	input wire [REC_VAL_BIT_WIDTH-1:0] yaw_target,
-	input wire [REC_VAL_BIT_WIDTH-1:0] pitch_target,
-	input wire [REC_VAL_BIT_WIDTH-1:0] roll_target,
-	input wire [RATE_BIT_WIDTH-1:0] yaw_actual /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
-	input wire [RATE_BIT_WIDTH-1:0] pitch_actual,
-	input wire [RATE_BIT_WIDTH-1:0] roll_actual,
+	input wire [`REC_VAL_BIT_WIDTH-1:0] throttle_target,
+	input wire [`REC_VAL_BIT_WIDTH-1:0] yaw_target,
+	input wire [`REC_VAL_BIT_WIDTH-1:0] pitch_target,
+	input wire [`REC_VAL_BIT_WIDTH-1:0] roll_target,
+	input wire signed [`RATE_BIT_WIDTH-1:0] yaw_actual /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
+	input wire signed [`RATE_BIT_WIDTH-1:0] pitch_actual,
+	input wire signed [`RATE_BIT_WIDTH-1:0] roll_actual,
 	input wire resetn,
 	input wire start_signal,
 	input wire us_clk);
@@ -56,7 +56,7 @@ module angle_controller
 	// TODO: Use decimal values instead to avoid having to comment
 	// rate limits (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	localparam signed
-		THROTTLE_MAX = 16'h0fc0, // 60
+		THROTTLE_MAX = 16'h0fa0, // 250
 		YAW_MAX =      16'h0190, // 25
 		YAW_MIN =      16'hfe70, // -25
 		PITCH_MAX =    16'h0190, // 25
@@ -73,10 +73,10 @@ module angle_controller
 
 	// TODO: Remove unused variables
 	// working registers
-	reg signed [RATE_BIT_WIDTH-1:0] mapped_throttle, mapped_yaw, mapped_roll, mapped_pitch;
-	reg signed [RATE_BIT_WIDTH-1:0] new_mapped_throttle, new_mapped_yaw, new_mapped_roll, new_mapped_pitch;
-	reg signed [RATE_BIT_WIDTH-1:0] scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
-	reg [REC_VAL_BIT_WIDTH-1:0] latched_throttle, latched_yaw, latched_pitch, latched_roll;
+	reg signed [`RATE_BIT_WIDTH-1:0] mapped_throttle, mapped_yaw, mapped_roll, mapped_pitch;
+	reg signed [`RATE_BIT_WIDTH-1:0] new_mapped_throttle, new_mapped_yaw, new_mapped_roll, new_mapped_pitch;
+	reg signed [`RATE_BIT_WIDTH-1:0] scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
+	reg signed [`REC_VAL_BIT_WIDTH-1:0] latched_throttle, latched_yaw, latched_pitch, latched_roll;
 
 
 	// state names
@@ -91,7 +91,7 @@ module angle_controller
 	reg [4:0] state, next_state;
 
 	reg start_flag = 1'b0;
-	
+
 	// latch start signal
 	always @(posedge start_signal or posedge us_clk or negedge resetn) begin
 		if(!resetn)
@@ -175,12 +175,10 @@ module angle_controller
 					complete_signal <= 1'b0;
 					active_signal <= 1'b1;
 
-					// TODO Change these value ranges!
-					// input value mapped from  0 - 250 to 0 - 62.5
-					mapped_throttle <= {6'b000000, latched_throttle, 2'b00}; // ???
+					mapped_throttle <= {4'h0, latched_throttle, 4'h0};
 					// input values mapped from 0 - 250 to -31.25 - 31.25
 					mapped_yaw <= $signed({7'b0000000, latched_yaw, 1'b0}) - $signed(16'd250);
-          // pitch value from IMU is flipped, add instead of subtract (do this in bfc too?)
+					// roll value from IMU is flipped, add instead of subtract (do this in bfc too?)
 					mapped_roll <= ($signed({7'b0000000, latched_roll, 1'b0}) - $signed(16'd250)) + $signed(roll_actual);
 					mapped_pitch <= ($signed({7'b0000000, latched_pitch, 1'b0}) - $signed(16'd250)) - $signed(pitch_actual);
 				end
