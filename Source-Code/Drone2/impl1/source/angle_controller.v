@@ -56,7 +56,7 @@ module angle_controller (
 	// TODO: Use decimal values instead to avoid having to comment
 	// rate limits (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	localparam signed
-		THROTTLE_MAX = 16'h0fc0, // 60
+		THROTTLE_MAX = 16'h0fa0, // 250
 		YAW_MAX =      16'h0190, // 25
 		YAW_MIN =      16'hfe70, // -25
 		PITCH_MAX =    16'h0190, // 25
@@ -175,9 +175,7 @@ module angle_controller (
 					complete_signal <= 1'b0;
 					active_signal <= 1'b1;
 
-					// TODO Change these value ranges!
-					// input value mapped from  0 - 250 to 0 - 62.5
-					mapped_throttle <= {6'b000000, latched_throttle, 2'b00}; // ???
+					mapped_throttle <= {4'h0, latched_throttle, 4'h0};
 					// input values mapped from 0 - 250 to -31.25 - 31.25
 					mapped_yaw <= $signed({7'b0000000, latched_yaw, 1'b0}) - $signed(16'd250);
 					// roll value from IMU is flipped, add instead of subtract (do this in bfc too?)
