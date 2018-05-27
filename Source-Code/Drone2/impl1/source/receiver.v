@@ -1,9 +1,11 @@
-`timescale 1ns / 1ns
-
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
 
 /**
@@ -23,6 +25,7 @@
  * @pitch_pwm: from the hardware receiver (duty cycle between ~5% and 10%)
  * @sys_clk: system clock
  */
+`timescale 1ns / 1ns
 
 `include "common_defines.v"
 

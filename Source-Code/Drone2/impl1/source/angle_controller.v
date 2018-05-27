@@ -1,11 +1,13 @@
-`timescale 1ns / 1ns
-
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
-
+ 
 /**
  *  Module takes as inputs:
  *		- Target rate & angles from the receiver module
@@ -29,6 +31,7 @@
  *		Optimize resource usage?
  *		Update this header description to look like other files
  */
+`timescale 1ns / 1ns
 
 `include "common_defines.v"
 

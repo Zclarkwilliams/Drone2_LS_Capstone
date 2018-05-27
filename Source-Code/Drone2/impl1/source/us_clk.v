@@ -1,14 +1,18 @@
-`timescale 1ns / 1ns
-
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
 
 /**
  * us_clk - Convert from sys_clk to us_clk (1 MHz and 1 us period).
  */
+
+`timescale 1ns / 1ns
 
 module us_clk #(parameter CLK_CONVERSION_HIGH = 19,
 	  			parameter CLK_CONVERSION_LOW = 37)

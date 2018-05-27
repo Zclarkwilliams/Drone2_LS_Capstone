@@ -1,10 +1,11 @@
-`timescale 1ns / 1ns
-`default_nettype none
-
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
 
 /**
@@ -13,7 +14,9 @@
  *
  * Outputs:
  *
- */
+ */ 
+ `timescale 1ns / 1ns
+ 
  module pid #(parameter signed RATE_MIN = 16'h8000,
 	 		  parameter signed RATE_MAX = 16'h7FFF,
 			  parameter K_P_SHIFT = 4'h1,

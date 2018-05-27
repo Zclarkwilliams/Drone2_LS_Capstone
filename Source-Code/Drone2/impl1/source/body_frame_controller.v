@@ -1,10 +1,11 @@
-`timescale 1ns / 1ns
-`default_nettype none
-
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
 
 /**
@@ -32,6 +33,7 @@
  * @resetn - global reset signal
  * @us_clk - 1MHz clock
  */
+`timescale 1ns / 1ns
 
 `include "common_defines.v"
 
@@ -89,19 +91,19 @@ module body_frame_controller (
 	 * K_* term and then shifting it using the K_*_SHIFT value.
 	 * Example: value = (value * ROLL_K_P) >>> ROLL_K_P_SHIFT;
 	 */
-	localparam ROLL_K_P			= 16'h0001;
+	localparam ROLL_K_P			= 16'h0009;
 	localparam ROLL_K_P_SHIFT	= 4'h4;
 	localparam ROLL_K_I			= 16'h0000;
 	localparam ROLL_K_I_SHIFT	= 4'h4;
 	localparam ROLL_K_D			= 16'h0000;
 	localparam ROLL_K_D_SHIFT	= 4'h4;
-	localparam PITCH_K_P		= 16'h0001;
+	localparam PITCH_K_P		= 16'h0009;
 	localparam PITCH_K_P_SHIFT	= 4'h4;
 	localparam PITCH_K_I		= 16'h0000;
 	localparam PITCH_K_I_SHIFT	= 4'h4;
 	localparam PITCH_K_D		= 16'h0000;
 	localparam PITCH_K_D_SHIFT	= 4'h4;
-	localparam YAW_K_P			= 16'h0001;
+	localparam YAW_K_P			= 16'h0009;
 	localparam YAW_K_P_SHIFT	= 4'h4;
 	localparam YAW_K_I			= 16'h0000;
 	localparam YAW_K_I_SHIFT	= 4'h4;
@@ -110,7 +112,7 @@ module body_frame_controller (
 
 
 	// IMU scalar values
-	localparam ROLL_IMU_SCALAR	= 4'h1;
+	localparam ROLL_IMU_SCALAR	= 4'h4;
 	localparam PITCH_IMU_SCALAR	= 4'h1;
 	localparam YAW_IMU_SCALAR	= 4'h1;
 
