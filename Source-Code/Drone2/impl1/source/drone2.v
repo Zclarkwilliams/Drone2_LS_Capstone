@@ -1,11 +1,11 @@
-`timescale 1ns / 1ns
-`default_nettype none
-`include "common_defines.v"
-
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
 
 /**
@@ -30,6 +30,9 @@
  * @scl: serial clock line to the IMU
  */
 
+`timescale 1ns / 1ns
+`default_nettype none
+`include "common_defines.v"
 
 module drone2 (
 	// Outputs
@@ -199,7 +202,7 @@ module drone2 (
 		.start_signal(1'b1),//imu_data_valid),
 		.resetn(resetn),
 		.us_clk(us_clk));
-/*
+
 	body_frame_controller bfc (
 		// Outpus
 		.yaw_rate_out(yaw_rate),
@@ -220,7 +223,7 @@ module drone2 (
 		.start_signal(ac_valid_strobe),
 		.resetn(resetn),
 		.us_clk(us_clk));
-*/
+
 	motor_mixer motor_mixer (
 		// Outputs
 		.motor_1_rate(motor_1_rate),
@@ -229,9 +232,9 @@ module drone2 (
 		.motor_4_rate(motor_4_rate),
 		// Inputs
 		.throttle_rate(throttle_target_rate),
-		.yaw_rate(yaw_target_rate),
-		.roll_rate(roll_target_rate),
-		.pitch_rate(pitch_target_rate),
+		.yaw_rate(yaw_rate),
+		.roll_rate(roll_rate),
+		.pitch_rate(pitch_rate),
 		.sys_clk(sys_clk),
 		.resetn(resetn));
 

@@ -1,7 +1,11 @@
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell,
+ * Brett Creeley,
+ * Daniel Christiansen,
+ * Kirk Hooper,
+ * Zachary Clark-Williams
  */
 
 /**
@@ -23,24 +27,13 @@
  *		^^^ NOTE: Inputs rates expected to be formated as follows
  *					[15:0] rate_input = [15:4] IntegerPart . [3:0] DecimalPart
  *
- *	Top level (Drone2.v) instantiation of module
+ *	Equations are based on the spinning direction of the motors as well as
+ *	how the motors are reference, i.e. which one is 1, 2, 3, and 4. Below
+ *	is an image of the motor referencing numbers and thier spin direction.
  *
- *		motor_mixer  #(BIT_WIDTH,
- *					   MOTOR_RATE_BIT_WIDTH)
- *		motor_mixer	(.resetn(resetn),
- *					 .sys_clk(sys_clk),
- *					 .yaw_rate(yaw_rate),
- *					 .roll_rate(roll_rate),
- *					 .pitch_rate(pitch_rate),
- *					 .throttle_rate(throttle_rate),
- *					 .motor_1_rate(motor_1_rate),
- *					 .motor_2_rate(motor_2_rate),
- *					 .motor_3_rate(motor_3_rate),
- *					 .motor_4_rate(motor_4_rate));
- *
- *		 		   | <-----			 -----> |
- *		 		   | Motor_1		Motor_2 |
- *		 		   V 	\			  /     V
+ *		 		     -----> |	  |	<-----
+ *		 		    Motor_1 |	  |	Motor_2
+ *		 		    	\	V	  V	  /
  *		 				 \			 /
  *		 				  \			/
  *		 				   /-------\
@@ -50,9 +43,9 @@
  *						  /		    \	
  *						 /			 \
  *						/			  \
- *		 		    -----> | 	   | <-----
- *		 		   Motor_4 |	   | Motor_3
- *		 		           V       V
+ *		 		  | <-----  	    ----->  |
+ *		 		  | Motor_4 	    Motor_3 |
+ *		 		  V                			V
  *
  *		Motors_1 and Motor_4 will spin clockwise (CW)
  *		Motors_2 and Motor_3 will spin counter clockwise (CCW)
@@ -161,6 +154,7 @@ module motor_mixer (
 						motor_4_temp	<= `ALL_ZERO_2BYTE;
 					end
 					else begin
+						// Motor_1 Boundary Check
 						if (motor_1_output < `MOTOR_VAL_MIN)
 							motor_1_temp <= `MOTOR_VAL_MIN;
 						else if (motor_1_output > `MOTOR_VAL_MAX)
@@ -168,6 +162,7 @@ module motor_mixer (
 						else
 							motor_1_temp <= motor_1_output;
 
+						// Motor_2 Boundary Check
 						if (motor_2_output < `MOTOR_VAL_MIN)
 							motor_2_temp <= `MOTOR_VAL_MIN;
 						else if (motor_2_output > `MOTOR_VAL_MAX)
@@ -175,6 +170,7 @@ module motor_mixer (
 						else
 							motor_2_temp <= motor_2_output;
 
+						// Motor_3 Boundary Check
 						if (motor_3_output < `MOTOR_VAL_MIN)
 							motor_3_temp <= `MOTOR_VAL_MIN;
 						else if (motor_3_output > `MOTOR_VAL_MAX)
@@ -182,6 +178,7 @@ module motor_mixer (
 						else
 							motor_3_temp <= motor_3_output;
 
+						// Motor_4 Boundary Check
 						if (motor_4_output < `MOTOR_VAL_MIN)
 							motor_4_temp <= `MOTOR_VAL_MIN;
 						else if (motor_4_output > `MOTOR_VAL_MAX)
