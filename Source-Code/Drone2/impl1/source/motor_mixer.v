@@ -31,9 +31,9 @@
  *	how the motors are reference, i.e. which one is 1, 2, 3, and 4. Below
  *	is an image of the motor referencing numbers and thier spin direction.
  *
- *		 		     -----> |	  |	<-----
- *		 		    Motor_1 |	  |	Motor_2
- *		 		    	\	V	  V	  /
+ *		 		   | <-----			 -----> |
+ *		 		   | Motor_1		Motor_2 |
+ *		 		   V 	\			  /     V
  *		 				 \			 /
  *		 				  \			/
  *		 				   /-------\
