@@ -79,6 +79,7 @@ module motor_mixer (
 	localparam STATE_BIT_WIDTH = 2;
 	localparam [STATE_BIT_WIDTH-1:0]
 			STATE_SCALE_RATES		= 0,
+			//STATE_MOTOR_RATE_LIMIT 	= 1,
 			STATE_MOTOR_RATE_CALC 	= 1,
 			STATE_BOUNDARY_CHECK	= 2,
 			STATE_SEND_OUTPUT		= 3;
@@ -90,7 +91,12 @@ module motor_mixer (
 	reg signed [`RATE_BIT_WIDTH-1:0] roll_scale;
 	reg signed [`RATE_BIT_WIDTH-1:0] pitch_scale;
 	reg	signed [`RATE_BIT_WIDTH-1:0] n_throttle_rate;
-
+	
+	reg signed [`RATE_BIT_WIDTH-1:0] motor_1_offset;
+	reg signed [`RATE_BIT_WIDTH-1:0] motor_2_offset;
+	reg signed [`RATE_BIT_WIDTH-1:0] motor_3_offset;
+	reg signed [`RATE_BIT_WIDTH-1:0] motor_4_offset;
+	
 	reg signed [`RATE_BIT_WIDTH-1:0] motor_1_output;
 	reg signed [`RATE_BIT_WIDTH-1:0] motor_2_output;
 	reg signed [`RATE_BIT_WIDTH-1:0] motor_3_output;
