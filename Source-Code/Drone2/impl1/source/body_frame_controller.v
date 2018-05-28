@@ -79,31 +79,31 @@ module body_frame_controller (
 		STATE_COMPLETE = 4'b1000;
 
 	// PID controller rate limiting values
-	localparam signed ROLL_RATE_MIN  = 16'h8000;
-	localparam signed ROLL_RATE_MAX  = 16'h7FFF;
-	localparam signed PITCH_RATE_MIN = 16'h8000;
-	localparam signed PITCH_RATE_MAX = 16'h7FFF;
-	localparam signed YAW_RATE_MIN   = 16'h8000;
-	localparam signed YAW_RATE_MAX   = 16'h7FFF;
+	localparam signed ROLL_RATE_MIN  = 16'hF060;
+	localparam signed ROLL_RATE_MAX  = 16'h0FA0;
+	localparam signed PITCH_RATE_MIN = 16'hF060;
+	localparam signed PITCH_RATE_MAX = 16'h0FA0;
+	localparam signed YAW_RATE_MIN   = 16'hF060;
+	localparam signed YAW_RATE_MAX   = 16'h0FA0;
 
 	/* PID controller proportional/integral/derivative constant values.
 	 * These are determined by first multiplying the value by the specific
 	 * K_* term and then shifting it using the K_*_SHIFT value.
 	 * Example: value = (value * ROLL_K_P) >>> ROLL_K_P_SHIFT;
 	 */
-	localparam ROLL_K_P			= 16'h0009;
+	localparam ROLL_K_P			= 16'h0003;
 	localparam ROLL_K_P_SHIFT	= 4'h4;
 	localparam ROLL_K_I			= 16'h0000;
 	localparam ROLL_K_I_SHIFT	= 4'h4;
 	localparam ROLL_K_D			= 16'h0000;
 	localparam ROLL_K_D_SHIFT	= 4'h4;
-	localparam PITCH_K_P		= 16'h0009;
+	localparam PITCH_K_P		= 16'h0003;
 	localparam PITCH_K_P_SHIFT	= 4'h4;
 	localparam PITCH_K_I		= 16'h0000;
 	localparam PITCH_K_I_SHIFT	= 4'h4;
 	localparam PITCH_K_D		= 16'h0000;
 	localparam PITCH_K_D_SHIFT	= 4'h4;
-	localparam YAW_K_P			= 16'h0009;
+	localparam YAW_K_P			= 16'h0003;
 	localparam YAW_K_P_SHIFT	= 4'h4;
 	localparam YAW_K_I			= 16'h0000;
 	localparam YAW_K_I_SHIFT	= 4'h4;
@@ -112,9 +112,9 @@ module body_frame_controller (
 
 
 	// IMU scalar values
-	localparam ROLL_IMU_SCALAR	= 4'h4;
-	localparam PITCH_IMU_SCALAR	= 4'h1;
-	localparam YAW_IMU_SCALAR	= 4'h1;
+	localparam ROLL_IMU_SCALAR	= 4'h0;
+	localparam PITCH_IMU_SCALAR	= 4'h0;
+	localparam YAW_IMU_SCALAR	= 4'h0;
 
 	// state variables
 	reg [3:0] state, next_state;
@@ -127,26 +127,49 @@ module body_frame_controller (
 	always @(posedge start_signal or posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
 			start_flag					<= 1'b0;
+			
+			// Angle rates from the angle_controller
 			latched_yaw_target			<= 16'h0000;
             latched_roll_target			<= 16'h0000;
             latched_pitch_target		<= 16'h0000;
-            latched_yaw_rotation		<= 16'h0000;
-            latched_roll_rotation		<= 16'h0000;
-            latched_pitch_rotation		<= 16'h0000;
             latched_roll_angle_error	<= 16'h0000;
             latched_pitch_angle_error	<= 16'h0000;
+			
+			// Angle rates from the imu
+			latched_yaw_rotation		<= 16'h0000;
+            latched_roll_rotation		<= 16'h0000;
+            latched_pitch_rotation		<= 16'h0000;
 		end
 		else if(start_signal && !start_flag) begin
 			start_flag 					<= 1'b1;
 			latched_yaw_target			<= yaw_target;
             latched_roll_target			<= roll_target;
             latched_pitch_target		<= pitch_target;
-            latched_yaw_rotation		<= yaw_rotation;
-			// Roll is flipped from the IMU so correct it here
-            latched_roll_rotation		<= ~roll_rotation + 1'b1;
-            latched_pitch_rotation		<= pitch_rotation;
             latched_roll_angle_error	<= roll_angle_error;
             latched_pitch_angle_error	<= pitch_angle_error;
+			
+			// Angle rates from the imu
+			if ($signed(yaw_rotation[15:4]) < -12'sd25)
+				latched_yaw_rotation <= {-12'sd25,4'b0};
+			else if ($signed(yaw_rotation[15:4]) > 12'sd25)
+				latched_yaw_rotation <= {12'sd25,4'b0};
+			else
+				latched_yaw_rotation <= yaw_rotation;
+				
+			// Roll is flipped from the IMU so correct it here
+			if ($signed(roll_rotation[15:4]) < -12'sd25)
+				latched_roll_rotation <= {12'sd25,4'b0};
+			else if ($signed(roll_rotation[15:4]) > 12'sd25)
+				latched_roll_rotation <= {-12'sd25,4'b0};
+			else
+				latched_roll_rotation <= ~roll_rotation + 1'b1;
+				
+			if ($signed(pitch_rotation[15:4]) < -12'sd25)
+				latched_pitch_rotation <= {-12'sd25,4'b0};
+			else if ($signed(pitch_rotation[15:4]) > 12'sd25)
+				latched_pitch_rotation <= {12'sd25,4'b0};
+			else
+				latched_pitch_rotation <= pitch_rotation;
 		end
 		else if(!start_signal && start_flag) begin
 			start_flag					<= 1'b0;
