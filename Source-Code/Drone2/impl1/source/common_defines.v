@@ -1,7 +1,11 @@
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
 
 /**
@@ -74,9 +78,9 @@
 
 //	Scaler to set proportions of yaw, roll, and pitch
 //  Shift to change impact of roll, pitch, and yaw
-`define MOTOR_RATE_YAW_SCALER	1
-`define MOTOR_RATE_ROLL_SCALER	1
-`define MOTOR_RATE_PITCH_SCALER	1
+`define MOTOR_RATE_YAW_SCALER			1
+`define MOTOR_RATE_ROLL_SCALER			1
+`define MOTOR_RATE_PITCH_SCALER			1
 
 //	Mapping 16 bit motor rate output to 8 bit value for pwm conversion
 `define MAPPING_SHIFT_8BIT				8

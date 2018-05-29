@@ -1,9 +1,11 @@
-`timescale 1ns/1ns
-
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
 
 /**
@@ -21,7 +23,7 @@
  * @motor_3_rate: rate to run motor 3 at (units?)
  * @motor_4_rate: rate to run motor 4 at (units?)
  */
-
+`timescale 1ns/1ns
 `include "common_defines.v"
 
 module pwm_generator (

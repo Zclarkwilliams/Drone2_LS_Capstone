@@ -1,11 +1,13 @@
-`timescale 1ns / 1ns
-
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
-
+ 
 /**
  *  Module takes as inputs:
  *		- Target rate & angles from the receiver module
@@ -29,6 +31,7 @@
  *		Optimize resource usage?
  *		Update this header description to look like other files
  */
+`timescale 1ns / 1ns
 
 `include "common_defines.v"
 
@@ -57,19 +60,19 @@ module angle_controller (
 	// rate limits (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	localparam signed
 		THROTTLE_MAX = 16'h0fa0, // 250
-		YAW_MAX =      16'h0190, // 25
-		YAW_MIN =      16'hfe70, // -25
-		PITCH_MAX =    16'h0190, // 25
-		PITCH_MIN =    16'hfe70, // -25
-		ROLL_MAX =     16'h0190, // 25
-		ROLL_MIN =     16'hfe70; // -25
+		YAW_MAX =      16'h0640, // 100
+		YAW_MIN =      16'hf9C0, // -100
+		PITCH_MAX =    16'h0640, // 100
+		PITCH_MIN =    16'hf9C0, // -100
+		ROLL_MAX =     16'h0640, // 100
+		ROLL_MIN =     16'hf9C0; // -100
 
 	// scale factors (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	localparam signed
-		THROTTLE_SCALE = 16'h0001, // 1
-		YAW_SCALE =      16'h0008, // 1
-		ROLL_SCALE =     16'h0008, // 1
-		PITCH_SCALE =    16'h0008; // 1
+		THROTTLE_SCALE = 16'h0001,
+		YAW_SCALE =      16'h0010,
+		ROLL_SCALE =     16'h0010,
+		PITCH_SCALE =    16'h0010;
 
 	// TODO: Remove unused variables
 	// working registers
@@ -177,10 +180,10 @@ module angle_controller (
 
 					mapped_throttle <= {4'h0, latched_throttle, 4'h0};
 					// input values mapped from 0 - 250 to -31.25 - 31.25
-					mapped_yaw <= $signed({7'b0000000, latched_yaw, 1'b0}) - $signed(16'd250);
+					mapped_yaw <= $signed({6'b0, latched_yaw, 2'b0}) - $signed(16'd500);
 					// roll value from IMU is flipped, add instead of subtract (do this in bfc too?)
-					mapped_roll <= ($signed({7'b0000000, latched_roll, 1'b0}) - $signed(16'd250)) + $signed(roll_actual);
-					mapped_pitch <= ($signed({7'b0000000, latched_pitch, 1'b0}) - $signed(16'd250)) - $signed(pitch_actual);
+					mapped_roll <= ($signed({6'b0, latched_roll, 2'b0}) - $signed(16'd500)) + $signed(roll_actual);
+					mapped_pitch <= ($signed({6'b0, latched_pitch, 2'b0}) - $signed(16'd500)) - $signed(pitch_actual);
 				end
 				STATE_SCALING: begin
 					complete_signal <= 1'b0;
