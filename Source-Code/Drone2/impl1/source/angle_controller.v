@@ -96,7 +96,7 @@ module angle_controller (
 	reg start_flag = 1'b0;
 
 	// latch start signal
-	always @(posedge start_signal or posedge us_clk or negedge resetn) begin
+	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn)
 			start_flag <= 1'b0;
 		else if(start_signal && !start_flag)
