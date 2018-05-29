@@ -265,7 +265,7 @@ module drone2 (
 			DEBUG_LEDs	 <= throttle_target_rate;
 			end
 		else begin
-			led_data_out <= ~roll_val;
+			led_data_out <= ~imu_debug_out;
 			DEBUG_LEDs	 <= y_rotation;
 			end
 	end
