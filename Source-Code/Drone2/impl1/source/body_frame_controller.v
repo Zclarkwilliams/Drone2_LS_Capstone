@@ -124,7 +124,7 @@ module body_frame_controller (
 	assign DEBUG_WIRE = (!resetn) ? 16'h0 : DEBUG_WIRE_PITCH;
 
 	// latch start signal and target/actual rotational angles
-	always @(posedge start_signal or posedge us_clk or negedge resetn) begin
+	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
 			start_flag					<= 1'b0;
 			
