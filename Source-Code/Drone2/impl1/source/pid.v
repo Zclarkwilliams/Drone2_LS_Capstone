@@ -95,7 +95,7 @@
 					pid_active <= 1'b1;
 					pid_complete <= 1'b0;
 					rotation_proportional <= ($signed(K_P) * $signed(rotation_error)) >>> K_P_SHIFT;
-					error_change <= ($signed(prev_rotation_error) - $signed(rotation_error));
+					error_change <= ($signed(rotation_error) - $signed(prev_rotation_error));
 				end
 				STATE_CALC3: begin
 					pid_active <= 1'b1;
