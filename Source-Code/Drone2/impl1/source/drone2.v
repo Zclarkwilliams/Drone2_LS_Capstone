@@ -55,6 +55,8 @@ module drone2 (
 	input wire DEBUG_LED_SWITCH_N,
 	output reg [15:0] DEBUG_LEDs,
 	output wire imu_data_valid_monitor,
+	output wire rx_data_latch_strobe,
+	output wire ac_active,
 	// Serial IO
 	inout wire sda_1,
 	inout wire sda_2,
@@ -159,6 +161,7 @@ module drone2 (
 		.x_velocity(x_linear_rate),
 		.y_velocity(y_linear_rate),
 		.z_velocity(z_linear_rate),
+		.rx_data_latch_strobe(rx_data_latch_strobe),
 		.ac_active(ac_active));
 
 	receiver receiver (

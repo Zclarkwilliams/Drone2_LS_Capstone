@@ -91,19 +91,19 @@ module body_frame_controller (
 	 * K_* term and then shifting it using the K_*_SHIFT value.
 	 * Example: value = (value * ROLL_K_P) >>> ROLL_K_P_SHIFT;
 	 */
-	localparam ROLL_K_P			= 16'h0003;
+	localparam ROLL_K_P			= 16'h0004;
 	localparam ROLL_K_P_SHIFT	= 4'h4;
 	localparam ROLL_K_I			= 16'h0000;
 	localparam ROLL_K_I_SHIFT	= 4'h4;
 	localparam ROLL_K_D			= 16'h0000;
 	localparam ROLL_K_D_SHIFT	= 4'h4;
-	localparam PITCH_K_P		= 16'h0003;
+	localparam PITCH_K_P		= 16'h0004;
 	localparam PITCH_K_P_SHIFT	= 4'h4;
 	localparam PITCH_K_I		= 16'h0000;
 	localparam PITCH_K_I_SHIFT	= 4'h4;
 	localparam PITCH_K_D		= 16'h0000;
 	localparam PITCH_K_D_SHIFT	= 4'h4;
-	localparam YAW_K_P			= 16'h0003;
+	localparam YAW_K_P			= 16'h0004;
 	localparam YAW_K_P_SHIFT	= 4'h4;
 	localparam YAW_K_I			= 16'h0000;
 	localparam YAW_K_I_SHIFT	= 4'h4;
