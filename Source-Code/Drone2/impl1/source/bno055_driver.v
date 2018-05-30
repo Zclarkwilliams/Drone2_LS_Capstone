@@ -15,7 +15,7 @@
 `include "bno055_defines.v"
 
 module bno055_driver #(
-	parameter INIT_TIME = 12'd650
+	parameter INIT_TIME = 15'd650
 )
 (
 	inout wire scl_1,                     //  I2C EFB #1 SDA wire
@@ -76,9 +76,9 @@ module bno055_driver #(
 	reg  [`BNO055_STATE_BITS-1:0]next_bno055_state;   //  Next FSM state
 	reg  [`BNO055_STATE_BITS-1:0]return_state;        //  FSM return state from i2c sub state
 	reg  [`BNO055_STATE_BITS-1:0]next_return_state;   //  Next value for FSM return state
-	reg  [27:0]count_ms;                              //  Count from 0 to value determined by clock rate, used to generate N ms delay trigger
-	reg  [11:0]wait_ms;                               //  The number of mS to wait in delay loop
-	reg  [11:0]next_wait_ms;                          //  The next latched value of wait mS
+	reg  [31:0]count_ms;                              //  Count from 0 to value determined by clock rate, used to generate N ms delay trigger
+	reg  [15:0]wait_ms;                               //  The number of mS to wait in delay loop
+	reg  [15:0]next_wait_ms;                          //  The next latched value of wait mS
 	reg  clear_waiting_ms;                            //  Reset waiting X ms timer.
 	reg  [5:0]target_read_count;                      //  The number of bytes to access for a read command (Writes are always for a single byte)
 	reg  [5:0]next_target_read_count;                 //  Next value of target_read_count
@@ -130,10 +130,10 @@ module bno055_driver #(
 	//  Generates a multiple of 1ms length duration delay trigger - Defaulted to 650 ms for BNO055 reset and boot time
 	always@(posedge sys_clk, negedge clear_waiting_ms, negedge rstn) begin
 		if(~rstn)
-			count_ms       <= 28'hFFFFFFF;
+			count_ms       <= 32'hFFFFFFFF;
 		else if( clear_waiting_ms == `CLEAR_MS_TIMER )
 			count_ms       <= (`WAIT_MS_DIVIDER*wait_ms);
-		else if( count_ms != 28'hFFFFFFF )
+		else if( count_ms != 32'hFFFFFFFF )
 			count_ms       <= (count_ms - 1'b1);
 		else
 			count_ms       <= count_ms;
@@ -421,7 +421,7 @@ module bno055_driver #(
 					clear_waiting_ms   = `RUN_MS_TIMER;
 					next_bno055_state  = `BNO055_STATE_BOOT_WAIT;
 					next_slave_address = `BNO055_SLAVE_ADDRESS;
-					if((~busy) && (count_ms[27] == 1'b1) ) // Wait for i2c to be in not busy state and count_ms wrapped around to 0x3FFFFFF
+					if((~busy) && (count_ms[31] == 1'b1) ) // Wait for i2c to be in not busy state and count_ms wrapped around to 0x3FFFFFF
 						next_bno055_state = `BNO055_STATE_READ_CHIP_ID;
 				end
 				`BNO055_STATE_READ_CHIP_ID: begin //  Page 0
@@ -552,7 +552,7 @@ module bno055_driver #(
 					next_go_flag       = `NOT_GO;
 					next_bno055_state  = `BNO055_STATE_WAIT_20MS;
 					rstn_buffer        = `LOW; //  Clear RX data buffer index before starting next state's read burst
-					if((count_ms[27] == 1'b1) ) begin // Wait for count_ms wrapped around to 0x3FFFFFF
+					if((count_ms[31] == 1'b1) ) begin // Wait for count_ms wrapped around to 0x3FFFFFF
 						next_wait_ms       = 'd10; //  Pause for 10 ms between iterations, for next wait state, not used in this one
 						next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
 					end
@@ -582,7 +582,7 @@ module bno055_driver #(
 					next_go_flag       = `NOT_GO;
 					next_bno055_state  = `BNO055_STATE_WAIT_10MS;
 					rstn_buffer        = `LOW; //  Clear the RX data buffer index starting next state's read burst
-					if((count_ms[27] == 1'b1) ) begin // Wait for count_ms wrapped around to 0x3FFFFFF
+					if((count_ms[31] == 1'b1) ) begin // Wait for count_ms wrapped around to 0x3FFFFFF
 						next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
 					end
 				end
