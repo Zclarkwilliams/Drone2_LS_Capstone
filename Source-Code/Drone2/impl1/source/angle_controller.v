@@ -70,9 +70,9 @@ module angle_controller (
 	// scale factors (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	localparam signed
 		THROTTLE_SCALE = 16'h0001,
-		YAW_SCALE =      16'h0010,
-		ROLL_SCALE =     16'h0010,
-		PITCH_SCALE =    16'h0010;
+		YAW_SCALE =      16'h000F,
+		ROLL_SCALE =     16'h000F,
+		PITCH_SCALE =    16'h000F;
 
 	// TODO: Remove unused variables
 	// working registers
