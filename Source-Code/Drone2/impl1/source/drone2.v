@@ -215,12 +215,24 @@ module drone2 (
 		// Debug LED wire
 		.DEBUG_WIRE(bfc_debug_wire),
 		// Inputs
+
+		.yaw_target(yaw_target_rate),
+		.roll_target(16'h0000),
+		.pitch_target(16'h0000),
+    /*
 		.yaw_target(yaw_target_rate),
 		.roll_target(roll_target_rate),
 		.pitch_target(pitch_target_rate),
-		.roll_rotation(y_rotation_rate),
+    */		
+
+    .roll_rotation(x_rotation_rate),
+		.pitch_rotation(y_rotation_rate),
+    /*
+    .roll_rotation(y_rotation_rate),
 		.pitch_rotation(x_rotation_rate),
-		.yaw_rotation(z_rotation_rate),
+		*/
+
+    .yaw_rotation(z_rotation_rate),
 		.roll_angle_error(roll_angle_error),
 		.pitch_angle_error(pitch_angle_error),
 		.start_signal(ac_valid_strobe),
