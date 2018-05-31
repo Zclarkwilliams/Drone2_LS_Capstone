@@ -92,23 +92,23 @@ module body_frame_controller (
 	 * Example: value = (value * ROLL_K_P) >>> ROLL_K_P_SHIFT;
 	 */
 	localparam ROLL_K_P			   = 16'h0004;
-	localparam ROLL_K_P_SHIFT	 = 4'h4;
+	localparam ROLL_K_P_SHIFT	 = 4'h1;
 	localparam ROLL_K_I			   = 16'h0000;
-	localparam ROLL_K_I_SHIFT	 = 4'h4;
+	localparam ROLL_K_I_SHIFT	 = 4'h1;
 	localparam ROLL_K_D			   = 16'h0000;
-	localparam ROLL_K_D_SHIFT	 = 4'h4;
+	localparam ROLL_K_D_SHIFT	 = 4'h1;
 	localparam PITCH_K_P		   = 16'h0004;
-	localparam PITCH_K_P_SHIFT = 4'h4;
+	localparam PITCH_K_P_SHIFT = 4'h1;
 	localparam PITCH_K_I		   = 16'h0000;
-	localparam PITCH_K_I_SHIFT = 4'h4;
+	localparam PITCH_K_I_SHIFT = 4'h1;
 	localparam PITCH_K_D		   = 16'h0000;
-	localparam PITCH_K_D_SHIFT = 4'h4;
+	localparam PITCH_K_D_SHIFT = 4'h1;
 	localparam YAW_K_P			   = 16'h0004;
-	localparam YAW_K_P_SHIFT	 = 4'h4;
+	localparam YAW_K_P_SHIFT	 = 4'h1;
 	localparam YAW_K_I			   = 16'h0000;
-	localparam YAW_K_I_SHIFT	 = 4'h4;
+	localparam YAW_K_I_SHIFT	 = 4'h1;
 	localparam YAW_K_D			   = 16'h0000;
-	localparam YAW_K_D_SHIFT	 = 4'h4;
+	localparam YAW_K_D_SHIFT	 = 4'h1;
 
 
 	// IMU scalar values
@@ -149,27 +149,34 @@ module body_frame_controller (
       latched_pitch_angle_error	<= pitch_angle_error;
 			
 			// Angle rates from the imu
+      /*
 			if ($signed(yaw_rotation[15:4]) < -12'sd25)
 				latched_yaw_rotation <= {-12'sd25,4'b0};
 			else if ($signed(yaw_rotation[15:4]) > 12'sd25)
 				latched_yaw_rotation <= {12'sd25,4'b0};
 			else
-				latched_yaw_rotation <= yaw_rotation;
+      */
+			latched_yaw_rotation <= ~yaw_rotation + 1'b1;
 				
 			// Roll is flipped from the IMU so correct it here
-			if ($signed(roll_rotation[15:4]) < -12'sd25)
+			/*
+      if ($signed(roll_rotation[15:4]) < -12'sd25)
 				latched_roll_rotation <= {12'sd25,4'b0};
 			else if ($signed(roll_rotation[15:4]) > 12'sd25)
 				latched_roll_rotation <= {-12'sd25,4'b0};
 			else
-				latched_roll_rotation <= ~roll_rotation + 1'b1;
+      */
+			latched_roll_rotation <= roll_rotation;
 				
+      /*
 			if ($signed(pitch_rotation[15:4]) < -12'sd25)
 				latched_pitch_rotation <= {-12'sd25,4'b0};
 			else if ($signed(pitch_rotation[15:4]) > 12'sd25)
 				latched_pitch_rotation <= {12'sd25,4'b0};
 			else
-				latched_pitch_rotation <= pitch_rotation;
+      */
+			latched_pitch_rotation <= ~pitch_rotation + 1'b1;
+
 		end
 		else if(!start_signal && start_flag) begin
 			start_flag					      <= 1'b0;
