@@ -216,14 +216,16 @@ module drone2 (
 		.DEBUG_WIRE(bfc_debug_wire),
 		// Inputs
 
+    /*
 		.yaw_target(yaw_target_rate),
 		.roll_target(16'h0000),
 		.pitch_target(16'h0000),
-    /*
+    */
+    
 		.yaw_target(yaw_target_rate),
 		.roll_target(roll_target_rate),
 		.pitch_target(pitch_target_rate),
-    */		
+    	
 
     .roll_rotation(x_rotation_rate),
 		.pitch_rotation(y_rotation_rate),
