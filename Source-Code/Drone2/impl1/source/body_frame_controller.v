@@ -91,30 +91,24 @@ module body_frame_controller (
 	 * K_* term and then shifting it using the K_*_SHIFT value.
 	 * Example: value = (value * ROLL_K_P) >>> ROLL_K_P_SHIFT;
 	 */
-	localparam ROLL_K_P			   = 16'h0004;
-	localparam ROLL_K_P_SHIFT	 = 4'h1;
-	localparam ROLL_K_I			   = 16'h0000;
-	localparam ROLL_K_I_SHIFT	 = 4'h1;
-	localparam ROLL_K_D			   = 16'h0000;
-	localparam ROLL_K_D_SHIFT	 = 4'h1;
-	localparam PITCH_K_P		   = 16'h0004;
-	localparam PITCH_K_P_SHIFT = 4'h1;
-	localparam PITCH_K_I		   = 16'h0000;
-	localparam PITCH_K_I_SHIFT = 4'h1;
-	localparam PITCH_K_D		   = 16'h0000;
-	localparam PITCH_K_D_SHIFT = 4'h1;
-	localparam YAW_K_P			   = 16'h0004;
-	localparam YAW_K_P_SHIFT	 = 4'h1;
-	localparam YAW_K_I			   = 16'h0000;
-	localparam YAW_K_I_SHIFT	 = 4'h1;
-	localparam YAW_K_D			   = 16'h0000;
-	localparam YAW_K_D_SHIFT	 = 4'h1;
-
-
-	// IMU scalar values
-	localparam ROLL_IMU_SCALAR	= 4'h0;
-	localparam PITCH_IMU_SCALAR	= 4'h0;
-	localparam YAW_IMU_SCALAR	  = 4'h0;
+	localparam ROLL_K_P			= 16'h0004;
+	localparam ROLL_K_P_SHIFT	= 4'h2;
+	localparam ROLL_K_I			= 16'h0000;
+	localparam ROLL_K_I_SHIFT	= 4'h1;
+	localparam ROLL_K_D			= 16'h0000;
+	localparam ROLL_K_D_SHIFT	= 4'h1;
+	localparam PITCH_K_P		= 16'h0004;
+	localparam PITCH_K_P_SHIFT 	= 4'h2;
+	localparam PITCH_K_I		= 16'h0000;
+	localparam PITCH_K_I_SHIFT  = 4'h1;
+	localparam PITCH_K_D		= 16'h0000;
+	localparam PITCH_K_D_SHIFT 	= 4'h1;
+	localparam YAW_K_P			= 16'h0004;
+	localparam YAW_K_P_SHIFT	= 4'h2;
+	localparam YAW_K_I			= 16'h0000;
+	localparam YAW_K_I_SHIFT	= 4'h1;
+	localparam YAW_K_D			= 16'h0000;
+	localparam YAW_K_D_SHIFT	= 4'h1;
 
 	// state variables
 	reg [3:0] state, next_state;
