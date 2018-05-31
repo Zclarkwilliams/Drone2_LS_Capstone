@@ -70,9 +70,9 @@ module angle_controller (
 	// scale factors (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	localparam signed
 		THROTTLE_SCALE = 16'h0001,
-		YAW_SCALE =      16'h000F,
-		ROLL_SCALE =     16'h000F,
-		PITCH_SCALE =    16'h000F;
+		YAW_SCALE =      16'h001F,
+		ROLL_SCALE =     16'h001F,
+		PITCH_SCALE =    16'h001F;
 
 	// TODO: Remove unused variables
 	// working registers
@@ -83,8 +83,8 @@ module angle_controller (
 
 
 	// state names
-  localparam
-  		STATE_WAITING =  5'b00001,
+	localparam
+		STATE_WAITING =  5'b00001,
 		STATE_MAPPING =  5'b00010,
 		STATE_SCALING =  5'b00100,
 		STATE_LIMITING = 5'b01000,
