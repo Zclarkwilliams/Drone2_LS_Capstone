@@ -33,8 +33,8 @@
  * @resetn - global reset signal
  * @us_clk - 1MHz clock
  */
-`timescale 1ns / 1ns
 
+`timescale 1ns / 1ns
 `include "common_defines.v"
 
 module body_frame_controller (
@@ -91,30 +91,30 @@ module body_frame_controller (
 	 * K_* term and then shifting it using the K_*_SHIFT value.
 	 * Example: value = (value * ROLL_K_P) >>> ROLL_K_P_SHIFT;
 	 */
-	localparam ROLL_K_P			= 16'h0004;
-	localparam ROLL_K_P_SHIFT	= 4'h4;
-	localparam ROLL_K_I			= 16'h0000;
-	localparam ROLL_K_I_SHIFT	= 4'h4;
-	localparam ROLL_K_D			= 16'h0000;
-	localparam ROLL_K_D_SHIFT	= 4'h4;
-	localparam PITCH_K_P		= 16'h0004;
-	localparam PITCH_K_P_SHIFT	= 4'h4;
-	localparam PITCH_K_I		= 16'h0000;
-	localparam PITCH_K_I_SHIFT	= 4'h4;
-	localparam PITCH_K_D		= 16'h0000;
-	localparam PITCH_K_D_SHIFT	= 4'h4;
-	localparam YAW_K_P			= 16'h0004;
-	localparam YAW_K_P_SHIFT	= 4'h4;
-	localparam YAW_K_I			= 16'h0000;
-	localparam YAW_K_I_SHIFT	= 4'h4;
-	localparam YAW_K_D			= 16'h0000;
-	localparam YAW_K_D_SHIFT	= 4'h4;
+	localparam ROLL_K_P			   = 16'h0004;
+	localparam ROLL_K_P_SHIFT	 = 4'h4;
+	localparam ROLL_K_I			   = 16'h0000;
+	localparam ROLL_K_I_SHIFT	 = 4'h4;
+	localparam ROLL_K_D			   = 16'h0000;
+	localparam ROLL_K_D_SHIFT	 = 4'h4;
+	localparam PITCH_K_P		   = 16'h0004;
+	localparam PITCH_K_P_SHIFT = 4'h4;
+	localparam PITCH_K_I		   = 16'h0000;
+	localparam PITCH_K_I_SHIFT = 4'h4;
+	localparam PITCH_K_D		   = 16'h0000;
+	localparam PITCH_K_D_SHIFT = 4'h4;
+	localparam YAW_K_P			   = 16'h0004;
+	localparam YAW_K_P_SHIFT	 = 4'h4;
+	localparam YAW_K_I			   = 16'h0000;
+	localparam YAW_K_I_SHIFT	 = 4'h4;
+	localparam YAW_K_D			   = 16'h0000;
+	localparam YAW_K_D_SHIFT	 = 4'h4;
 
 
 	// IMU scalar values
 	localparam ROLL_IMU_SCALAR	= 4'h0;
 	localparam PITCH_IMU_SCALAR	= 4'h0;
-	localparam YAW_IMU_SCALAR	= 4'h0;
+	localparam YAW_IMU_SCALAR	  = 4'h0;
 
 	// state variables
 	reg [3:0] state, next_state;
@@ -126,27 +126,27 @@ module body_frame_controller (
 	// latch start signal and target/actual rotational angles
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
-			start_flag					<= 1'b0;
+			start_flag					      <= 1'b0;
 			
 			// Angle rates from the angle_controller
-			latched_yaw_target			<= 16'h0000;
-            latched_roll_target			<= 16'h0000;
-            latched_pitch_target		<= 16'h0000;
-            latched_roll_angle_error	<= 16'h0000;
-            latched_pitch_angle_error	<= 16'h0000;
+			latched_yaw_target			  <= 16'h0000;
+      latched_roll_target			  <= 16'h0000;
+      latched_pitch_target		  <= 16'h0000;
+      latched_roll_angle_error	<= 16'h0000;
+      latched_pitch_angle_error	<= 16'h0000;
 			
 			// Angle rates from the imu
-			latched_yaw_rotation		<= 16'h0000;
-            latched_roll_rotation		<= 16'h0000;
-            latched_pitch_rotation		<= 16'h0000;
+			latched_yaw_rotation		  <= 16'h0000;
+      latched_roll_rotation		  <= 16'h0000;
+      latched_pitch_rotation	  <= 16'h0000;
 		end
 		else if(start_signal && !start_flag) begin
-			start_flag 					<= 1'b1;
-			latched_yaw_target			<= yaw_target;
-            latched_roll_target			<= roll_target;
-            latched_pitch_target		<= pitch_target;
-            latched_roll_angle_error	<= roll_angle_error;
-            latched_pitch_angle_error	<= pitch_angle_error;
+			start_flag 					      <= 1'b1;
+			latched_yaw_target			  <= yaw_target;
+      latched_roll_target			  <= roll_target;
+      latched_pitch_target		  <= pitch_target;
+      latched_roll_angle_error	<= roll_angle_error;
+      latched_pitch_angle_error	<= pitch_angle_error;
 			
 			// Angle rates from the imu
 			if ($signed(yaw_rotation[15:4]) < -12'sd25)
@@ -172,26 +172,26 @@ module body_frame_controller (
 				latched_pitch_rotation <= pitch_rotation;
 		end
 		else if(!start_signal && start_flag) begin
-			start_flag					<= 1'b0;
-			latched_yaw_target			<= latched_yaw_target;
-            latched_roll_target			<= latched_roll_target;
-            latched_pitch_target		<= latched_pitch_target;
-            latched_yaw_rotation		<= latched_yaw_rotation;
-            latched_roll_rotation		<= latched_roll_rotation;
-            latched_pitch_rotation		<= latched_pitch_rotation;
-            latched_roll_angle_error	<= latched_roll_angle_error;
-            latched_pitch_angle_error	<= latched_pitch_angle_error;
+			start_flag					      <= 1'b0;
+			latched_yaw_target			  <= latched_yaw_target;
+      latched_roll_target			  <= latched_roll_target;
+      latched_pitch_target		  <= latched_pitch_target;
+      latched_yaw_rotation		  <= latched_yaw_rotation;
+      latched_roll_rotation		  <= latched_roll_rotation;
+      latched_pitch_rotation		<= latched_pitch_rotation;
+      latched_roll_angle_error	<= latched_roll_angle_error;
+      latched_pitch_angle_error	<= latched_pitch_angle_error;
 		end
 		else begin
-			start_flag 					<= start_flag;
-			latched_yaw_target			<= latched_yaw_target;
-            latched_roll_target			<= latched_roll_target;
-            latched_pitch_target		<= latched_pitch_target;
-            latched_yaw_rotation		<= latched_yaw_rotation;
-            latched_roll_rotation		<= latched_roll_rotation;
-            latched_pitch_rotation		<= latched_pitch_rotation;
-            latched_roll_angle_error	<= latched_roll_angle_error;
-            latched_pitch_angle_error	<= latched_pitch_angle_error;
+			start_flag 					      <= start_flag;
+			latched_yaw_target			  <= latched_yaw_target;
+      latched_roll_target			  <= latched_roll_target;
+      latched_pitch_target		  <= latched_pitch_target;
+      latched_yaw_rotation		  <= latched_yaw_rotation;
+      latched_roll_rotation		  <= latched_roll_rotation;
+      latched_pitch_rotation		<= latched_pitch_rotation;
+      latched_roll_angle_error	<= latched_roll_angle_error;
+      latched_pitch_angle_error	<= latched_pitch_angle_error;
 		end
 	end
 
