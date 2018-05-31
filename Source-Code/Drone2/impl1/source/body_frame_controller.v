@@ -269,10 +269,12 @@ module body_frame_controller (
 	pid #(
 		.RATE_MIN(YAW_RATE_MIN),
 		.RATE_MAX(YAW_RATE_MAX),
+		.K_P_SHIFT(YAW_K_P_SHIFT),
+		.K_I_SHIFT(YAW_K_I_SHIFT),
+		.K_D_SHIFT(YAW_K_D_SHIFT),
 		.K_P(YAW_K_P),
 		.K_I(YAW_K_I),
-		.K_D(YAW_K_D),
-		.IMU_SCALAR(YAW_IMU_SCALAR))
+		.K_D(YAW_K_D))
 	yaw_pid (
 		.DEBUG_WIRE(DEBUG_WIRE_YAW),
 		.rate_out(yaw_rate_out),
@@ -289,10 +291,12 @@ module body_frame_controller (
 	pid #(
 		.RATE_MIN(PITCH_RATE_MIN),
 		.RATE_MAX(PITCH_RATE_MAX),
+		.K_P_SHIFT(PITCH_K_P_SHIFT),
+		.K_I_SHIFT(PITCH_K_I_SHIFT),
+		.K_D_SHIFT(PITCH_K_D_SHIFT),
 		.K_P(PITCH_K_P),
 		.K_I(PITCH_K_I),
-		.K_D(PITCH_K_D),
-		.IMU_SCALAR(PITCH_IMU_SCALAR))
+		.K_D(PITCH_K_D))
 	pitch_pid (
 		.DEBUG_WIRE(DEBUG_WIRE_PITCH),
 		.rate_out(pitch_rate_out),
@@ -309,10 +313,12 @@ module body_frame_controller (
 	pid #(
 		.RATE_MIN(ROLL_RATE_MIN),
 		.RATE_MAX(ROLL_RATE_MAX),
+		.K_P_SHIFT(ROLL_K_P_SHIFT),
+		.K_I_SHIFT(ROLL_K_I_SHIFT),
+		.K_D_SHIFT(ROLL_K_D_SHIFT),
 		.K_P(ROLL_K_P),
 		.K_I(ROLL_K_I),
-		.K_D(ROLL_K_D),
-		.IMU_SCALAR(ROLL_IMU_SCALAR))
+		.K_D(ROLL_K_D))
 	roll_pid (
 		.DEBUG_WIRE(DEBUG_WIRE_ROLL),
 		.rate_out(roll_rate_out),
