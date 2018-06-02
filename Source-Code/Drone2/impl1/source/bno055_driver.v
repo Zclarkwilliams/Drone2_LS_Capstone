@@ -56,7 +56,7 @@ module bno055_driver #(
 	output reg [15:0]x_velocity,          //  Linear velocity in the X direction, one byte signed integer
 	output reg [15:0]y_velocity,          //  Linear velocity in the Y direction, one byte signed integer
 	output reg [15:0]z_velocity,           //  Linear velocity in the Z direction, one byte signed integer
-	output wire rx_data_latch_strobe
+	output reg rx_data_latch_strobe
 
 );
 
@@ -100,7 +100,7 @@ module bno055_driver #(
 	reg next_calibrated_once;
 	reg next_valid_strobe_enable;
 	reg valid_strobe_enable;
-	reg [27:0]master_trigger_count_ms;                //  Counter used to generate a periodic 10ms timer tick.
+	reg [31:0]master_trigger_count_ms;                //  Counter used to generate a periodic 20ms timer tick.
 
 	//
 	//  Module body
@@ -160,17 +160,17 @@ module bno055_driver #(
 		end
 	end
 
-	//generate a 10ms timer that sends valid strobe every timer complete interval
+	//generate a 20ms timer that sends valid strobe every timer complete interval
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn) begin
-			master_trigger_count_ms <= `WAIT_MS_DIVIDER*10;
+			master_trigger_count_ms <= `WAIT_MS_DIVIDER*20;
 			valid_strobe_enable     <= `FALSE;
 		end
-		else if( master_trigger_count_ms[27] == `TRUE && ~rx_data_latch_strobe) begin
-			master_trigger_count_ms <= (`WAIT_MS_DIVIDER*10);
+		else if( master_trigger_count_ms[31] == `TRUE && ~rx_data_latch_strobe) begin
+			master_trigger_count_ms <= (`WAIT_MS_DIVIDER*20);
 			valid_strobe_enable     <= `TRUE;
 		end
-		else if( master_trigger_count_ms[27] == `TRUE && rx_data_latch_strobe) begin
+		else if( master_trigger_count_ms[31] == `TRUE && rx_data_latch_strobe) begin
 			master_trigger_count_ms <= master_trigger_count_ms;
 			valid_strobe_enable     <= `FALSE;
 		end
@@ -444,7 +444,7 @@ module bno055_driver #(
 					next_return_state  = `BNO055_STATE_SET_POWER_MODE;
 					next_data_reg      = `BNO055_UNIT_SEL_ADDR;
 					// This line Modified from Adafruit Bosch BNO055 Arduino driver code, downloaded from: https://github.com/adafruit/Adafruit_BNO055
-					next_data_tx       = ((1 << 7) |  // Orientation = Windows - Range (Windows format) -180° to +180° corresponds with turning clockwise and increases values
+					next_data_tx       = ((1 << 7) |  // Orientation = Windows - Range (Windows format) -180Â° to +180Â° corresponds with turning clockwise and increases values
 										 ( 0 << 4) |  // Temperature = Celsius
 										 ( 0 << 2) |  // Euler = Degrees
 										 ( 0 << 1) |  // Gyro = Degrees/Sec
@@ -553,25 +553,25 @@ module bno055_driver #(
 					next_bno055_state  = `BNO055_STATE_WAIT_20MS;
 					rstn_buffer        = `LOW; //  Clear RX data buffer index before starting next state's read burst
 					if((count_ms[31] == 1'b1) ) begin // Wait for count_ms wrapped around to 0x3FFFFFF
-						next_wait_ms       = 'd10; //  Pause for 10 ms between iterations, for next wait state, not used in this one
+						next_wait_ms       = 'd20; //  Pause for 20 ms between iterations, for next wait state, not used in this one
 						next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
 					end
 				end
 				`BNO055_STATE_READ_IMU_DATA_BURST: begin //  Page 0 - Read from Acceleration Data X-Axis LSB to Calibration Status registers - 46 bytes
 					clear_waiting_ms       = `CLEAR_MS_TIMER; //  Clear and set to wait_ms value
-					next_wait_ms           = 'd10; //  Pause for 10 ms between iterations, for next wait state, not used in this one
+					next_wait_ms           = 'd20; //  Pause for 20 ms between iterations, for next wait state, not used here
 					next_slave_address     = `BNO055_SLAVE_ADDRESS;
 					next_go_flag           = `NOT_GO;
 					next_bno055_state      = `BNO055_SUB_STATE_START;
-					next_return_state      = `BNO055_STATE_WAIT_10MS;
+					next_return_state      = `BNO055_STATE_WAIT_IMU_POLL_TIME;
 					next_data_reg          = `BNO055_ACCEL_DATA_X_LSB_ADDR;
 					next_data_tx           = `BYTE_ALL_ZERO;
 					next_read_write_in     = `I2C_READ;
 					next_target_read_count = `DATA_RX_BYTE_REG_CNT;
 					next_led_view_index    = (`DATA_RX_BYTE_REG_CNT-1); //  Calibration status will be in the last byte buffer, index 45
 				end
-				`BNO055_STATE_WAIT_10MS: begin 	// Wait 10 ms between polls to maintain 10Hz polling rate
-												//wait time is i2c time + time spent here, for a total of 10ms,
+				`BNO055_STATE_WAIT_IMU_POLL_TIME: begin 	// Wait 20 ms between polls to maintain 50Hz polling rate
+												//wait time is i2c time + time spent here, for a total of 20ms,
 												//i2c time is variable and dependent on slave
 												//This timer starts at the beginning of the the previous state
 					next_imu_good      = `TRUE;
@@ -580,7 +580,7 @@ module bno055_driver #(
 					next_data_reg      = `BYTE_ALL_ZERO;
 					next_data_tx       = `BYTE_ALL_ZERO;
 					next_go_flag       = `NOT_GO;
-					next_bno055_state  = `BNO055_STATE_WAIT_10MS;
+					next_bno055_state  = `BNO055_STATE_WAIT_IMU_POLL_TIME;
 					rstn_buffer        = `LOW; //  Clear the RX data buffer index starting next state's read burst
 					if((count_ms[31] == 1'b1) ) begin // Wait for count_ms wrapped around to 0x3FFFFFF
 						next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;

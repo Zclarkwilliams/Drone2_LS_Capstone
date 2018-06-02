@@ -465,7 +465,7 @@ Total: 46 bytes
 `define BNO055_STATE_SET_RUN_MODE        12
 `define BNO055_STATE_WAIT_20MS           13
 `define BNO055_STATE_READ_IMU_DATA_BURST 14
-`define BNO055_STATE_WAIT_10MS           15
+`define BNO055_STATE_WAIT_IMU_POLL_TIME  15
 
 
 `define BNO055_SUB_STATE_START           16

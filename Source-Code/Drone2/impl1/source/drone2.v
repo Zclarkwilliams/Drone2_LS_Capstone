@@ -1,10 +1,10 @@
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, 
- * Brett Creeley, 
- * Daniel Christiansen, 
- * Kirk Hooper, 
+ * Ethan Grinnell,
+ * Brett Creeley,
+ * Daniel Christiansen,
+ * Kirk Hooper,
  * Zachary Clark-Williams
  */
 
@@ -197,6 +197,9 @@ module drone2 (
 		// Inputs
 		.throttle_target(throttle_val),
 		.yaw_target(yaw_val),
+		/* TODO: Figure out why the orientation from the IMU is different for
+		 * pitch/roll for euler's angles (input to AC) compared to the BFC.
+		 */
 		.roll_target(roll_val),
 		.pitch_target(pitch_val),
 		.yaw_actual(z_rotation),
@@ -218,8 +221,11 @@ module drone2 (
 		.yaw_target(yaw_target_rate),
 		.roll_target(roll_target_rate),
 		.pitch_target(pitch_target_rate),
-		.roll_rotation(y_rotation_rate),
-		.pitch_rotation(x_rotation_rate),
+		/* TODO: Figure out why the orientation from the IMU is different for
+		 * pitch/roll for angle rotation rates (input to BFC) compared to the AC.
+		 */
+		.roll_rotation(x_rotation_rate),
+		.pitch_rotation(y_rotation_rate),
 		.yaw_rotation(z_rotation_rate),
 		.roll_angle_error(roll_angle_error),
 		.pitch_angle_error(pitch_angle_error),

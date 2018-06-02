@@ -1,10 +1,10 @@
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, 
- * Brett Creeley, 
- * Daniel Christiansen, 
- * Kirk Hooper, 
+ * Ethan Grinnell,
+ * Brett Creeley,
+ * Daniel Christiansen,
+ * Kirk Hooper,
  * Zachary Clark-Williams
  */
 
@@ -33,8 +33,8 @@
  * @resetn - global reset signal
  * @us_clk - 1MHz clock
  */
-`timescale 1ns / 1ns
 
+`timescale 1ns / 1ns
 `include "common_defines.v"
 
 module body_frame_controller (
@@ -95,26 +95,20 @@ module body_frame_controller (
 	localparam ROLL_K_P_SHIFT	= 4'h4;
 	localparam ROLL_K_I			= 16'h0000;
 	localparam ROLL_K_I_SHIFT	= 4'h4;
-	localparam ROLL_K_D			= 16'h0000;
+	localparam ROLL_K_D			= 16'h0001;
 	localparam ROLL_K_D_SHIFT	= 4'h4;
 	localparam PITCH_K_P		= 16'h0004;
-	localparam PITCH_K_P_SHIFT	= 4'h4;
+	localparam PITCH_K_P_SHIFT 	= 4'h4;
 	localparam PITCH_K_I		= 16'h0000;
-	localparam PITCH_K_I_SHIFT	= 4'h4;
-	localparam PITCH_K_D		= 16'h0000;
-	localparam PITCH_K_D_SHIFT	= 4'h4;
-	localparam YAW_K_P			= 16'h0004;
+	localparam PITCH_K_I_SHIFT  = 4'h4;
+	localparam PITCH_K_D		= 16'h0001;
+	localparam PITCH_K_D_SHIFT 	= 4'h4;
+	localparam YAW_K_P			= 16'h001F;
 	localparam YAW_K_P_SHIFT	= 4'h4;
 	localparam YAW_K_I			= 16'h0000;
 	localparam YAW_K_I_SHIFT	= 4'h4;
-	localparam YAW_K_D			= 16'h0000;
+	localparam YAW_K_D			= 16'h0004;
 	localparam YAW_K_D_SHIFT	= 4'h4;
-
-
-	// IMU scalar values
-	localparam ROLL_IMU_SCALAR	= 4'h0;
-	localparam PITCH_IMU_SCALAR	= 4'h0;
-	localparam YAW_IMU_SCALAR	= 4'h0;
 
 	// state variables
 	reg [3:0] state, next_state;
@@ -127,71 +121,55 @@ module body_frame_controller (
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
 			start_flag					<= 1'b0;
-			
+
 			// Angle rates from the angle_controller
 			latched_yaw_target			<= 16'h0000;
-            latched_roll_target			<= 16'h0000;
-            latched_pitch_target		<= 16'h0000;
-            latched_roll_angle_error	<= 16'h0000;
-            latched_pitch_angle_error	<= 16'h0000;
-			
+			latched_roll_target			<= 16'h0000;
+			latched_pitch_target		<= 16'h0000;
+			latched_roll_angle_error	<= 16'h0000;
+			latched_pitch_angle_error	<= 16'h0000;
+
 			// Angle rates from the imu
 			latched_yaw_rotation		<= 16'h0000;
-            latched_roll_rotation		<= 16'h0000;
-            latched_pitch_rotation		<= 16'h0000;
+			latched_roll_rotation		<= 16'h0000;
+			latched_pitch_rotation		<= 16'h0000;
 		end
 		else if(start_signal && !start_flag) begin
-			start_flag 					<= 1'b1;
+			start_flag					<= 1'b1;
 			latched_yaw_target			<= yaw_target;
-            latched_roll_target			<= roll_target;
-            latched_pitch_target		<= pitch_target;
-            latched_roll_angle_error	<= roll_angle_error;
-            latched_pitch_angle_error	<= pitch_angle_error;
-			
+			latched_roll_target			<= roll_target;
+			latched_pitch_target		<= pitch_target;
+			latched_roll_angle_error	<= roll_angle_error;
+			latched_pitch_angle_error	<= pitch_angle_error;
+
 			// Angle rates from the imu
-			if ($signed(yaw_rotation[15:4]) < -12'sd25)
-				latched_yaw_rotation <= {-12'sd25,4'b0};
-			else if ($signed(yaw_rotation[15:4]) > 12'sd25)
-				latched_yaw_rotation <= {12'sd25,4'b0};
-			else
-				latched_yaw_rotation <= yaw_rotation;
-				
-			// Roll is flipped from the IMU so correct it here
-			if ($signed(roll_rotation[15:4]) < -12'sd25)
-				latched_roll_rotation <= {12'sd25,4'b0};
-			else if ($signed(roll_rotation[15:4]) > 12'sd25)
-				latched_roll_rotation <= {-12'sd25,4'b0};
-			else
-				latched_roll_rotation <= ~roll_rotation + 1'b1;
-				
-			if ($signed(pitch_rotation[15:4]) < -12'sd25)
-				latched_pitch_rotation <= {-12'sd25,4'b0};
-			else if ($signed(pitch_rotation[15:4]) > 12'sd25)
-				latched_pitch_rotation <= {12'sd25,4'b0};
-			else
-				latched_pitch_rotation <= pitch_rotation;
+	 		// TODO: Should we limit rates from IMU?
+			latched_yaw_rotation		<= ~yaw_rotation + 1'b1;
+			latched_roll_rotation		<= roll_rotation;
+			latched_pitch_rotation		<= ~pitch_rotation + 1'b1;
+
 		end
 		else if(!start_signal && start_flag) begin
 			start_flag					<= 1'b0;
-			latched_yaw_target			<= latched_yaw_target;
-            latched_roll_target			<= latched_roll_target;
-            latched_pitch_target		<= latched_pitch_target;
-            latched_yaw_rotation		<= latched_yaw_rotation;
-            latched_roll_rotation		<= latched_roll_rotation;
-            latched_pitch_rotation		<= latched_pitch_rotation;
-            latched_roll_angle_error	<= latched_roll_angle_error;
-            latched_pitch_angle_error	<= latched_pitch_angle_error;
+			latched_yaw_target	 		<= latched_yaw_target;
+			latched_roll_target			<= latched_roll_target;
+			latched_pitch_target		<= latched_pitch_target;
+			latched_yaw_rotation		<= latched_yaw_rotation;
+			latched_roll_rotation		<= latched_roll_rotation;
+			latched_pitch_rotation		<= latched_pitch_rotation;
+			latched_roll_angle_error	<= latched_roll_angle_error;
+			latched_pitch_angle_error	<= latched_pitch_angle_error;
 		end
 		else begin
-			start_flag 					<= start_flag;
+			start_flag					<= start_flag;
 			latched_yaw_target			<= latched_yaw_target;
-            latched_roll_target			<= latched_roll_target;
-            latched_pitch_target		<= latched_pitch_target;
-            latched_yaw_rotation		<= latched_yaw_rotation;
-            latched_roll_rotation		<= latched_roll_rotation;
-            latched_pitch_rotation		<= latched_pitch_rotation;
-            latched_roll_angle_error	<= latched_roll_angle_error;
-            latched_pitch_angle_error	<= latched_pitch_angle_error;
+			latched_roll_target			<= latched_roll_target;
+			latched_pitch_target		<= latched_pitch_target;
+			latched_yaw_rotation		<= latched_yaw_rotation;
+			latched_roll_rotation		<= latched_roll_rotation;
+			latched_pitch_rotation		<= latched_pitch_rotation;
+			latched_roll_angle_error	<= latched_roll_angle_error;
+			latched_pitch_angle_error	<= latched_pitch_angle_error;
 		end
 	end
 
@@ -269,10 +247,12 @@ module body_frame_controller (
 	pid #(
 		.RATE_MIN(YAW_RATE_MIN),
 		.RATE_MAX(YAW_RATE_MAX),
+		.K_P_SHIFT(YAW_K_P_SHIFT),
+		.K_I_SHIFT(YAW_K_I_SHIFT),
+		.K_D_SHIFT(YAW_K_D_SHIFT),
 		.K_P(YAW_K_P),
 		.K_I(YAW_K_I),
-		.K_D(YAW_K_D),
-		.IMU_SCALAR(YAW_IMU_SCALAR))
+		.K_D(YAW_K_D))
 	yaw_pid (
 		.DEBUG_WIRE(DEBUG_WIRE_YAW),
 		.rate_out(yaw_rate_out),
@@ -289,10 +269,12 @@ module body_frame_controller (
 	pid #(
 		.RATE_MIN(PITCH_RATE_MIN),
 		.RATE_MAX(PITCH_RATE_MAX),
+		.K_P_SHIFT(PITCH_K_P_SHIFT),
+		.K_I_SHIFT(PITCH_K_I_SHIFT),
+		.K_D_SHIFT(PITCH_K_D_SHIFT),
 		.K_P(PITCH_K_P),
 		.K_I(PITCH_K_I),
-		.K_D(PITCH_K_D),
-		.IMU_SCALAR(PITCH_IMU_SCALAR))
+		.K_D(PITCH_K_D))
 	pitch_pid (
 		.DEBUG_WIRE(DEBUG_WIRE_PITCH),
 		.rate_out(pitch_rate_out),
@@ -309,10 +291,12 @@ module body_frame_controller (
 	pid #(
 		.RATE_MIN(ROLL_RATE_MIN),
 		.RATE_MAX(ROLL_RATE_MAX),
+		.K_P_SHIFT(ROLL_K_P_SHIFT),
+		.K_I_SHIFT(ROLL_K_I_SHIFT),
+		.K_D_SHIFT(ROLL_K_D_SHIFT),
 		.K_P(ROLL_K_P),
 		.K_I(ROLL_K_I),
-		.K_D(ROLL_K_D),
-		.IMU_SCALAR(ROLL_IMU_SCALAR))
+		.K_D(ROLL_K_D))
 	roll_pid (
 		.DEBUG_WIRE(DEBUG_WIRE_ROLL),
 		.rate_out(roll_rate_out),
