@@ -103,11 +103,11 @@ module body_frame_controller (
 	localparam PITCH_K_I_SHIFT  = 4'h4;
 	localparam PITCH_K_D		= 16'h0001;
 	localparam PITCH_K_D_SHIFT 	= 4'h4;
-	localparam YAW_K_P			= 16'h0005;
+	localparam YAW_K_P			= 16'h001F;
 	localparam YAW_K_P_SHIFT	= 4'h4;
 	localparam YAW_K_I			= 16'h0000;
 	localparam YAW_K_I_SHIFT	= 4'h4;
-	localparam YAW_K_D			= 16'h0001;
+	localparam YAW_K_D			= 16'h0004;
 	localparam YAW_K_D_SHIFT	= 4'h4;
 
 	// state variables
