@@ -5,60 +5,102 @@
  */
 
 /**
-* TODO: Add module description with description of inputs/outputs
-* 		instead of with the variable. Make this file look like all of
-* 		the other files.
-*/
+ * TODO: Fix long line comments
+ */
 
 `timescale 1ns / 1ns
 `include "common_defines.v"
 `include "bno055_defines.v"
 
+/**
+ * bno055_driver - The is the top level driver to read/write from/to the physical IMU
+ *
+ * Inouts:
+ * @scl_1: I2C EFB #1 SCL wire
+ * @scl_2: I2C EFB #2 SCL wire
+ * @sda_1: I2C EFB #1 SDA wire
+ * @sda_2: I2C EFB #2 SDA wire
+ *
+ * Inputs:
+ * @rstn: asynchronous negative reset signal (0 = reset, 1 = not reset)
+ * @led_data_out: module LED status output
+ * @sys_clk: MachX03 master clock
+ *
+ * Outputs:
+ * @rstn_imu: active low reset signal to IMU hardware to trigger reset
+ * @imu_good: the IMU is either in an error or initial bootup states, measurements not yet active
+ * @imu_data_valid: indicates that the IMU data is valid, goes low once at the end of a IMU poll
+ *                  and reoccurs every 10ms
+ * @accel_rate_x: Accelerometer X-Axis Precision: 1 m/s^2 = 100
+ * @accel_rate_y: Accelerometer Y-Axis Precision: 1 m/s^2 = 100
+ * @accel_rate_z: Accelerometer Z-Axis Precision: 1 m/s^2 = 100
+ * @magneto_rate_x: Magnetometer X-Axis Precision: 1uT = 16 LSB imescale 1ns / 1ns
+ * @magneto_rate_y: Magnetometer Y-Axis Precision: 1uT = 16 LSB nclude "common_defines.v"
+ * @magneto_rate_z: Magnetometer Z-Axis Precision: 1uT = 16 LSB nclude "bno055_defines.v"
+ * @gyro_rate_x: Gyroscope X-Axis Precision: Dps = 16 LSB
+ * @gyro_rate_y: Gyroscope Y-Axis Precision: Dps = 16 LSB dule bno055_driver #(
+ * @gyro_rate_z: Gyroscope Z-Axis Precision: Dps = 16 LSB   parameter INIT_TIME = 12'd650
+ * @euler_angle_x: Euler angle X-Axis Precision Deg = 16 LSB
+ * @euler_angle_y: Euler angle Y-Axis Precision Deg = 16 LSB
+ * @euler_angle_z: Euler angle Z-Axis Precision Deg = 16 LSB
+ * @euler_angle_x: Euler angle X-Axis Precision: Deg = 16 LSB
+ * @euler_angle_y: Euler angle Y-Axis Precision: Deg = 16 LSB
+ * @euler_angle_z: Euler angle Z-Axis Precision: Deg = 16 LSB
+ * @quaternion_data_w: Quaternion X-Axis Precision: Unit = 2^14 LSB
+ * @quaternion_data_x: Quaternion X-Axis Precision: Unit = 2^14 LSB
+ * @quaternion_data_y: Quaternion Y-Axis Precision: Unit = 2^14 LSB
+ * @quaternion_data_z: Quaternion Z-Axis Precision: Unit = 2^14 LSB
+ * @linear_accel_x: Linear Acceleration X-Axis Precision: 1 m/s^2 = 100 LSB
+ * @linear_accel_y: Linear Acceleration Y-Axis Precision: 1 m/s^2 = 100 LSB
+ * @linear_accel_z: Linear Acceleration Z-Axis Precision: 1 m/s^2 = 100 LSB
+ * @gravity_accel_x: Gravitational Acceleration X-Axis   Precision: 1 m/s^2 = 100 LSB
+ * @gravity_accel_y: Gravitational Acceleration Y-Axis   Precision: 1 m/s^2 = 100 LSB
+ * @gravity_accel_z: Gravitational Acceleration Z-Axis   Precision: 1 m/s^2 = 100 LSB
+ * @temperature: Temperature in degrees Celsius Precision: 1 Deg C = 1 LSB
+ * @calib_status: Calibration status register
+ * @x_velocity: Linear velocity in the X direction, one byte signed integer
+ * @y_velocity: Linear velocity in the Y direction, one byte signed integer
+ * @z_velocity: Linear velocity in the Z direction, one byte signed integer
+ */
 module bno055_driver #(
-	parameter INIT_TIME = 15'd650
-)
-(
-	inout wire scl_1,                     //  I2C EFB #1 SDA wire
-	inout wire scl_2,                     //  I2C EFB #2 SDA wire
-	inout wire sda_1,                     //  I2C EFB #1 SDA wire
-	inout wire sda_2,                     //  I2C EFB #2 SDA wire
-	input wire rstn,                      //  async negative reset signal 0 = reset, 1 = not reset
-	output wire [7:0]led_data_out,        //  Module LED Status output
-	input  wire sys_clk,                  //  master clock
-	input wire ac_active,
-	output wire rstn_imu,                 //  Low active reset signal to IMU hardware to trigger reset
-	output reg  imu_good,                 //  The IMU is either in an error or initial bootup states, measurements not yet active
-	output reg  valid_strobe,             //  Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
-	output reg [15:0]accel_rate_x,        //  Accelerometer X-Axis                Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]accel_rate_y,        //  Accelerometer Y-Axis                Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]accel_rate_z,        //  Accelerometer Z-Axis                Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]magneto_rate_x,      //  Magnetometer X-Axis                 Precision: 1uT = 16 LSB
-	output reg [15:0]magneto_rate_y,      //  Magnetometer Y-Axis                 Precision: 1uT = 16 LSB
-	output reg [15:0]magneto_rate_z,      //  Magnetometer Z-Axis                 Precision: 1uT = 16 LSB
-	output reg [15:0]gyro_rate_x,         //  Gyroscope X-Axis                    Precision: Dps = 16 LSB
-	output reg [15:0]gyro_rate_y,         //  Gyroscope Y-Axis                    Precision: Dps = 16 LSB
-	output reg [15:0]gyro_rate_z,         //  Gyroscope Z-Axis                    Precision: Dps = 16 LSB
-	output reg [15:0]euler_angle_x,       //  Euler angle X-Axis                  Precision: Deg = 16 LSB
-	output reg [15:0]euler_angle_y,       //  Euler angle Y-Axis                  Precision: Deg = 16 LSB
-	output reg [15:0]euler_angle_z,       //  Euler angle Z-Axis                  Precision: Deg = 16 LSB
-	output reg [15:0]quaternion_data_w,   //  Quaternion X-Axis                   Precision: Unit = 2^14 LSB
-	output reg [15:0]quaternion_data_x,   //  Quaternion X-Axis                   Precision: Unit = 2^14 LSB
-	output reg [15:0]quaternion_data_y,   //  Quaternion Y-Axis                   Precision: Unit = 2^14 LSB
-	output reg [15:0]quaternion_data_z,   //  Quaternion Z-Axis                   Precision: Unit = 2^14 LSB
-	output reg [15:0]linear_accel_x,      //  Linear Acceleration X-Axis          Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]linear_accel_y,      //  Linear Acceleration Y-Axis          Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]linear_accel_z,      //  Linear Acceleration Z-Axis          Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]gravity_accel_x,     //  Gravitational Acceleration X-Axis   Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]gravity_accel_y,     //  Gravitational Acceleration Y-Axis   Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]gravity_accel_z,     //  Gravitational Acceleration Z-Axis   Precision: 1 m/s^2 = 100 LSB
-	output reg [7:0]temperature,          //  Temperature in degrees Celsius      Precision: 1 Deg C = 1 LSB
-	output reg [7:0]calib_status,         //  Calibration status register
-	output reg [15:0]x_velocity,          //  Linear velocity in the X direction, one byte signed integer
-	output reg [15:0]y_velocity,          //  Linear velocity in the Y direction, one byte signed integer
-	output reg [15:0]z_velocity,           //  Linear velocity in the Z direction, one byte signed integer
-	output reg rx_data_latch_strobe
-
-);
+	parameter INIT_TIME = 12'd650)
+   (inout wire scl_1,
+	inout wire scl_2,
+	inout wire sda_1,
+	inout wire sda_2,
+	input wire rstn,
+	output wire [7:0]led_data_out,
+	input  wire sys_clk,
+	output wire rstn_imu,
+	output reg  imu_good,
+	output reg  imu_data_valid,
+	output reg [15:0]accel_rate_x,
+	output reg [15:0]accel_rate_y,
+	output reg [15:0]accel_rate_z,
+	output reg [15:0]magneto_rate_x,
+	output reg [15:0]magneto_rate_y,
+	output reg [15:0]magneto_rate_z,
+	output reg [15:0]gyro_rate_x,
+	output reg [15:0]gyro_rate_y,
+	output reg [15:0]gyro_rate_z,
+	output reg [15:0]euler_angle_x,
+	output reg [15:0]euler_angle_y,
+	output reg [15:0]euler_angle_z,
+	output reg [15:0]quaternion_data_w,
+	output reg [15:0]quaternion_data_x,
+	output reg [15:0]quaternion_data_y,
+	output reg [15:0]quaternion_data_z,
+	output reg [15:0]linear_accel_x,
+	output reg [15:0]linear_accel_y,
+	output reg [15:0]linear_accel_z,
+	output reg [15:0]gravity_accel_x,
+	output reg [15:0]gravity_accel_y,
+	output reg [15:0]gravity_accel_z,
+	output reg [7:0]temperature,
+	output reg [7:0]calib_status,
+	output reg [15:0]x_velocity,
+	output reg [15:0]y_velocity,
+	output reg [15:0]z_velocity);
 
 	reg  read_write_in, next_read_write_in;           //  Value and next value of signal to i2c module to indicate read or write transaction, 1 = read, 0 = write
 	reg  go;                                          //  Flag to i2c module signaling start of i2c transaction. All inputs must be valid before asserting this bit
@@ -98,7 +140,36 @@ module bno055_driver #(
 	reg increment_cal_restore_index;
 	reg calibrated_once;
 	reg next_calibrated_once;
-	reg next_valid_strobe_enable;
+
+	reg [15:0]next_accel_rate_x;        //  Next value of Accelerometer X-Axis
+	reg [15:0]next_accel_rate_y;        //  Next value of Accelerometer Y-Axis
+	reg [15:0]next_accel_rate_z;        //  Next value of Accelerometer Z-Axis
+	reg [15:0]next_magneto_rate_x;      //  Next value of Magnetometer X-Axis
+	reg [15:0]next_magneto_rate_y;      //  Next value of Magnetometer Y-Axis
+	reg [15:0]next_magneto_rate_z;      //  Next value of Magnetometer Z-Axis
+	reg [15:0]next_gyro_rate_x;         //  Next value of Gyroscope X-Axis
+	reg [15:0]next_gyro_rate_y;         //  Next value of Gyroscope Y-Axis
+	reg [15:0]next_gyro_rate_z;         //  Next value of Gyroscope Z-Axis
+	reg [15:0]next_euler_angle_x;       //  Next value of Euler angle X-Axis
+	reg [15:0]next_euler_angle_y;       //  Next value of Euler angle Y-Axis
+	reg [15:0]next_euler_angle_z;       //  Next value of Euler angle Z-Axis
+	reg [15:0]next_quaternion_data_w;   //  Next value of Quaternion X-Axis
+	reg [15:0]next_quaternion_data_x;   //  Next value of Quaternion X-Axis
+	reg [15:0]next_quaternion_data_y;   //  Next value of Quaternion Y-Axis
+	reg [15:0]next_quaternion_data_z;   //  Next value of Quaternion Z-Axis
+	reg [15:0]next_linear_accel_x;      //  Next value of Linear Acceleration X-Axis
+	reg [15:0]next_linear_accel_y;      //  Next value of Linear Acceleration Y-Axis
+	reg [15:0]next_linear_accel_z;      //  Next value of Linear Acceleration Z-Axis
+	reg [15:0]next_gravity_accel_x;     //  Next value of Gravitational Acceleration X-Axis
+	reg [15:0]next_gravity_accel_y;     //  Next value of Gravitational Acceleration Y-Axis
+	reg [15:0]next_gravity_accel_z;     //  Next value of Gravitational Acceleration Z-Axis
+	reg [7:0] next_temperature;         //  Next value of Temperature in degrees Celsius
+	reg [7:0] next_calib_status;        //  Next value of Calibration status register
+	reg [15:0]next_x_velocity;          //  Next value of Linear velocity in the X direction
+	reg [15:0]next_y_velocity;          //  Next value of Linear velocity in the Y direction
+	reg [15:0]next_z_velocity;          //  Next value of Linear velocity in the Z directio
+	
+  reg next_valid_strobe_enable;
 	reg valid_strobe_enable;
 	reg [31:0]master_trigger_count_ms;                //  Counter used to generate a periodic 20ms timer tick.
 
@@ -108,23 +179,23 @@ module bno055_driver #(
 	assign led_data_out = (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : data_rx_reg[led_view_index]; //  Inverted output for LEDS, since they are low active
 
 	//  Instantiate i2c driver
-	i2c_module i2c(	.scl_1(scl_1),
-					.sda_1(sda_1),
-					.scl_2(scl_2),
-					.sda_2(sda_2),
-					.rstn(rstn),
-					.rstn_imu(rstn_imu),
-					.target_read_count(target_read_count),
-					.slave_address(slave_address),
-					.module_data_out(data_rx),
-					.module_data_in(data_tx),
-					.module_reg_in(data_reg),
-					.read_write_in(read_write_in),
-					.go(go),
-					.busy(busy),
-					.one_byte_ready(one_byte_ready),
-					.i2c_number(i2c_number),
-					.sys_clk(sys_clk)
+	i2c_module i2c(.scl_1(scl_1),
+				   .sda_1(sda_1),
+				   .scl_2(scl_2),
+				   .sda_2(sda_2),
+				   .rstn(rstn),
+				   .rstn_imu(rstn_imu),
+				   .target_read_count(target_read_count),
+				   .slave_address(slave_address),
+				   .module_data_out(data_rx),
+				   .module_data_in(data_tx),
+				   .module_reg_in(data_reg),
+				   .read_write_in(read_write_in),
+				   .go(go),
+				   .busy(busy),
+				   .one_byte_ready(one_byte_ready),
+				   .i2c_number(i2c_number),
+				   .sys_clk(sys_clk)
 	);
 
 	//  Generates a multiple of 1ms length duration delay trigger - Defaulted to 650 ms for BNO055 reset and boot time
@@ -241,6 +312,29 @@ module bno055_driver #(
 		end
 	endtask
 
+/*
+	always@(posedge sys_clk, negedge rstn) begin
+		if(~rstn) begin
+			output_data_latch <= `FALSE;
+			imu_data_valid    <= `LOW;
+		end
+		else if (rx_data_latch) begin
+			output_data_latch <= `TRUE;
+			if(imu_good)  // Suppress valid bit toggle unless this was a measurement data poll (IMU fully initilized and functioning)
+				imu_data_valid <= `LOW;
+			else
+				imu_data_valid <= `LOW;
+		end
+		else begin
+			output_data_latch <= `FALSE;
+			if(imu_good)  // Hold valid bit high unless this was a measurement data poll (IMU fully initilized and functioning)
+				imu_data_valid <= `HIGH;
+			else
+				imu_data_valid <= `LOW;
+		end
+	end
+*/
+  
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn) begin
 			accel_rate_x      <= 16'b0;
