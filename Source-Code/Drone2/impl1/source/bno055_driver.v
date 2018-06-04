@@ -106,8 +106,7 @@ module bno055_driver #(
 	output reg [15:0]x_velocity,       
 	output reg [15:0]y_velocity,       
 	output reg [15:0]z_velocity,       
-	output reg rx_data_latch_strobe
-);
+	output reg rx_data_latch_strobe);
 
 	reg  read_write_in, next_read_write_in;           //  Value and next value of signal to i2c module to indicate read or write transaction, 1 = read, 0 = write
 	reg  go;                                          //  Flag to i2c module signaling start of i2c transaction. All inputs must be valid before asserting this bit
@@ -136,7 +135,7 @@ module bno055_driver #(
 	reg  [5:0]next_led_view_index;                    //  Next value of LED View Index
 	reg  [7:0]data_rx_reg[`DATA_RX_BYTE_REG_CNT-1:0]; //  Store all measurement bytes from i2c read burst
 	reg  rstn_buffer;                                 //  Negedge clears received measurement buffer
-	reg  rx_data_latch_strobe;                        //  Strobe data output register, latch onto current data in rx buffer, asyncronous latch
+//	reg  rx_data_latch_strobe;                        //  Strobe data output register, latch onto current data in rx buffer, asyncronous latch
 	reg  rx_data_latch_tmp; 						  //  Syncronously latched value of the data latch strobe
 	reg  next_imu_good;                               //  Next value of module imu_good bit
 	reg  i2c_number;								  //  The i2c module to call, 0 = i2c EFB #1, 1 = i2c EFB #2

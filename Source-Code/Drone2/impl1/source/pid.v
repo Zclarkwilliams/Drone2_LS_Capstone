@@ -16,6 +16,7 @@
  *
  */
  `timescale 1ns / 1ns
+ `include "common_defines.v"
 
  module pid #(parameter signed RATE_MIN = 16'h8000,
 	 		  parameter signed RATE_MAX = 16'h7FFF,
@@ -28,7 +29,7 @@
  			 (output reg signed [`PID_RATE_BIT_WIDTH-1:0] rate_out,
  			  output reg pid_complete,
 			  output reg pid_active,
-			  output wire [15:0] DEBUG_WIRE, /*DEBUG LEDs*/
+			  output wire [`DEBUG_WIRE_BIT_WIDTH-1:0] DEBUG_WIRE, /*DEBUG LEDs*/
 			  input wire signed [`RATE_BIT_WIDTH-1:0] target_rotation,
  			  input wire signed [`IMU_VAL_BIT_WIDTH-1:0] actual_rotation,
 			  input wire signed [`RATE_BIT_WIDTH-1:0] angle_error,
@@ -38,14 +39,20 @@
 			  input wire us_clk);
 
 	// working registers
-	reg signed [`RATE_BIT_WIDTH-1:0]
-		scaled_rotation, rotation_error, prev_rotation_error,
-		rotation_proportional, rotation_integral, rotation_derivative,
-		error_change, rotation_total;
+	reg signed [`RATE_BIT_WIDTH-1:0] 
+		error_change, 
+		rotation_total,
+		rotation_error, 
+		prev_rotation_error,
+		scaled_rotation,
+		rotation_integral,
+		rotation_derivative,
+		rotation_proportional;
 
 	reg signed [`RATE_BIT_WIDTH-1:0]
-		latched_target_rotation, latched_actual_rotation, latched_angle_error;
-
+		latched_angle_error,
+		latched_target_rotation, 
+		latched_actual_rotation;
 
 	// state names
 	localparam
@@ -73,53 +80,53 @@
   // calculation / output logic
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
-			pid_active <= 1'b0;
-			pid_complete <= 1'b0;
-			rate_out <= 16'h0000;
+			pid_active 		<= `FALSE;
+			pid_complete 	<= `FALSE;
+			rate_out 		<= `ALL_ZERO_2BYTE;
 		end
 		else begin
 			case(state)
 				STATE_WAIT: begin
-					pid_active <= 1'b0;
-					pid_complete <= 1'b1;
+					pid_active				<= `FALSE;
+					pid_complete			<= `TRUE;
 				end
 				STATE_CALC1: begin
-					pid_active <= 1'b1;
-					pid_complete <= 1'b0;
-					prev_rotation_error <= rotation_error;
-					rotation_error <= ($signed(target_rotation) - $signed(actual_rotation));
-					rotation_integral <= ($signed(K_I) * $signed(angle_error)) >>> K_I_SHIFT;
+					pid_active 				<= `TRUE;
+					pid_complete 			<= `FALSE;
+					prev_rotation_error 	<= rotation_error;
+					rotation_error 			<= target_rotation - actual_rotation;
+					rotation_integral 		<= (K_I * angle_error) >>> K_I_SHIFT;
 				end
 				STATE_CALC2: begin
-					pid_active <= 1'b1;
-					pid_complete <= 1'b0;
-					rotation_proportional <= ($signed(K_P) * $signed(rotation_error)) >>> K_P_SHIFT;
-					error_change <= ($signed(rotation_error) - $signed(prev_rotation_error));
+					pid_active 				<= `TRUE;
+					pid_complete 			<= `FALSE;
+					rotation_proportional 	<= (K_P * rotation_error) >>> K_P_SHIFT;
+					error_change 			<= rotation_error - prev_rotation_error;
 				end
 				STATE_CALC3: begin
-					pid_active <= 1'b1;
-					pid_complete <= 1'b0;
-					rotation_derivative <= ($signed(K_D) * $signed(error_change)) >>> K_D_SHIFT;
+					pid_active 				<= `TRUE;
+					pid_complete 			<= `FALSE;
+					rotation_derivative 	<= (K_D * error_change) >>> K_D_SHIFT;
 				end
 				STATE_CALC4: begin
-					pid_active <= 1'b1;
-					pid_complete <= 1'b0;
-					rotation_total <= ($signed(rotation_proportional) + $signed(rotation_integral) + $signed(rotation_derivative));
+					pid_active 				<= `TRUE;
+					pid_complete 			<= `FALSE;
+					rotation_total 			<= rotation_proportional + rotation_integral + rotation_derivative;
 				end
 				STATE_COMPLETE: begin
-					pid_active <= 1'b1;
-					pid_complete <= 1'b1;
-					if($signed(rotation_total) < $signed(RATE_MIN))
-						rate_out <= RATE_MIN;
-					else if($signed(rotation_total) > $signed(RATE_MAX))
-						rate_out <= RATE_MAX;
+					pid_active 				<= `TRUE;
+					pid_complete 			<= `TRUE;
+					if(rotation_total < RATE_MIN)
+						rate_out 			<= RATE_MIN;
+					else if(rotation_total > RATE_MAX)
+						rate_out 			<= RATE_MAX;
 					else
-						rate_out <= rotation_total;
+						rate_out 			<= rotation_total;
 				end
 				default: begin
-					pid_active <= 1'b0;
-					pid_complete <= 1'b0;
-					rate_out <= 16'h0000;
+					pid_active 				<= `FALSE;
+					pid_complete 			<= `FALSE;
+					rate_out 				<= `ALL_ZERO_2BYTE;
 				end
 			endcase
 		end
@@ -134,30 +141,30 @@
 			case(state)
 				STATE_WAIT: begin
 					if(start_flag)
-						next_state = STATE_CALC1;
+						next_state 	= STATE_CALC1;
 					else
-						next_state = STATE_WAIT;
+						next_state	= STATE_WAIT;
 				end
 				STATE_CALC1: begin
-				   next_state = STATE_CALC2;
+				   next_state		= STATE_CALC2;
 				end
 				STATE_CALC2: begin
-					next_state = STATE_CALC3;
+					next_state 		= STATE_CALC3;
 				end
 				STATE_CALC3: begin
-						next_state = STATE_CALC4;
+						next_state 	= STATE_CALC4;
 				end
 				STATE_CALC4: begin
-					next_state = STATE_COMPLETE;
+					next_state 		= STATE_COMPLETE;
 				end
 				STATE_COMPLETE: begin
 					if(wait_flag)
-						next_state = STATE_WAIT;
+						next_state 	= STATE_WAIT;
 					else
-						next_state = STATE_COMPLETE;
+						next_state 	= STATE_COMPLETE;
 				end
 			default: begin
-			  next_state = STATE_WAIT;
+			  next_state 			= STATE_WAIT;
 			end
 			endcase
 		end
