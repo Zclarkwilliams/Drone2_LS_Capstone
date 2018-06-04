@@ -9,22 +9,11 @@
  */
 
 /**
- * TODO: Fill these descriptions out.
- * module pid - sub-module implementing a pid controller for rotation rate
+ * module pid - sub-module implementing a pid controller for  rotation rate
  * around a single axis.
- * Inputs:
- * @target_rotation:
- * @actual_rotation:
- * @angle_error:
- * @start_flag:
- * @wait_flag:
- * @resetn:
- * @us_clk:
  *
  * Outputs:
- * @rate_out:
- * @pid_complete:
- * @pid_active:
+ *
  */
  `timescale 1ns / 1ns
 
