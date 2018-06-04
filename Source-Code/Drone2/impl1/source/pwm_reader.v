@@ -35,12 +35,13 @@ module pwm_reader #(parameter DEFAULT_PWM_TIME_HIGH_US = 16'd1500)
 					input wire resetn);
 
 	// PWM reader FSM states
-	localparam [2:0] STATE_INIT   = 3'b000;
-	localparam [2:0] STATE_LOW    = 3'b001;
-	localparam [2:0] STATE_HIGH   = 3'b010;
-	localparam [2:0] STATE_FALL   = 3'b011;
-	localparam [2:0] STATE_RISE   = 3'b100;
-	localparam [2:0] STATE_BOUNCE = 3'b101;
+	localparam [2:0] 
+		STATE_INIT   = 3'b000,
+		STATE_LOW    = 3'b001,
+		STATE_HIGH   = 3'b010,
+		STATE_FALL   = 3'b011,
+		STATE_RISE   = 3'b100,
+		STATE_BOUNCE = 3'b101;
 
     /* Keeps track of the what the pwm is in regards to the pwm reader state machine.
 	 * This does not follow the pwm signal exactly.  This allows for detecting a
@@ -64,19 +65,19 @@ module pwm_reader #(parameter DEFAULT_PWM_TIME_HIGH_US = 16'd1500)
 
 	// 1 always block model FSM to simplify the logic
 	always @(posedge us_clk or negedge resetn) begin
-		if (resetn == 0) begin
-			state <= STATE_INIT;
-			time_high_count <= 0;
-			pwm_pulse_level_flag <= `LOW;
-			time_high_us <= DEFAULT_PWM_TIME_HIGH_US;
+		if (!resetn) begin
+			state				 	<= STATE_INIT;
+			time_high_count 	 	<= `ALL_ZERO_2BYTE;
+			pwm_pulse_level_flag	<= `LOW;
+			time_high_us 		 	<= DEFAULT_PWM_TIME_HIGH_US;
 		end
 		else begin
 			case (state)
 				STATE_INIT: begin
-					state <= STATE_LOW;
-					time_high_count <= 0;
-					pwm_pulse_level_flag <= `LOW;
-					time_high_us <= DEFAULT_PWM_TIME_HIGH_US;
+					state 					<= STATE_LOW;
+					time_high_count		 	<= `ALL_ZERO_2BYTE;
+					pwm_pulse_level_flag 	<= `LOW;
+					time_high_us 			<= DEFAULT_PWM_TIME_HIGH_US;
 				end
 				STATE_LOW: begin
 					// time_high_us only changes on a falling edges
@@ -84,21 +85,21 @@ module pwm_reader #(parameter DEFAULT_PWM_TIME_HIGH_US = 16'd1500)
 
 					// The pwm pulse is already low so stay here
 					if (pwm == `LOW && pwm_pulse_level_flag == `LOW) begin
-						state <= STATE_LOW;
+						state 				<= STATE_LOW;
 						pwm_pulse_level_flag <= pwm_pulse_level_flag;
-						time_high_count <= 0;
+						time_high_count 	<= `ALL_ZERO_2BYTE;
 					end
 					// The pwm pulse was high so start the falling edge
 					else if (pwm == `LOW && pwm_pulse_level_flag == `HIGH) begin
-						state <= STATE_FALL;
+						state 				 <= STATE_FALL;
 						pwm_pulse_level_flag <= `LOW;
-						time_high_count <= time_high_count;
+						time_high_count 	 <= time_high_count;
 					end
 					// The current pwm input is high so start transitioning high
 					else begin
-						state <= STATE_BOUNCE;
+						state 				 <= STATE_BOUNCE;
 						pwm_pulse_level_flag <= pwm_pulse_level_flag;
-						time_high_count <= time_high_count;
+						time_high_count 	 <= time_high_count;
 					end
 				end
 				STATE_HIGH: begin
@@ -107,56 +108,56 @@ module pwm_reader #(parameter DEFAULT_PWM_TIME_HIGH_US = 16'd1500)
 
 					// The pwm pulse was already high so stay here and keep counting
 					if (pwm == `HIGH && pwm_pulse_level_flag == `HIGH) begin
-						state <= STATE_HIGH;
+						state 				 <= STATE_HIGH;
 						pwm_pulse_level_flag <= pwm_pulse_level_flag;
-						time_high_count <= time_high_count + 1'b1;
+						time_high_count 	 <= time_high_count + `ONE;
 					end
 					// The pwm pulse was low so start the rising edge
 					else if (pwm == `HIGH && pwm_pulse_level_flag == `LOW) begin
-						state <= STATE_RISE;
+						state 				 <= STATE_RISE;
 						pwm_pulse_level_flag <= `HIGH;
-						time_high_count <= 0;
+						time_high_count  	 <= `ALL_ZERO_2BYTE;
 					end
 					// The current pwm input is low so start transitioning low
 					else begin
-						state <= STATE_BOUNCE;
+						state 				 <= STATE_BOUNCE;
 						pwm_pulse_level_flag <= pwm_pulse_level_flag;
-						time_high_count <= time_high_count;
+						time_high_count 	 <= time_high_count;
 					end
 				end
 				// Falling edge so propegate new pwm pulse length to the output
 				STATE_FALL: begin
-						state <= STATE_LOW;
+						state 				 <= STATE_LOW;
 						pwm_pulse_level_flag <= pwm_pulse_level_flag;
-						time_high_count <= 0;
+						time_high_count 	 <= `ALL_ZERO_2BYTE;
 						// Make sure we output a known good value
 						if (time_high_count < `MIN_PWM_TIME_HIGH_US)
-							time_high_us <= `MIN_PWM_TIME_HIGH_US;
+							time_high_us 	 <= `MIN_PWM_TIME_HIGH_US;
 						else if (time_high_count > `MAX_PWM_TIME_HIGH_US)
-							time_high_us <= `MAX_PWM_TIME_HIGH_US;
+							time_high_us 	 <= `MAX_PWM_TIME_HIGH_US;
 						else
-							time_high_us <= time_high_count;
+							time_high_us 	 <= time_high_count;
 				end
 				// Rising edge so get ready to start counting the pwm pulse length
 				STATE_RISE: begin
-						state <= STATE_HIGH;
+						state 				 <= STATE_HIGH;
 						pwm_pulse_level_flag <= pwm_pulse_level_flag;
-						time_high_us <= time_high_us;
-						time_high_count <= 0;
+						time_high_us 		 <= time_high_us;
+						time_high_count 	 <= `ALL_ZERO_2BYTE;
 				end
 				// Start transitioning in the direction of the current pwm input
 				STATE_BOUNCE: begin
-						time_high_us <= time_high_us;
+						state 				 <= (pwm == `LOW) ? STATE_LOW : STATE_HIGH;
+						time_high_us 		 <= time_high_us;
 						pwm_pulse_level_flag <= pwm_pulse_level_flag;
-						time_high_count <= time_high_count;
-						state <= (pwm == `LOW) ? STATE_LOW : STATE_HIGH;
+						time_high_count 	 <= time_high_count;
 				end
 				// Error state, should never make it here
 				default: begin
-					state <= STATE_INIT;
+					state 				 <= STATE_INIT;
 					pwm_pulse_level_flag <= `LOW;
-					time_high_us <= DEFAULT_PWM_TIME_HIGH_US;
-					time_high_count <= 0;
+					time_high_us 		 <= DEFAULT_PWM_TIME_HIGH_US;
+					time_high_count 	 <= `ALL_ZERO_2BYTE;
 				end
 			endcase
 		end

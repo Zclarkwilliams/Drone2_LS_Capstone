@@ -25,10 +25,7 @@
  * 	- Represent degrees/second
  *
  * TODO:
- *		Change non-blocking to blocking
- *		Clean up defines/localparams
  *		Rate limits???
- *		Optimize resource usage?
  *		Update this header description to look like other files
  */
 `timescale 1ns / 1ns
@@ -36,95 +33,111 @@
 `include "common_defines.v"
 
 module angle_controller (
-	output reg signed [`RATE_BIT_WIDTH-1:0] throttle_rate_out,
-	output reg signed [`RATE_BIT_WIDTH-1:0] yaw_rate_out,
-	output reg signed [`RATE_BIT_WIDTH-1:0] pitch_rate_out,
-	output reg signed [`RATE_BIT_WIDTH-1:0] roll_rate_out,
-	output reg signed [`RATE_BIT_WIDTH-1:0] pitch_angle_error,
-	output reg signed [`RATE_BIT_WIDTH-1:0] roll_angle_error,
-	output reg complete_signal,
-	output reg active_signal,
-	//output reg [4:0] state,
-	input wire [`REC_VAL_BIT_WIDTH-1:0] throttle_target,
-	input wire [`REC_VAL_BIT_WIDTH-1:0] yaw_target,
-	input wire [`REC_VAL_BIT_WIDTH-1:0] pitch_target,
-	input wire [`REC_VAL_BIT_WIDTH-1:0] roll_target,
-	input wire signed [`RATE_BIT_WIDTH-1:0] yaw_actual /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
-	input wire signed [`RATE_BIT_WIDTH-1:0] pitch_actual,
-	input wire signed [`RATE_BIT_WIDTH-1:0] roll_actual,
-	input wire resetn,
-	input wire start_signal,
-	input wire us_clk);
+	output reg  signed [`RATE_BIT_WIDTH-1:0] throttle_rate_out,
+	output reg  signed [`RATE_BIT_WIDTH-1:0] yaw_rate_out,
+	output reg  signed [`RATE_BIT_WIDTH-1:0] pitch_rate_out,
+	output reg  signed [`RATE_BIT_WIDTH-1:0] roll_rate_out,
+	output reg  signed [`RATE_BIT_WIDTH-1:0] pitch_angle_error,
+	output reg  signed [`RATE_BIT_WIDTH-1:0] roll_angle_error,
+	output reg  active_signal,
+	output reg  complete_signal,
+	input  wire [`REC_VAL_BIT_WIDTH-1:0] throttle_target,
+	input  wire [`REC_VAL_BIT_WIDTH-1:0] yaw_target,
+	input  wire [`REC_VAL_BIT_WIDTH-1:0] pitch_target,
+	input  wire [`REC_VAL_BIT_WIDTH-1:0] roll_target,
+	input  wire signed [`RATE_BIT_WIDTH-1:0] yaw_actual /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
+	input  wire signed [`RATE_BIT_WIDTH-1:0] pitch_actual,
+	input  wire signed [`RATE_BIT_WIDTH-1:0] roll_actual,
+	input  wire start_signal,
+	input  wire resetn,
+	input  wire us_clk);
 
-	// TODO: Use decimal values instead to avoid having to comment
 	// rate limits (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	localparam signed
-		THROTTLE_MAX = 16'h0fa0, // 250
-		YAW_MAX =      16'h0640, // 100
-		YAW_MIN =      16'hf9C0, // -100
-		PITCH_MAX =    16'h0640, // 100
-		PITCH_MIN =    16'hf9C0, // -100
-		ROLL_MAX =     16'h0640, // 100
-		ROLL_MIN =     16'hf9C0; // -100
+		THROTTLE_MAX 	=  16'd250,
+		YAW_MAX 		=  16'd100,
+		YAW_MIN 		= -16'd100,
+		PITCH_MAX 		=  16'd100,
+		PITCH_MIN 		= -16'd100,
+		ROLL_MAX		=  16'd100,
+		ROLL_MIN		= -16'd100;
 
 	// scale factors (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	localparam signed
-		THROTTLE_SCALE = 16'd1,
-		YAW_SCALE =      16'd48,
-		ROLL_SCALE =     16'd32,
-		PITCH_SCALE =    16'd32;
+		// YAW
+		YAW_SCALE_DIV 		= 3'd4,
+		YAW_SCALE_MULT 		= 16'd48,
+		// ROLL
+		ROLL_SCALE_DIV	 	= 3'd4,
+		ROLL_SCALE_MULT 	= 16'd32,
+		// PITCH
+		PITCH_SCALE_DIV 	= 3'd4,
+		PITCH_SCALE_MULT 	= 16'd32,
+		// THROTTLE
+		THROTTLE_SCALE_DIV	= 3'd0,
+		THROTTLE_SCALE_MULT	= 16'd1;
+		
+	// Mapping input range to other
+	localparam signed
+		MAPPING_SUBS 		= 16'd500;
+		
+	// Mapping input Padding Zeros
+	localparam signed
+		END_PAD				= 2'b0,
+		FRONT_PAD 			= 6'b0,
+		THROTTLE_F_PAD		= 4'b0,
+		THROTTLE_R_PAD		= 4'b0;
 
 	// TODO: Remove unused variables
 	// working registers
-	reg signed [`RATE_BIT_WIDTH-1:0] mapped_throttle, mapped_yaw, mapped_roll, mapped_pitch;
-	reg signed [`RATE_BIT_WIDTH-1:0] new_mapped_throttle, new_mapped_yaw, new_mapped_roll, new_mapped_pitch;
-	reg signed [`RATE_BIT_WIDTH-1:0] scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
-	reg signed [`REC_VAL_BIT_WIDTH-1:0] latched_throttle, latched_yaw, latched_pitch, latched_roll;
+	reg signed [`RATE_BIT_WIDTH-1:0]	mapped_throttle, mapped_yaw, mapped_roll, mapped_pitch;
+	reg signed [`RATE_BIT_WIDTH-1:0] 	scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
+	reg signed [`REC_VAL_BIT_WIDTH-1:0]	latched_throttle, latched_yaw, latched_pitch, latched_roll;
 
 
 	// state names
 	localparam
-		STATE_WAITING =  5'b00001,
-		STATE_MAPPING =  5'b00010,
-		STATE_SCALING =  5'b00100,
+		STATE_WAITING  = 5'b00001,
+		STATE_MAPPING  = 5'b00010,
+		STATE_SCALING  = 5'b00100,
 		STATE_LIMITING = 5'b01000,
 		STATE_COMPLETE = 5'b10000;
 
 	// state variables
 	reg [4:0] state, next_state;
 
-	reg start_flag = 1'b0;
+	reg start_flag = `FALSE;
 
 	// latch start signal
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn)
-			start_flag <= 1'b0;
+			start_flag 		<= `FALSE;
 		else if(start_signal && !start_flag)
-			start_flag <= 1'b1;
+			start_flag 		<= `TRUE;
 		else if(!start_signal && start_flag) begin
 			if(state != STATE_WAITING) begin
-				start_flag <= 1'b0;
+				start_flag 	<= `FALSE;
 			end
 		end
 		else
-			start_flag <= start_flag;
+			start_flag 		<= start_flag;
 	end
 
 	// update state
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
-			state <= STATE_WAITING;
-			latched_throttle <= 16'h0000;
-			latched_yaw <= 16'h00000;
-			latched_pitch <= 16'h0000;
-			latched_roll <= 16'h0000;
+			state 				<= STATE_WAITING;
+			latched_throttle 	<= `ALL_ZERO_2BYTE;
+			latched_yaw 		<= `ALL_ZERO_2BYTE;
+			latched_pitch 		<= `ALL_ZERO_2BYTE;
+			latched_roll 		<= `ALL_ZERO_2BYTE;
 		end
 		else begin
-			state <= next_state;
-			latched_throttle <= throttle_target;
-			latched_yaw <= yaw_target;
-			latched_pitch <= pitch_target;
-			latched_roll <= roll_target;
+			state 				<= next_state;
+			latched_throttle 	<= throttle_target;
+			latched_yaw 		<= yaw_target;
+			latched_pitch 		<= pitch_target;
+			latched_roll 		<= roll_target;
 
 		end
 
@@ -163,82 +176,85 @@ module angle_controller (
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
 			// reset values
-			yaw_rate_out <= 16'h0000;
-			roll_rate_out <= 16'h0000;
-			pitch_rate_out <= 16'h0000;
+			yaw_rate_out 	<= `ALL_ZERO_2BYTE;
+			roll_rate_out 	<= `ALL_ZERO_2BYTE;
+			pitch_rate_out	<= `ALL_ZERO_2BYTE;
 
 		end
 		else begin
 			case(state)
 				STATE_WAITING: begin
-					complete_signal <= 1'b0;
-					active_signal <= 1'b0;
+					complete_signal 	<= `FALSE;
+					active_signal 		<= `FALSE;
 				end
 				STATE_MAPPING: begin
-					complete_signal <= 1'b0;
-					active_signal <= 1'b1;
+					complete_signal 	<= `FALSE;
+					active_signal 		<= `TRUE;
 
-					mapped_throttle <= {4'h0, latched_throttle, 4'h0};
+					mapped_throttle 	<= {THROTTLE_F_PAD, latched_throttle, THROTTLE_R_PAD};
 					// input values mapped from 0 - 250 to -31.25 - 31.25
-					mapped_yaw <= $signed({6'b0, latched_yaw, 2'b0}) - $signed(16'd500);
-					// roll value from IMU is flipped, add instead of subtract (do this in bfc too?)
-					mapped_roll <= ($signed({6'b0, latched_roll, 2'b0}) - $signed(16'd500)) + $signed(roll_actual);
-					mapped_pitch <= ($signed({6'b0, latched_pitch, 2'b0}) - $signed(16'd500)) - $signed(pitch_actual);
+					mapped_yaw 			<= $signed({FRONT_PAD, latched_yaw,   END_PAD}) - MAPPING_SUBS;
+					mapped_roll 		<= $signed({FRONT_PAD, latched_roll,  END_PAD}) - MAPPING_SUBS + roll_actual; // roll value from IMU is flipped, add instead of subtract
+					mapped_pitch 		<= $signed({FRONT_PAD, latched_pitch, END_PAD}) - MAPPING_SUBS - pitch_actual;
 				end
 				STATE_SCALING: begin
-					complete_signal <= 1'b0;
-					active_signal <= 1'b1;
+					complete_signal 	<= `FALSE;
+					active_signal		<= `TRUE;
 
 					// the decimal point should be shifted...
-					scaled_throttle <= (mapped_throttle * THROTTLE_SCALE);
-					scaled_yaw <= (mapped_yaw * YAW_SCALE) >>> 4;
-					scaled_roll <= (mapped_roll * ROLL_SCALE) >>> 4;
-					scaled_pitch <= (mapped_pitch * PITCH_SCALE) >>> 4;
+					scaled_yaw			<= (mapped_yaw * YAW_SCALE_MULT)			>>> YAW_SCALE_DIV;
+					scaled_roll			<= (mapped_roll * ROLL_SCALE_MULT) 			>>> ROLL_SCALE_DIV;
+					scaled_pitch 		<= (mapped_pitch * PITCH_SCALE_MULT) 		>>> PITCH_SCALE_DIV;
+					scaled_throttle		<= (mapped_throttle * THROTTLE_SCALE_MULT) 	>>> THROTTLE_SCALE_DIV;
 				end
 				STATE_LIMITING: begin
-					complete_signal <= 1'b0;
-					active_signal <= 1'b1;
+					complete_signal 	<= `FALSE;
+					active_signal		<= `TRUE;
 
-					//TODO: Add throttle min checking
-					// apply rate limits
+					// Throttle rate limits
 					if(scaled_throttle > THROTTLE_MAX)
 						throttle_rate_out <= THROTTLE_MAX;
+					else if(scaled_throttle < `MOTOR_VAL_MIN)
+						throttle_rate_out <= `MOTOR_VAL_MIN;
 					else
 						throttle_rate_out <= scaled_throttle;
-
+					
+					// Yaw rate limits
 					if(scaled_yaw > YAW_MAX)
-						yaw_rate_out <= YAW_MAX;
+						yaw_rate_out 	<= YAW_MAX;
 					else if(scaled_yaw < YAW_MIN)
-						yaw_rate_out <= YAW_MIN;
+						yaw_rate_out 	<= YAW_MIN;
 					else
-						yaw_rate_out <= scaled_yaw;
-
+						yaw_rate_out 	<= scaled_yaw;
+					
+					// Roll rate limits
 					if(scaled_roll > ROLL_MAX)
-						roll_rate_out <= ROLL_MAX;
+						roll_rate_out 	<= ROLL_MAX;
 					else if(scaled_roll < ROLL_MIN)
-						roll_rate_out <= ROLL_MIN;
+						roll_rate_out 	<= ROLL_MIN;
 					else
-						roll_rate_out <= scaled_roll;
-
+						roll_rate_out 	<= scaled_roll;
+					
+					// Pitch rate limits
 					if(scaled_pitch > PITCH_MAX)
-						pitch_rate_out <= PITCH_MAX;
+						pitch_rate_out	<= PITCH_MAX;
 					else if(scaled_pitch < PITCH_MIN)
-						pitch_rate_out <= PITCH_MIN;
+						pitch_rate_out 	<= PITCH_MIN;
 					else
-						pitch_rate_out <= scaled_pitch;
+						pitch_rate_out	<= scaled_pitch;
 
-					pitch_angle_error <= mapped_pitch;
-					roll_angle_error <= mapped_roll;
+					pitch_angle_error	<= mapped_pitch;
+					roll_angle_error	<= mapped_roll;
 				end
 				STATE_COMPLETE: begin
-					complete_signal <= 1'b1;
-					active_signal <= 1'b0;
+					complete_signal 	<= `TRUE;
+					active_signal 		<= `FALSE;
 				end
 				default: begin
-					pitch_rate_out <= 16'h0000;
-					yaw_rate_out <= 16'h0000;
-					roll_rate_out <= 16'h0000;
-					throttle_rate_out <= 16'h0000;
+					pitch_rate_out 		<= `ALL_ZERO_2BYTE;
+					yaw_rate_out 		<= `ALL_ZERO_2BYTE;
+					roll_rate_out 		<= `ALL_ZERO_2BYTE;
+					throttle_rate_out	<= `ALL_ZERO_2BYTE;
 				end
 			endcase
 		end
