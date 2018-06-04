@@ -1,14 +1,64 @@
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
-
+ 
 /**
-* TODO: Add module description with description of inputs/outputs
-* 		instead of with the variable. Make this file look like all of
-* 		the other files.
-*/
+
+ *  Module inouts:
+ *  	 	inout scl_1,          I2C Primary   EFB SDA wire - Module only uses Primary or secondary I2C, but can use either one
+ *  		inout scl_2,          I2C Secondary EFB SDA wire
+ *  		inout sda_1,          I2C Primary   EFB SDA wire
+ *  		inout sda_2,          I2C Secondary EFB SDA wire
+ 
+ *  Module takes as inputs:
+ *  		sys_clk                 master clock
+ *  		ac_active               Handshake signal from angle controller acknowledging the data valid strobe
+ *  		rstn                    async negative reset signal 0 = reset, 1 = not reset
+ 
+ * Module provides as output (all values are 16-bit, 2's complement):
+ *  		led_data_out,          Module calibration status output for LED indication of IMU operating state      
+ *  		rstn_imu               Low active reset signal to IMU hardware to trigger reset
+ *  		imu_good               The IMU is either in an error or initial bootup states, measurements not yet active
+ *  		valid_strobe           Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
+ *  		accel_rate_x           Accelerometer X-Axis                Precision: 1 m/s^2 = 100 LSB
+ *  		accel_rate_y           Accelerometer Y-Axis                Precision: 1 m/s^2 = 100 LSB
+ *  		accel_rate_z           Accelerometer Z-Axis                Precision: 1 m/s^2 = 100 LSB
+ *  		magneto_rate_x         Magnetometer X-Axis                 Precision: 1uT = 16 LSB
+ *  		magneto_rate_y         Magnetometer Y-Axis                 Precision: 1uT = 16 LSB
+ *  		magneto_rate_z         Magnetometer Z-Axis                 Precision: 1uT = 16 LSB
+ *  		gyro_rate_x            Gyroscope X-Axis                    Precision: Dps = 16 LSB
+ *  		gyro_rate_y            Gyroscope Y-Axis                    Precision: Dps = 16 LSB
+ *  		gyro_rate_z            Gyroscope Z-Axis                    Precision: Dps = 16 LSB
+ *  		euler_angle_x          Euler angle X-Axis                  Precision: Deg = 16 LSB
+ *  		euler_angle_y          Euler angle Y-Axis                  Precision: Deg = 16 LSB
+ *  		euler_angle_z          Euler angle Z-Axis                  Precision: Deg = 16 LSB
+ *  		quaternion_data_w      Quaternion X-Axis                   Precision: Unit = 2^14 LSB
+ *  		quaternion_data_x      Quaternion X-Axis                   Precision: Unit = 2^14 LSB
+ *  		quaternion_data_y      Quaternion Y-Axis                   Precision: Unit = 2^14 LSB
+ *  		quaternion_data_z      Quaternion Z-Axis                   Precision: Unit = 2^14 LSB
+ *  		linear_accel_x         Linear Acceleration X-Axis          Precision: 1 m/s^2 = 100 LSB
+ *  		linear_accel_y         Linear Acceleration Y-Axis          Precision: 1 m/s^2 = 100 LSB
+ *  		linear_accel_z         Linear Acceleration Z-Axis          Precision: 1 m/s^2 = 100 LSB
+ *  		gravity_accel_x        Gravitational Acceleration X-Axis   Precision: 1 m/s^2 = 100 LSB
+ *  		gravity_accel_y        Gravitational Acceleration Y-Axis   Precision: 1 m/s^2 = 100 LSB
+ *  		gravity_accel_z        Gravitational Acceleration Z-Axis   Precision: 1 m/s^2 = 100 LSB
+ *  		temperature            Temperature in degrees Celsius      Precision: 1 Deg C = 1 LSB
+ *  		calib_status           Calibration status register
+ *  		x_velocity             Linear velocity in the X direction, one byte signed integer
+ *  		y_velocity             Linear velocity in the Y direction, one byte signed integer
+ *  		z_velocity             Linear velocity in the Z direction, one byte signed integer
+ *   	rx_data_latch_strobe   Output rx data latch to upper level module for debugging  
+ *
+ * TODO: Add module description with description of inputs/outputs
+ * 		instead of with the variable. Make this file look like all of
+ * 		the other files.
+ */
 
 `timescale 1ns / 1ns
 `include "common_defines.v"
@@ -18,46 +68,45 @@ module bno055_driver #(
 	parameter INIT_TIME = 15'd650
 )
 (
-	inout wire scl_1,                     //  I2C EFB #1 SDA wire
-	inout wire scl_2,                     //  I2C EFB #2 SDA wire
-	inout wire sda_1,                     //  I2C EFB #1 SDA wire
-	inout wire sda_2,                     //  I2C EFB #2 SDA wire
-	input wire rstn,                      //  async negative reset signal 0 = reset, 1 = not reset
-	output wire [7:0]led_data_out,        //  Module LED Status output
-	input  wire sys_clk,                  //  master clock
+ 	inout wire scl_1,                  
+	inout wire scl_2,                  
+	inout wire sda_1,                  
+	inout wire sda_2,                  
+	input wire rstn,                   
+	output wire [7:0]led_data_out,     
+	input  wire sys_clk,               
 	input wire ac_active,
-	output wire rstn_imu,                 //  Low active reset signal to IMU hardware to trigger reset
-	output reg  imu_good,                 //  The IMU is either in an error or initial bootup states, measurements not yet active
-	output reg  valid_strobe,             //  Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
-	output reg [15:0]accel_rate_x,        //  Accelerometer X-Axis                Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]accel_rate_y,        //  Accelerometer Y-Axis                Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]accel_rate_z,        //  Accelerometer Z-Axis                Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]magneto_rate_x,      //  Magnetometer X-Axis                 Precision: 1uT = 16 LSB
-	output reg [15:0]magneto_rate_y,      //  Magnetometer Y-Axis                 Precision: 1uT = 16 LSB
-	output reg [15:0]magneto_rate_z,      //  Magnetometer Z-Axis                 Precision: 1uT = 16 LSB
-	output reg [15:0]gyro_rate_x,         //  Gyroscope X-Axis                    Precision: Dps = 16 LSB
-	output reg [15:0]gyro_rate_y,         //  Gyroscope Y-Axis                    Precision: Dps = 16 LSB
-	output reg [15:0]gyro_rate_z,         //  Gyroscope Z-Axis                    Precision: Dps = 16 LSB
-	output reg [15:0]euler_angle_x,       //  Euler angle X-Axis                  Precision: Deg = 16 LSB
-	output reg [15:0]euler_angle_y,       //  Euler angle Y-Axis                  Precision: Deg = 16 LSB
-	output reg [15:0]euler_angle_z,       //  Euler angle Z-Axis                  Precision: Deg = 16 LSB
-	output reg [15:0]quaternion_data_w,   //  Quaternion X-Axis                   Precision: Unit = 2^14 LSB
-	output reg [15:0]quaternion_data_x,   //  Quaternion X-Axis                   Precision: Unit = 2^14 LSB
-	output reg [15:0]quaternion_data_y,   //  Quaternion Y-Axis                   Precision: Unit = 2^14 LSB
-	output reg [15:0]quaternion_data_z,   //  Quaternion Z-Axis                   Precision: Unit = 2^14 LSB
-	output reg [15:0]linear_accel_x,      //  Linear Acceleration X-Axis          Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]linear_accel_y,      //  Linear Acceleration Y-Axis          Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]linear_accel_z,      //  Linear Acceleration Z-Axis          Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]gravity_accel_x,     //  Gravitational Acceleration X-Axis   Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]gravity_accel_y,     //  Gravitational Acceleration Y-Axis   Precision: 1 m/s^2 = 100 LSB
-	output reg [15:0]gravity_accel_z,     //  Gravitational Acceleration Z-Axis   Precision: 1 m/s^2 = 100 LSB
-	output reg [7:0]temperature,          //  Temperature in degrees Celsius      Precision: 1 Deg C = 1 LSB
-	output reg [7:0]calib_status,         //  Calibration status register
-	output reg [15:0]x_velocity,          //  Linear velocity in the X direction, one byte signed integer
-	output reg [15:0]y_velocity,          //  Linear velocity in the Y direction, one byte signed integer
-	output reg [15:0]z_velocity,           //  Linear velocity in the Z direction, one byte signed integer
+	output wire rstn_imu,              
+	output reg  imu_good,              
+	output reg  valid_strobe,          
+	output reg [15:0]accel_rate_x,     
+	output reg [15:0]accel_rate_y,     
+	output reg [15:0]accel_rate_z,     
+	output reg [15:0]magneto_rate_x,   
+	output reg [15:0]magneto_rate_y,   
+	output reg [15:0]magneto_rate_z,   
+	output reg [15:0]gyro_rate_x,      
+	output reg [15:0]gyro_rate_y,      
+	output reg [15:0]gyro_rate_z,      
+	output reg [15:0]euler_angle_x,    
+	output reg [15:0]euler_angle_y,    
+	output reg [15:0]euler_angle_z,    
+	output reg [15:0]quaternion_data_w,
+	output reg [15:0]quaternion_data_x,
+	output reg [15:0]quaternion_data_y,
+	output reg [15:0]quaternion_data_z,
+	output reg [15:0]linear_accel_x,   
+	output reg [15:0]linear_accel_y,   
+	output reg [15:0]linear_accel_z,   
+	output reg [15:0]gravity_accel_x,  
+	output reg [15:0]gravity_accel_y,  
+	output reg [15:0]gravity_accel_z,  
+	output reg [7:0]temperature,       
+	output reg [7:0]calib_status,      
+	output reg [15:0]x_velocity,       
+	output reg [15:0]y_velocity,       
+	output reg [15:0]z_velocity,       
 	output reg rx_data_latch_strobe
-
 );
 
 	reg  read_write_in, next_read_write_in;           //  Value and next value of signal to i2c module to indicate read or write transaction, 1 = read, 0 = write
@@ -72,7 +121,7 @@ module bno055_driver #(
 	reg  [7:0]next_data_tx;                           //  Data written to registers for this command
 	reg  [6:0]slave_address;                          //  Slave address to access
 	reg  [6:0]next_slave_address;                     //  Next value of slave address
-	reg  [`BNO055_STATE_BITS-1:0]bno055_state /* synthesis syn_encoding = "one-hot" */ ; //  State for bno055 command sequence FSM
+	reg  [`BNO055_STATE_BITS-1:0]bno055_state;        //  State for bno055 command sequence FSM
 	reg  [`BNO055_STATE_BITS-1:0]next_bno055_state;   //  Next FSM state
 	reg  [`BNO055_STATE_BITS-1:0]return_state;        //  FSM return state from i2c sub state
 	reg  [`BNO055_STATE_BITS-1:0]next_return_state;   //  Next value for FSM return state
@@ -304,9 +353,8 @@ module bno055_driver #(
 			set_calibration_data_values();
 		end
 	end
-//--------------------------------------------------------------------------------------------------------------------//
-/// For debug testing, write data to external i2c device, Arduino to validate measurements
-//--------------------------------------------------------------------------------------------------------------------//
+
+	//Increment calibration restore index and calibration register address by 1 or clear back to initial values
 	always@(posedge sys_clk) begin
 		if( ~clear_cal_restore_index) begin
 			cal_reg_addr      <= `BNO055_ACCEL_OFFSET_X_LSB_ADDR;
@@ -321,9 +369,7 @@ module bno055_driver #(
 			cal_restore_index <= cal_restore_index;
 		end
 	end
-//--------------------------------------------------------------------------------------------------------------------//
-// end of debug stuff
-//--------------------------------------------------------------------------------------------------------------------//
+
 
 	//  Advance state and registered data at each positive clock edge
 	always@(posedge sys_clk, negedge rstn) begin
