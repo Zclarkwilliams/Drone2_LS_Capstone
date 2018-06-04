@@ -13,14 +13,12 @@
  *			  period of 20ms and a duty cycle rangeing between ~5% to ~10% which equals ~1ms to ~2ms.
  *
  * Outputs:
- * (Values between 0 and 2^(PWM_VALUE_BIT_WIDTH-1) that correspond to a 1ms to 2ms pwm signal)
- * @throttle_val: mapped from 1ms-2ms pwm signal to PWM_VALUE_BIT_WIDTH value
- * @yaw_val: mapped from 1ms-2ms pwm signal to PWM_VALUE_BIT_WIDTH value
- * @roll_val: mapped from 1ms-2ms pwm signal to PWM_VALUE_BIT_WIDTH value
- * @pitch_val: mapped from 1ms-2ms pwm signal to PWM_VALUE_BIT_WIDTH value
+ * @throttle_val: Value between 0 and 2^(PWM_VALUE_BIT_WIDTH-1 that corresponds to between 1ms and 2ms pwm
+ * @yaw_val: Value between 0 and 2^(PWM_VALUE_BIT_WIDTH-1 that corresponds to between 1ms and 2ms pwm
+ * @roll_val: Value between 0 and 2^(PWM_VALUE_BIT_WIDTH-1 that corresponds to between 1ms and 2ms pwm
+ * @pitch_val: Value between 0 and 2^(PWM_VALUE_BIT_WIDTH-1 that corresponds to between 1ms and 2ms pwm
  *
  * Inputs:
- * (pwm pulses range from 1ms-2ms)
  * @throttle_pwm: from the hardware receiver (duty cycle between ~5% and 10%)
  * @yaw_pwm: from the hardware receiver (duty cycle between ~5% and 10%)
  * @roll_pwm: from the hardware receiver (duty cycle between ~5% and 10%)

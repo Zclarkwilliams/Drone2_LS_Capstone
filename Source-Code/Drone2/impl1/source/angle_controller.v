@@ -9,33 +9,27 @@
  */
  
 /**
- * Inputs:
- * (Target rates/angles are from the receiver module)
- * @throttle_target: 8-bit target rate from receiver module ranging from 0-250
- * @yaw_target: 8-bit target rate from receiver module ranging from 0-250
- * @pitch_target: 8-bit target angle from receiver module ranging from 0-250
- * @roll_target: 8-bit target angle from receiver module  ranging from 0-250
- * (Actual rates/angles are from the bno55_driver(IMU))
- * @yaw_actual: 16-bit, 2's complement fixed point [s11.4] actual rate in degrees
- * @pitch_actual: 16-bit, 2's complement fixed point [s11.4] actual rate in degrees
- * @roll_actual: 16-bit, 2's complement fixed point [s11.4] actual rate in degrees
+ *  Module takes as inputs:
+ *		- Target rate & angles from the receiver module
+ * 		- 8-bit values
+ * 		- The throttle represents a rate, from 0 to max (???)
+ * 		- The yaw is a rate, from  a negative min to a positive max
+ * 		- The pitch and roll represent target angles (degrees)
+ * 	- Actual pitch and roll angles from the IMU
+ * 		- Represent degrees
+ * 		- In 16-bit, 2's complement, 12-bits integer, 4-bits fractional
  *
- * Outputs:
- * (Output rates are represented as 16-bit, 2's complement fixed point [s11.4])
- * @throttle_rate_out: limited to rate (>= 0) and represented as a scalar
- * @yaw_rate_out: limited yaw rate in degrees/second
- * @pitch_rate_out: limited pitch rate in degrees/second
- * @roll_rate_out: limited roll rate in degrees/second
- * (Output errors are represented as 16-bit, 2's complement fixed point [s11.4])
- * @pitch_angle_error: difference between the target and actual scaled
- * @roll_angle_error: difference between the target and actual scaled
- * (Signals used for module synchronization)
- * @complete_signal: Set high when the most recent calculation is done
- * @active_signal: Set high when currently calculating the next outputs
+ * Module provides as output (all values are 16-bit, 2's complement):
+ *		- Limited throttle rate (>= 0)
+ *		- Limited yaw, pitch, and roll rates
+ * 	- Represent degrees/second
+ *
  * TODO:
+ *		Change non-blocking to blocking
  *		Clean up defines/localparams
  *		Rate limits???
  *		Optimize resource usage?
+ *		Update this header description to look like other files
  */
 `timescale 1ns / 1ns
 
