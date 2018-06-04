@@ -85,3 +85,4 @@ IOBUF PORT "imu_data_valid_monitor" IO_TYPE=LVCMOS33 ;
 IOBUF PORT "ac_active" IO_TYPE=LVCMOS33 ;
 LOCATE COMP "ac_active" SITE "D2" ;
 LOCATE COMP "rx_data_latch_strobe" SITE "C1" ;
+IOBUF PORT "rstn_imu" IO_TYPE=LVCMOS33 PULLMODE=UP ;
