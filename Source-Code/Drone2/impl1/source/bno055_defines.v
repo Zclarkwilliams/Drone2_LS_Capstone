@@ -1,7 +1,11 @@
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
 
 /**
@@ -450,18 +454,18 @@ Total: 46 bytes
 `define BNO055_STATE_BOOT_WAIT           2
 
 `define BNO055_STATE_READ_CHIP_ID        3
-`define BNO055_STATE_SET_EXT_CRYSTAL     4
-`define BNO055_STATE_SET_UNITS           5
-`define BNO055_STATE_SET_POWER_MODE      6
-`define BNO055_STATE_CAL_RESTORE_DATA    7
-`define BNO055_STATE_CAL_RESTORE_START   8
-`define BNO055_STATE_CAL_RESTORE_WAIT    9
-`define BNO055_STATE_CAL_RESTORE_STOP    10
-`define BNO055_STATE_CAL_RESTORE_AGAIN   11
+`define BNO055_STATE_SET_UNITS           4
+`define BNO055_STATE_SET_POWER_MODE      5
+`define BNO055_STATE_CAL_RESTORE_DATA    6
+`define BNO055_STATE_CAL_RESTORE_START   7
+`define BNO055_STATE_CAL_RESTORE_WAIT    8
+`define BNO055_STATE_CAL_RESTORE_STOP    9
+`define BNO055_STATE_CAL_RESTORE_AGAIN   10
+`define BNO055_STATE_SET_EXT_CRYSTAL     11
 `define BNO055_STATE_SET_RUN_MODE        12
 `define BNO055_STATE_WAIT_20MS           13
 `define BNO055_STATE_READ_IMU_DATA_BURST 14
-`define BNO055_STATE_WAIT_10MS           15
+`define BNO055_STATE_WAIT_IMU_POLL_TIME  15
 
 
 `define BNO055_SUB_STATE_START           16

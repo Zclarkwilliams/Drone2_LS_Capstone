@@ -1,7 +1,11 @@
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
 
 /**
@@ -43,37 +47,43 @@
 
 `define MOTOR_RATE_BIT_WIDTH 4'd8
 
+`define REC_VAL_BIT_WIDTH	4'd8	// Sized to hold outputs of receiver
+`define PID_RATE_BIT_WIDTH	5'd16	// Sized to hold values from body frame controller
+`define	RATE_BIT_WIDTH		5'd16	// Sized to hold values from the angle controller
+`define IMU_VAL_BIT_WIDTH	5'd16	// Sized to hold values from the bno055_driver
+
 // Default values (on reset or error) for pwm pulse high values in microseconds
 `define THROTTLE_DEFAULT_PULSE_TIME_HIGH_US  16'd1000
 `define YAW_DEFAULT_PULSE_TIME_HIGH_US		 16'd1500
 `define ROLL_DEFAULT_PULSE_TIME_HIGH_US		 16'd1500
 `define PITCH_DEFAULT_PULSE_TIME_HIGH_US	 16'd1500
+`define AUX1_DEFAULT_PULSE_TIME_HIGH_US	 	 16'd1500
+`define AUX2_DEFAULT_PULSE_TIME_HIGH_US	 	 16'd1500
+`define SWAB_DEFAULT_PULSE_TIME_HIGH_US	 	 16'd1500
 
-/*	Motor_Rate Module Defines:
+/************************************************************ *
+ *	Motor_Rate Module Defines:
  *
- *	All values assigned below are initially arbitrary and
- *	must be tested and adjusted appropriately
- */
+ ************************************************************/
 
 //	Min and Max boundary values for to send to ESC's
-`define MOTOR_VAL_MIN					16'h0002
-`define MOTOR_VAL_MAX					16'h03E8
+`define MOTOR_VAL_MIN					$signed(16'h0020)
+`define MOTOR_VAL_MAX					$signed(16'h0FA0)
 
 //	Bias to add as a buffer to the motor equation
 `define	MOTOR_1_RATE_BIAS				 	$signed(16'h0000)
 `define	MOTOR_2_RATE_BIAS				 	$signed(16'h0000)
-`define	MOTOR_3_RATE_BIAS				 	$signed(16'hFFF0)
+`define	MOTOR_3_RATE_BIAS				 	$signed(16'h0000)
 `define	MOTOR_4_RATE_BIAS				 	$signed(16'h0000)
 
 //	Scaler to set proportions of yaw, roll, and pitch
 //  Shift to change impact of roll, pitch, and yaw
-`define MOTOR_RATE_YAW_SCALER			  2
-`define MOTOR_RATE_ROLL_SCALER			2
-`define MOTOR_RATE_PITCH_SCALER			2
+`define MOTOR_RATE_YAW_SCALER			1
+`define MOTOR_RATE_ROLL_SCALER			1
+`define MOTOR_RATE_PITCH_SCALER			1
 
 //	Mapping 16 bit motor rate output to 8 bit value for pwm conversion
 `define MAPPING_SHIFT_8BIT				8
 
 //	Value to add to value before bit shift rounding to help rounding error
 `define MOTOR_RATE_ROUND_UP_VAL 		8'd127
-

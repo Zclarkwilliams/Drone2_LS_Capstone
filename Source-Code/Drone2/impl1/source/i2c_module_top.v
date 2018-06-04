@@ -1,7 +1,11 @@
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
 
 `timescale 1ns / 1ns
@@ -46,7 +50,7 @@ module i2c_module(
 	reg  [(`I2C_STATE_BITS-1):0]next_i2c_cmd_state; //  Module FSM NEXT state
 	reg  [11:0]count_us;                            //  Count from 0 to value determined by clock rate, used to generate 1us delay trigger
 	reg  clear_waiting_us;                          //  Start multi-us counter from pre-set start value
-	reg  [23:0]count_wd_delay ;                     //  Countdown watchdog timer for hardware reset
+	reg  [31:0]count_wd_delay ;                     //  Countdown watchdog timer for hardware reset
 	reg  wd_event_active;                           //  The current WD event state, active indicates a watchdog fault
 	reg  clear_watchdog;                            //  Reset watchdog to max value
 	wire irq1_out, irq2_out;                        //  IRQ output from EFB i2c modules
@@ -122,17 +126,17 @@ module i2c_module(
 			count_us       <= count_us;
 	end
 
-	//  Generates a 30 ms watchdog timer
+	//  Generates a 60 ms watchdog timer
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn) begin
-			count_wd_delay  <= 24'hFFFFFF;
+			count_wd_delay  <= 32'hFFFFFFFF;
 			wd_event_active <= `FALSE;
 		end
 		else if ( (clear_watchdog  == `CLEAR_WD_TIMER) || (~rstn_imu) ) begin //If IMU is being rest keep WD from running
-			count_wd_delay <= (`WAIT_MS_DIVIDER*8'd30);
+			count_wd_delay <= (`WAIT_MS_DIVIDER*60);
 			wd_event_active <= `FALSE;
 		end
-		else if( count_wd_delay != 24'hFFFFFF  ) begin
+		else if( count_wd_delay != 32'hFFFFFFFF  ) begin
 			count_wd_delay <= (count_wd_delay - 1'b1);
 			wd_event_active <= `FALSE;
 		end

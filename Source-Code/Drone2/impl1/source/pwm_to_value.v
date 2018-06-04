@@ -1,9 +1,11 @@
-`timescale 1ns / 1ns
-
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
 
 /**
@@ -17,6 +19,7 @@
  * @pwm_time_high_us: value between MIN_PWM_TIME_HIGH_US and MAX_PWM_TIME_HIGH_US
  * @us_clk: output is updated on every positive edge of the input clock
  */
+`timescale 1ns / 1ns
 
 `include "common_defines.v"
 

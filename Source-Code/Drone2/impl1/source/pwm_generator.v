@@ -1,9 +1,11 @@
-`timescale 1ns/1ns
-
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
+ * Ethan Grinnell, 
+ * Brett Creeley, 
+ * Daniel Christiansen, 
+ * Kirk Hooper, 
+ * Zachary Clark-Williams
  */
 
 /**
@@ -21,34 +23,34 @@
  * @motor_3_rate: rate to run motor 3 at (units?)
  * @motor_4_rate: rate to run motor 4 at (units?)
  */
-
+`timescale 1ns/1ns
 `include "common_defines.v"
 
-module pwm_generator #(parameter INPUT_BIT_WIDTH = 8)
-					  (output wire motor_1_pwm,
-					   output wire motor_2_pwm,
-					   output wire motor_3_pwm,
-					   output wire motor_4_pwm,
-					   output wire [2:0] state_out,
-					   input wire [INPUT_BIT_WIDTH - 1:0] motor_1_rate,
-					   input wire [INPUT_BIT_WIDTH - 1:0] motor_2_rate,
-					   input wire [INPUT_BIT_WIDTH - 1:0] motor_3_rate,
-					   input wire [INPUT_BIT_WIDTH - 1:0] motor_4_rate,
-					   input wire resetn,
-					   input wire us_clk);
+module pwm_generator (
+	output wire motor_1_pwm,
+	output wire motor_2_pwm,
+	output wire motor_3_pwm,
+	output wire motor_4_pwm,
+	//output wire [2:0] state_out,
+	input wire [`MOTOR_RATE_BIT_WIDTH - 1:0] motor_1_rate,
+	input wire [`MOTOR_RATE_BIT_WIDTH - 1:0] motor_2_rate,
+	input wire [`MOTOR_RATE_BIT_WIDTH - 1:0] motor_3_rate,
+	input wire [`MOTOR_RATE_BIT_WIDTH - 1:0] motor_4_rate,
+	input wire resetn,
+	input wire us_clk);
 
 	// Internal counters
 
 	reg [15:0] period_counter;
-	reg [INPUT_BIT_WIDTH + 1:0] high_counter;
+	reg [`MOTOR_RATE_BIT_WIDTH + 1:0] high_counter;
 	reg high_counter_en;
 
 	// Latched PWM values
-	reg [INPUT_BIT_WIDTH + 1:0] m1_rate, m2_rate, m3_rate, m4_rate;
+	reg [`MOTOR_RATE_BIT_WIDTH + 1:0] m1_rate, m2_rate, m3_rate, m4_rate;
 
 	// PWM gen blocks
 	pwm_generator_block pwm1 (
-		.state_out(state_out),
+		//.state_out(state_out),
 		.motor_pwm(motor_1_pwm),
 		.motor_val(m1_rate),
 		.period_counter(period_counter),
