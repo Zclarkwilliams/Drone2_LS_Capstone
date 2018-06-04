@@ -15,7 +15,7 @@
 `include "bno055_defines.v"
 
 module bno055_driver #(
-	parameter INIT_TIME = 12'd650
+	parameter INIT_TIME = 15'd650
 )
 (
 	inout wire scl_1,                     //  I2C EFB #1 SDA wire
@@ -77,8 +77,8 @@ module bno055_driver #(
 	reg  [`BNO055_STATE_BITS-1:0]return_state;        //  FSM return state from i2c sub state
 	reg  [`BNO055_STATE_BITS-1:0]next_return_state;   //  Next value for FSM return state
 	reg  [31:0]count_ms;                              //  Count from 0 to value determined by clock rate, used to generate N ms delay trigger
-	reg  [11:0]wait_ms;                               //  The number of mS to wait in delay loop
-	reg  [11:0]next_wait_ms;                          //  The next latched value of wait mS
+	reg  [15:0]wait_ms;                               //  The number of mS to wait in delay loop
+	reg  [15:0]next_wait_ms;                          //  The next latched value of wait mS
 	reg  clear_waiting_ms;                            //  Reset waiting X ms timer.
 	reg  [5:0]target_read_count;                      //  The number of bytes to access for a read command (Writes are always for a single byte)
 	reg  [5:0]next_target_read_count;                 //  Next value of target_read_count
@@ -421,7 +421,7 @@ module bno055_driver #(
 					clear_waiting_ms   = `RUN_MS_TIMER;
 					next_bno055_state  = `BNO055_STATE_BOOT_WAIT;
 					next_slave_address = `BNO055_SLAVE_ADDRESS;
-					if((~busy) && (count_ms[27] == 1'b1) ) // Wait for i2c to be in not busy state and count_ms wrapped around to 0x3FFFFFF
+					if((~busy) && (count_ms[31] == 1'b1) ) // Wait for i2c to be in not busy state and count_ms wrapped around to 0x3FFFFFF
 						next_bno055_state = `BNO055_STATE_READ_CHIP_ID;
 				end
 				`BNO055_STATE_READ_CHIP_ID: begin //  Page 0
@@ -444,7 +444,7 @@ module bno055_driver #(
 					next_return_state  = `BNO055_STATE_SET_POWER_MODE;
 					next_data_reg      = `BNO055_UNIT_SEL_ADDR;
 					// This line Modified from Adafruit Bosch BNO055 Arduino driver code, downloaded from: https://github.com/adafruit/Adafruit_BNO055
-					next_data_tx       = ((1 << 7) |  // Orientation = Windows - Range (Windows format) -180° to +180° corresponds with turning clockwise and increases values
+					next_data_tx       = ((1 << 7) |  // Orientation = Windows - Range (Windows format) -180Â° to +180Â° corresponds with turning clockwise and increases values
 										 ( 0 << 4) |  // Temperature = Celsius
 										 ( 0 << 2) |  // Euler = Degrees
 										 ( 0 << 1) |  // Gyro = Degrees/Sec
