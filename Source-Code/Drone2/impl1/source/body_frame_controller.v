@@ -42,16 +42,15 @@ module body_frame_controller (
 	output wire signed [`PID_RATE_BIT_WIDTH-1:0] roll_rate_out,
 	output wire signed [`PID_RATE_BIT_WIDTH-1:0] pitch_rate_out,
 	output reg complete_signal,
-	// Debug led output wire
-	output wire [15:0] DEBUG_WIRE,
-	input wire signed [`RATE_BIT_WIDTH-1:0] yaw_target,
-	input wire signed [`RATE_BIT_WIDTH-1:0] roll_target,
-	input wire signed [`RATE_BIT_WIDTH-1:0] pitch_target,
-	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] roll_rotation,
-	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] pitch_rotation,
-	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] yaw_rotation,
-	input wire signed [`RATE_BIT_WIDTH-1:0] roll_angle_error,
-	input wire signed [`RATE_BIT_WIDTH-1:0] pitch_angle_error,
+	output wire [`DEBUG_WIRE_BIT_WIDTH-1:0] DEBUG_WIRE, /*DEBUG LEDs*/
+	input wire signed [`RATE_BIT_WIDTH-1:0] 	yaw_target,
+	input wire signed [`RATE_BIT_WIDTH-1:0] 	roll_target,
+	input wire signed [`RATE_BIT_WIDTH-1:0] 	pitch_target,
+	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] 	roll_rotation,
+	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] 	pitch_rotation,
+	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] 	yaw_rotation,
+	input wire signed [`RATE_BIT_WIDTH-1:0]		roll_angle_error,
+	input wire signed [`RATE_BIT_WIDTH-1:0] 	pitch_angle_error,
 	input wire start_signal,
 	input wire resetn,
 	input wire us_clk);
@@ -62,15 +61,16 @@ module body_frame_controller (
 
 	// working registers
 	reg wait_flag, start_flag;
-	reg signed [`RATE_BIT_WIDTH-1:0]	 latched_yaw_target;
-	reg signed [`RATE_BIT_WIDTH-1:0]	 latched_roll_target;
-	reg signed [`RATE_BIT_WIDTH-1:0]	 latched_pitch_target;
+	reg signed [`RATE_BIT_WIDTH-1:0]	latched_yaw_target;
+	reg signed [`RATE_BIT_WIDTH-1:0]	latched_roll_target;
+	reg signed [`RATE_BIT_WIDTH-1:0]	latched_pitch_target;
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] latched_yaw_rotation;
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] latched_roll_rotation;
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] latched_pitch_rotation;
-	reg signed [`RATE_BIT_WIDTH-1:0]	 latched_roll_angle_error;
-	reg signed [`RATE_BIT_WIDTH-1:0]	 latched_pitch_angle_error;
-
+	reg signed [`RATE_BIT_WIDTH-1:0]	latched_roll_angle_error;
+	reg signed [`RATE_BIT_WIDTH-1:0]	latched_pitch_angle_error;
+	
+	localparam STATE_BIT_WIDTH = 3'd4;
 	// state names
 	localparam
 		STATE_WAITING  = 4'b0001,
@@ -79,63 +79,67 @@ module body_frame_controller (
 		STATE_COMPLETE = 4'b1000;
 
 	// PID controller rate limiting values
-	localparam signed ROLL_RATE_MIN  = 16'hF060;
-	localparam signed ROLL_RATE_MAX  = 16'h0FA0;
-	localparam signed PITCH_RATE_MIN = 16'hF060;
-	localparam signed PITCH_RATE_MAX = 16'h0FA0;
-	localparam signed YAW_RATE_MIN   = 16'hF060;
-	localparam signed YAW_RATE_MAX   = 16'h0FA0;
+	localparam signed 
+		ROLL_RATE_MIN  = -16'd4000,
+		ROLL_RATE_MAX  =  16'd4000,
+		PITCH_RATE_MIN = -16'd4000,
+		PITCH_RATE_MAX =  16'd4000,
+		YAW_RATE_MIN   = -16'd4000,
+		YAW_RATE_MAX   =  16'd4000;
 
 	/* PID controller proportional/integral/derivative constant values.
 	 * These are determined by first multiplying the value by the specific
 	 * K_* term and then shifting it using the K_*_SHIFT value.
 	 * Example: value = (value * ROLL_K_P) >>> ROLL_K_P_SHIFT;
-	 */
-	localparam ROLL_K_P			= 16'h0004;
-	localparam ROLL_K_P_SHIFT	= 4'h4;
-	localparam ROLL_K_I			= 16'h0000;
-	localparam ROLL_K_I_SHIFT	= 4'h4;
-	localparam ROLL_K_D			= 16'h0001;
-	localparam ROLL_K_D_SHIFT	= 4'h4;
-	localparam PITCH_K_P		= 16'h0004;
-	localparam PITCH_K_P_SHIFT 	= 4'h4;
-	localparam PITCH_K_I		= 16'h0000;
-	localparam PITCH_K_I_SHIFT  = 4'h4;
-	localparam PITCH_K_D		= 16'h0001;
-	localparam PITCH_K_D_SHIFT 	= 4'h4;
-	localparam YAW_K_P			= 16'h001F;
-	localparam YAW_K_P_SHIFT	= 4'h4;
-	localparam YAW_K_I			= 16'h0000;
-	localparam YAW_K_I_SHIFT	= 4'h4;
-	localparam YAW_K_D			= 16'h0004;
-	localparam YAW_K_D_SHIFT	= 4'h4;
+	 */	
+	 localparam signed // YAW CONTROL PARAMS
+		YAW_K_P			= 16'h001F,
+		YAW_K_P_SHIFT	= 4'h4,
+		YAW_K_I			= 16'h0000,
+		YAW_K_I_SHIFT	= 4'h4,
+		YAW_K_D			= 16'h0004,
+		YAW_K_D_SHIFT	= 4'h4;
+	localparam signed // ROLL CONTROL PARAMS
+		ROLL_K_P		= 16'h0004,
+		ROLL_K_P_SHIFT	= 4'h4,
+		ROLL_K_I		= 16'h0000,
+		ROLL_K_I_SHIFT	= 4'h4,
+		ROLL_K_D		= 16'h0001,
+		ROLL_K_D_SHIFT	= 4'h4;
+	localparam signed // PITCH CONTROL PARAMS
+		PITCH_K_P		= 16'h0004,
+		PITCH_K_P_SHIFT = 4'h4,
+		PITCH_K_I		= 16'h0000,
+		PITCH_K_I_SHIFT = 4'h4,
+		PITCH_K_D		= 16'h0001,
+		PITCH_K_D_SHIFT = 4'h4;
 
 	// state variables
-	reg [3:0] state, next_state;
+	reg [STATE_BIT_WIDTH-1:0] state, next_state;
 
 	// debug wires
-	wire [15:0] DEBUG_WIRE_YAW, DEBUG_WIRE_ROLL, DEBUG_WIRE_PITCH;
-	assign DEBUG_WIRE = (!resetn) ? 16'h0 : DEBUG_WIRE_PITCH;
+	wire [`DEBUG_WIRE_BIT_WIDTH-1:0] DEBUG_WIRE_YAW, DEBUG_WIRE_ROLL, DEBUG_WIRE_PITCH;
+	assign DEBUG_WIRE = (!resetn) ? 16'hA0A0 : DEBUG_WIRE_PITCH;
 
 	// latch start signal and target/actual rotational angles
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
-			start_flag					<= 1'b0;
+			start_flag					<= `FALSE;
 
 			// Angle rates from the angle_controller
-			latched_yaw_target			<= 16'h0000;
-			latched_roll_target			<= 16'h0000;
-			latched_pitch_target		<= 16'h0000;
-			latched_roll_angle_error	<= 16'h0000;
-			latched_pitch_angle_error	<= 16'h0000;
+			latched_yaw_target			<= `ALL_ZERO_2BYTE;
+			latched_roll_target			<= `ALL_ZERO_2BYTE;
+			latched_pitch_target		<= `ALL_ZERO_2BYTE;
+			latched_roll_angle_error	<= `ALL_ZERO_2BYTE;
+			latched_pitch_angle_error	<= `ALL_ZERO_2BYTE;
 
 			// Angle rates from the imu
-			latched_yaw_rotation		<= 16'h0000;
-			latched_roll_rotation		<= 16'h0000;
-			latched_pitch_rotation		<= 16'h0000;
+			latched_yaw_rotation		<= `ALL_ZERO_2BYTE;
+			latched_roll_rotation		<= `ALL_ZERO_2BYTE;
+			latched_pitch_rotation		<= `ALL_ZERO_2BYTE;
 		end
 		else if(start_signal && !start_flag) begin
-			start_flag					<= 1'b1;
+			start_flag					<= `TRUE;
 			latched_yaw_target			<= yaw_target;
 			latched_roll_target			<= roll_target;
 			latched_pitch_target		<= pitch_target;
@@ -143,14 +147,13 @@ module body_frame_controller (
 			latched_pitch_angle_error	<= pitch_angle_error;
 
 			// Angle rates from the imu
-	 		// TODO: Should we limit rates from IMU?
-			latched_yaw_rotation		<= ~yaw_rotation + 1'b1;
+			latched_yaw_rotation		<= ~yaw_rotation + `ONE;
 			latched_roll_rotation		<= roll_rotation;
-			latched_pitch_rotation		<= ~pitch_rotation + 1'b1;
+			latched_pitch_rotation		<= ~pitch_rotation + `ONE;
 
 		end
 		else if(!start_signal && start_flag) begin
-			start_flag					<= 1'b0;
+			start_flag					<= `FALSE;
 			latched_yaw_target	 		<= latched_yaw_target;
 			latched_roll_target			<= latched_roll_target;
 			latched_pitch_target		<= latched_pitch_target;
@@ -181,7 +184,6 @@ module body_frame_controller (
 			state <= next_state;
 	end
 
-
 	// next state logic
 	always @(*) begin
     	if(!resetn) begin
@@ -191,28 +193,28 @@ module body_frame_controller (
   			case (state)
   				STATE_WAITING: begin
   					if(start_flag)
-  						next_state = STATE_STARTING;
+  						next_state	= STATE_STARTING;
   					else
-  						next_state = STATE_WAITING;
+  						next_state	= STATE_WAITING;
   				end
   				STATE_STARTING: begin
   					if((yaw_active) && (pitch_active) && (roll_active))
-  						next_state = STATE_ACTIVE;
+  						next_state	= STATE_ACTIVE;
   					else
-  						next_state = STATE_STARTING;
+  						next_state	= STATE_STARTING;
   				end
   				STATE_ACTIVE: begin
   					if((yaw_complete) && (pitch_complete) && (roll_complete))
-  						next_state = STATE_COMPLETE;
+  						next_state	= STATE_COMPLETE;
   					else
-  						next_state = STATE_ACTIVE;
+  						next_state	= STATE_ACTIVE;
   				end
   				STATE_COMPLETE: begin
-  					next_state = STATE_WAITING;
+  					next_state		= STATE_WAITING;
   				end
-    	    default: begin
-    	      next_state = STATE_WAITING;
-    	    end
+				default: begin
+				  next_state 		= STATE_WAITING;
+				end
   			endcase
     	end
 	end
@@ -221,24 +223,24 @@ module body_frame_controller (
 	always @(state) begin
 		case(state)
 			STATE_WAITING: begin
-				wait_flag = 1'b1;
-				complete_signal = 1'b0;
+				wait_flag 		<= `TRUE;
+				complete_signal <= `FALSE;
 			end
 			STATE_STARTING: begin
-				wait_flag = 1'b0;
-				complete_signal = 1'b0;
+				wait_flag 		<= `FALSE;
+				complete_signal <= `FALSE;
 			end
 			STATE_ACTIVE: begin
-				wait_flag = 1'b0;
-				complete_signal = 1'b0;
+				wait_flag 		<= `FALSE;
+				complete_signal <= `FALSE;
 			end
 			STATE_COMPLETE: begin
-				wait_flag = 1'b0;
-				complete_signal = 1'b1;
+				wait_flag 		<= `FALSE;
+				complete_signal <= `TRUE;
 			end
 			default: begin
-				wait_flag = 1'b1;
-				complete_signal = 1'b0;
+				wait_flag 		<= `TRUE;
+				complete_signal <= `FALSE;
 			end
 		endcase
 	end
@@ -254,13 +256,16 @@ module body_frame_controller (
 		.K_I(YAW_K_I),
 		.K_D(YAW_K_D))
 	yaw_pid (
-		.DEBUG_WIRE(DEBUG_WIRE_YAW),
+		// Output
 		.rate_out(yaw_rate_out),
 		.pid_complete(yaw_complete),
 		.pid_active(yaw_active),
+		// DEBUG LEDs
+		.DEBUG_WIRE(DEBUG_WIRE_YAW),
+		// Input
 		.target_rotation(latched_yaw_target),
 		.actual_rotation(latched_yaw_rotation),
-		.angle_error(16'h0000),
+		.angle_error(`ALL_ZERO_2BYTE),
 		.start_flag(start_flag),
 		.wait_flag(wait_flag),
 		.resetn(resetn),
@@ -276,10 +281,13 @@ module body_frame_controller (
 		.K_I(PITCH_K_I),
 		.K_D(PITCH_K_D))
 	pitch_pid (
-		.DEBUG_WIRE(DEBUG_WIRE_PITCH),
+		// Output
 		.rate_out(pitch_rate_out),
 		.pid_complete(pitch_complete),
 		.pid_active(pitch_active),
+		// DEBUG LEDs
+		.DEBUG_WIRE(DEBUG_WIRE_PITCH),
+		// Input
 		.target_rotation(latched_pitch_target),
 		.actual_rotation(latched_pitch_rotation),
 		.angle_error(latched_pitch_angle_error),
@@ -298,10 +306,13 @@ module body_frame_controller (
 		.K_I(ROLL_K_I),
 		.K_D(ROLL_K_D))
 	roll_pid (
-		.DEBUG_WIRE(DEBUG_WIRE_ROLL),
+		// Output
 		.rate_out(roll_rate_out),
 		.pid_complete(roll_complete),
 		.pid_active(roll_active),
+		// DEBUG LEDs
+		.DEBUG_WIRE(DEBUG_WIRE_ROLL),
+		// Input
 		.target_rotation(latched_roll_target),
 		.actual_rotation(latched_roll_rotation),
 		.angle_error(latched_roll_angle_error),
@@ -309,6 +320,4 @@ module body_frame_controller (
 		.wait_flag(wait_flag),
 		.resetn(resetn),
 		.us_clk(us_clk));
-
 endmodule
-

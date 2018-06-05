@@ -31,9 +31,9 @@
  *	how the motors are reference, i.e. which one is 1, 2, 3, and 4. Below
  *	is an image of the motor referencing numbers and thier spin direction.
  *
- *		 		   | <-----			 -----> |
- *		 		   | Motor_1		Motor_2 |
- *		 		   V 	\			  /     V
+ *		 		    ----->  |	  | <----- 
+ *		 		    Motor_1 |	  | Motor_2 
+ *		 		    	\   V	  V   /     
  *		 				 \			 /
  *		 				  \			/
  *		 				   /-------\
@@ -47,17 +47,14 @@
  *		 		  | Motor_4 	    Motor_3 |
  *		 		  V                			V
  *
- *		Motors_1 and Motor_4 will spin clockwise (CW)
- *		Motors_2 and Motor_3 will spin counter clockwise (CCW)
- *
- *		TODO Check that the motor spin rotation is correct
+ *		Motors_1 and Motor_2 will spin clockwise (CW)
+ *		Motors_2 and Motor_4 will spin counter clockwise (CCW)
  *
  *		Referenceing the image above the following equations are generated
- *			Motor_1 = bias + throttle + (-)yaw/2 + (+)roll/2 + (+)pitch/2
- *			Motor_2 = bias + throttle + (+)yaw/2 + (-)roll/2 + (+)pitch/2
- *			Motor_3 = bias + throttle + (-)yaw/2 + (-)roll/2 + (-)pitch/2
- *			Motor_4 = bias + throttle + (+)yaw/2 + (+)roll/2 + (-)pitch/2
- *
+ *			Motor_1 = motor_1_bias + throttle - yaw/2 + roll/2 + pitch/2
+ *			Motor_2 = motor_2_bias + throttle + yaw/2 - roll/2 + pitch/2
+ *			Motor_3 = motor_3_bias + throttle - yaw/2 - roll/2 - pitch/2
+ *			Motor_4 = motor_4_bias + throttle + yaw/2 + roll/2 - pitch/2
  */
 
 `timescale 1ns / 1ns
@@ -66,98 +63,113 @@
 module motor_mixer (
 	input  wire resetn,
 	input  wire sys_clk,
-	input wire signed [`RATE_BIT_WIDTH-1:0] yaw_rate,
-	input wire signed [`RATE_BIT_WIDTH-1:0] roll_rate,
-	input wire signed [`RATE_BIT_WIDTH-1:0] pitch_rate,
-	input wire signed [`RATE_BIT_WIDTH-1:0] throttle_rate,
-	output reg  [`MOTOR_RATE_BIT_WIDTH-1:0] motor_1_rate,
-	output reg  [`MOTOR_RATE_BIT_WIDTH-1:0] motor_2_rate,
-	output reg  [`MOTOR_RATE_BIT_WIDTH-1:0] motor_3_rate,
-	output reg  [`MOTOR_RATE_BIT_WIDTH-1:0] motor_4_rate);
+	input  wire signed [`RATE_BIT_WIDTH-1:0] yaw_rate,
+	input  wire signed [`RATE_BIT_WIDTH-1:0] roll_rate,
+	input  wire signed [`RATE_BIT_WIDTH-1:0] pitch_rate,
+	input  wire signed [`RATE_BIT_WIDTH-1:0] throttle_rate,
+	output reg  [`MOTOR_RATE_BIT_WIDTH-1:0]	 motor_1_rate,
+	output reg  [`MOTOR_RATE_BIT_WIDTH-1:0]  motor_2_rate,
+	output reg  [`MOTOR_RATE_BIT_WIDTH-1:0]  motor_3_rate,
+	output reg  [`MOTOR_RATE_BIT_WIDTH-1:0]  motor_4_rate);
 
 	/*	Params for states and state size	*/
-	localparam STATE_BIT_WIDTH = 2;
-	localparam [STATE_BIT_WIDTH-1:0]
-			STATE_SCALE_RATES		= 0,
-			//STATE_MOTOR_RATE_LIMIT 	= 1,
-			STATE_MOTOR_RATE_CALC 	= 1,
-			STATE_BOUNDARY_CHECK	= 2,
-			STATE_SEND_OUTPUT		= 3;
+	localparam [1:0]
+		STATE_SCALE_RATES		= 0,
+		STATE_MOTOR_RATE_CALC 	= 1,
+		STATE_BOUNDARY_CHECK	= 2,
+		STATE_SEND_OUTPUT		= 3;
+	reg [1:0] motor_mixer_state;
 
-	reg	 [STATE_BIT_WIDTH-1:0] motor_mixer_state;
+	//	Bias to add as a buffer to the motor equation
+	localparam signed 
+		MOTOR_1_RATE_BIAS		= 16'd0,
+		MOTOR_2_RATE_BIAS		= 16'd0,
+		MOTOR_3_RATE_BIAS		= 16'd0,
+		MOTOR_4_RATE_BIAS		= 16'd0;
+
+	//	Scaler to set proportions of yaw, roll, and pitch
+	//  Shift to change impact of roll, pitch, and yaw
+	localparam
+		MOTOR_RATE_YAW_SCALER 	= 1'd1,
+		MOTOR_RATE_ROLL_SCALER	= 1'd1,
+		MOTOR_RATE_PITCH_SCALER	= 1'd1;
 
 	/*	Motor specific variables per axis	*/
-	reg signed [`RATE_BIT_WIDTH-1:0] yaw_scale;
-	reg signed [`RATE_BIT_WIDTH-1:0] roll_scale;
-	reg signed [`RATE_BIT_WIDTH-1:0] pitch_scale;
-	reg	signed [`RATE_BIT_WIDTH-1:0] n_throttle_rate;
+	reg signed [`RATE_BIT_WIDTH-1:0] 
+		yaw_scale,
+		roll_scale,
+		pitch_scale,
+		n_throttle_rate;
 	
-	reg signed [`RATE_BIT_WIDTH-1:0] motor_1_offset;
-	reg signed [`RATE_BIT_WIDTH-1:0] motor_2_offset;
-	reg signed [`RATE_BIT_WIDTH-1:0] motor_3_offset;
-	reg signed [`RATE_BIT_WIDTH-1:0] motor_4_offset;
+	reg signed [`RATE_BIT_WIDTH-1:0] 
+		motor_1_offset,
+		motor_2_offset,
+		motor_3_offset,
+		motor_4_offset;
 	
-	reg signed [`RATE_BIT_WIDTH-1:0] motor_1_output;
-	reg signed [`RATE_BIT_WIDTH-1:0] motor_2_output;
-	reg signed [`RATE_BIT_WIDTH-1:0] motor_3_output;
-	reg signed [`RATE_BIT_WIDTH-1:0] motor_4_output;
+	reg signed [`RATE_BIT_WIDTH-1:0] 
+		motor_1_output,
+		motor_2_output,
+		motor_3_output,
+		motor_4_output;
 
-	reg signed [`RATE_BIT_WIDTH-1:0] motor_1_temp;
-	reg signed [`RATE_BIT_WIDTH-1:0] motor_2_temp;
-	reg signed [`RATE_BIT_WIDTH-1:0] motor_3_temp;
-	reg signed [`RATE_BIT_WIDTH-1:0] motor_4_temp;
+	reg signed [`RATE_BIT_WIDTH-1:0] 
+		motor_1_temp,
+		motor_2_temp,
+		motor_3_temp,
+		motor_4_temp;
 
 	always @(posedge sys_clk or negedge resetn) begin
 		if (!resetn) begin //On reset input LOW set all variables to zero
-			yaw_scale					<= `ALL_ZERO_2BYTE;
-			roll_scale					<= `ALL_ZERO_2BYTE;
-			pitch_scale					<= `ALL_ZERO_2BYTE;
-			n_throttle_rate				<= `ALL_ZERO_2BYTE;
+			yaw_scale					 <= `ALL_ZERO_2BYTE;
+			roll_scale					 <= `ALL_ZERO_2BYTE;
+			pitch_scale					 <= `ALL_ZERO_2BYTE;
+			n_throttle_rate				 <= `ALL_ZERO_2BYTE;
 
-			motor_1_output				<= `ALL_ZERO_2BYTE;
-			motor_2_output				<= `ALL_ZERO_2BYTE;
-			motor_3_output				<= `ALL_ZERO_2BYTE;
-			motor_4_output				<= `ALL_ZERO_2BYTE;
+			motor_1_output				 <= `ALL_ZERO_2BYTE;
+			motor_2_output				 <= `ALL_ZERO_2BYTE;
+			motor_3_output				 <= `ALL_ZERO_2BYTE;
+			motor_4_output				 <= `ALL_ZERO_2BYTE;
 
-			motor_1_temp				<= `ALL_ZERO_2BYTE;
-			motor_2_temp				<= `ALL_ZERO_2BYTE;
-			motor_3_temp				<= `ALL_ZERO_2BYTE;
-			motor_4_temp				<= `ALL_ZERO_2BYTE;
+			motor_1_temp				 <= `ALL_ZERO_2BYTE;
+			motor_2_temp				 <= `ALL_ZERO_2BYTE;
+			motor_3_temp				 <= `ALL_ZERO_2BYTE;
+			motor_4_temp				 <= `ALL_ZERO_2BYTE;
 
-			motor_1_rate				<= `ALL_ZERO_2BYTE;
-			motor_2_rate				<= `ALL_ZERO_2BYTE;
-			motor_3_rate				<= `ALL_ZERO_2BYTE;
-			motor_4_rate				<= `ALL_ZERO_2BYTE;
+			motor_1_rate				 <= `ALL_ZERO_2BYTE;
+			motor_2_rate				 <= `ALL_ZERO_2BYTE;
+			motor_3_rate				 <= `ALL_ZERO_2BYTE;
+			motor_4_rate				 <= `ALL_ZERO_2BYTE;
 
-			motor_mixer_state			<= STATE_SCALE_RATES;
+			motor_mixer_state			 <= STATE_SCALE_RATES;
 		end
 		else begin
 			case(motor_mixer_state)
 				STATE_SCALE_RATES: 	begin	// Get the value rates input and scale them in half for later arithmetic
-					yaw_scale			<= (yaw_rate   >>> `MOTOR_RATE_YAW_SCALER);
-					roll_scale			<= (roll_rate  >>> `MOTOR_RATE_ROLL_SCALER);
-					pitch_scale			<= (pitch_rate >>> `MOTOR_RATE_PITCH_SCALER);
+					yaw_scale			 <= (yaw_rate   >>> MOTOR_RATE_YAW_SCALER);
+					roll_scale			 <= (roll_rate  >>> MOTOR_RATE_ROLL_SCALER);
+					pitch_scale			 <= (pitch_rate >>> MOTOR_RATE_PITCH_SCALER);
 
 					// Throttle does not get scaled because it is equal across all motors
-					n_throttle_rate		<= throttle_rate;
+					n_throttle_rate		 <= throttle_rate;
 
 					// Assign next state
-					motor_mixer_state	<= STATE_MOTOR_RATE_CALC;
+					motor_mixer_state	 <= STATE_MOTOR_RATE_CALC;
 				end
 				STATE_MOTOR_RATE_CALC:  begin
-					motor_1_output		<= `MOTOR_1_RATE_BIAS + n_throttle_rate - yaw_scale + roll_scale + pitch_scale;
-					motor_2_output		<= `MOTOR_2_RATE_BIAS + n_throttle_rate + yaw_scale - roll_scale + pitch_scale;
-					motor_3_output		<= `MOTOR_3_RATE_BIAS + n_throttle_rate - yaw_scale - roll_scale - pitch_scale;
-					motor_4_output		<= `MOTOR_4_RATE_BIAS + n_throttle_rate + yaw_scale + roll_scale - pitch_scale;
-					motor_mixer_state 	<= STATE_BOUNDARY_CHECK;
+					motor_1_output		 <= MOTOR_1_RATE_BIAS + n_throttle_rate - yaw_scale + roll_scale + pitch_scale;
+					motor_2_output		 <= MOTOR_2_RATE_BIAS + n_throttle_rate + yaw_scale - roll_scale + pitch_scale;
+					motor_3_output		 <= MOTOR_3_RATE_BIAS + n_throttle_rate - yaw_scale - roll_scale - pitch_scale;
+					motor_4_output		 <= MOTOR_4_RATE_BIAS + n_throttle_rate + yaw_scale + roll_scale - pitch_scale;
+					motor_mixer_state 	 <= STATE_BOUNDARY_CHECK;
 				end
 				STATE_BOUNDARY_CHECK: 	begin // Test to see if motor_#_output is wwithin reasonable range for flight
-					if (n_throttle_rate <= `MOTOR_VAL_MIN) begin
+					if (n_throttle_rate  <= `MOTOR_VAL_MIN) begin
 						// If we don't have throttle input, we don't want to fire off any motors so set all to ZERO
-						motor_1_temp	<= `ALL_ZERO_2BYTE;
-						motor_2_temp	<= `ALL_ZERO_2BYTE;
-						motor_3_temp	<= `ALL_ZERO_2BYTE;
-						motor_4_temp	<= `ALL_ZERO_2BYTE;
+						motor_1_temp	 <= `ALL_ZERO_2BYTE;
+						motor_2_temp	 <= `ALL_ZERO_2BYTE;
+						motor_3_temp	 <= `ALL_ZERO_2BYTE;
+						motor_4_temp	 <= `ALL_ZERO_2BYTE;
 					end
 					else begin
 						// Motor_1 Boundary Check
@@ -192,24 +204,22 @@ module motor_mixer (
 						else
 							motor_4_temp <= motor_4_output;
 					end
-
-					motor_mixer_state <= STATE_SEND_OUTPUT;
-
+					motor_mixer_state 	 <= STATE_SEND_OUTPUT;
 				end
 				STATE_SEND_OUTPUT: 	begin	//	Reduce the motor_rates to 8 bit for pwm_generator use
-					motor_1_rate		<= motor_1_temp[11:4];
-					motor_2_rate		<= motor_2_temp[11:4];
-					motor_3_rate		<= motor_3_temp[11:4];
-					motor_4_rate		<= motor_4_temp[11:4];
-					motor_mixer_state 	<= STATE_SCALE_RATES;
+					motor_1_rate		 <= motor_1_temp[11:4] + motor_1_temp[3];
+					motor_2_rate		 <= motor_2_temp[11:4] + motor_2_temp[3];
+					motor_3_rate		 <= motor_3_temp[11:4] + motor_3_temp[3];
+					motor_4_rate		 <= motor_4_temp[11:4] + motor_4_temp[3];
+					motor_mixer_state 	 <= STATE_SCALE_RATES;
 				end
 				default begin
 					// This state should never be reached! If reached, act as a resetn signal.
-					motor_1_rate		<= `ALL_ZERO_2BYTE;
-					motor_2_rate		<= `ALL_ZERO_2BYTE;
-					motor_3_rate		<= `ALL_ZERO_2BYTE;
-					motor_4_rate		<= `ALL_ZERO_2BYTE;
-					motor_mixer_state	<= STATE_SCALE_RATES;
+					motor_1_rate		 <= `ALL_ZERO_2BYTE;
+					motor_2_rate		 <= `ALL_ZERO_2BYTE;
+					motor_3_rate		 <= `ALL_ZERO_2BYTE;
+					motor_4_rate		 <= `ALL_ZERO_2BYTE;
+					motor_mixer_state	 <= STATE_SCALE_RATES;
 				end
 			endcase
 		end

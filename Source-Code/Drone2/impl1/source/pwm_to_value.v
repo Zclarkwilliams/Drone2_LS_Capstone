@@ -37,6 +37,4 @@ module pwm_to_value (output wire [`PWM_VALUE_BIT_WIDTH - 1:0] value_out,
 
 			// Use truncation as a simplified map() function
 			assign value_out = adjusted_value[9:2];
-
 endmodule
-
