@@ -53,47 +53,48 @@ module angle_controller (
 	input  wire us_clk);
 
 	// rate limits (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
-	localparam signed
-		THROTTLE_MAX 	=  16'd4000,
-		YAW_MAX 		=  16'd1600,
-		YAW_MIN 		= -16'd1600,
-		PITCH_MAX 		=  16'd1600,
-		PITCH_MIN 		= -16'd1600,
-		ROLL_MAX		=  16'd1600,
-		ROLL_MIN		= -16'd1600;
+	localparam signed [`OPS_BIT_WIDTH-1:0]
+		THROTTLE_MAX 	=  250 << `FIXED_POINT_SHIFT,
+		YAW_MAX 		=  100 << `FIXED_POINT_SHIFT,
+		YAW_MIN 		= -100 << `FIXED_POINT_SHIFT,
+		PITCH_MAX 		=  100 << `FIXED_POINT_SHIFT,
+		PITCH_MIN 		= -100 << `FIXED_POINT_SHIFT,
+		ROLL_MAX		=  100 << `FIXED_POINT_SHIFT,
+		ROLL_MIN		= -100 << `FIXED_POINT_SHIFT;
 
 	// scale factors (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
-	localparam signed
-		// YAW
-		YAW_SCALE_DIV 		= 3'd4,
-		YAW_SCALE_MULT 		= 16'd48,
-		// ROLL
-		ROLL_SCALE_DIV	 	= 3'd4,
-		ROLL_SCALE_MULT 	= 16'd32,
-		// PITCH
-		PITCH_SCALE_DIV 	= 3'd4,
-		PITCH_SCALE_MULT 	= 16'd32,
-		// THROTTLE
-		THROTTLE_SCALE_DIV	= 3'd0,
-		THROTTLE_SCALE_MULT	= 16'd1;
+	// Multiplier Scaler Values
+	localparam signed [`OPS_BIT_WIDTH-1:0]
+		YAW_SCALE_MULT 		= 1,
+		ROLL_SCALE_MULT 	= 36,
+		PITCH_SCALE_MULT 	= 32,
+		THROTTLE_SCALE_MULT	= 1;
+	
+	//Divisor Shift Values
+	localparam signed [`SHIFT_OP_BIT_WIDTH-1:0]	
+		YAW_SCALE_DIV 		= 0,
+		PITCH_SCALE_DIV 	= 4,
+		ROLL_SCALE_DIV	 	= 4,
+		THROTTLE_SCALE_DIV	= 0;
 		
 	// Mapping input range to other
-	localparam signed
-		MAPPING_SUBS 		= 16'd500;
-		
+	localparam signed [`OPS_BIT_WIDTH-1:0]
+		MAPPING_SUBS 		= 500;
+	
+	// Pad with zeros on front to compare as 32 bit number
+	localparam signed MOTOR_VAL_MIN_32BIT = {`PADDING_ZEROS, `MOTOR_VAL_MIN};
+	
 	// Mapping input Padding Zeros
 	localparam signed
-		END_PAD				= 2'b0,
-		FRONT_PAD 			= 6'b0,
-		THROTTLE_F_PAD		= 4'b0,
-		THROTTLE_R_PAD		= 4'b0;
+		END_PAD				=  2'b0,
+		FRONT_PAD 			= 24'b0,
+		THROTTLE_F_PAD		= 20'b0,
+		THROTTLE_R_PAD		=  4'b0;
 
-	// TODO: Remove unused variables
 	// working registers
-	reg signed [`RATE_BIT_WIDTH-1:0]	mapped_throttle, mapped_yaw, mapped_roll, mapped_pitch;
-	reg signed [`RATE_BIT_WIDTH-1:0] 	scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
+	reg signed [`OPS_BIT_WIDTH-1:0]		mapped_throttle, mapped_yaw, mapped_roll, mapped_pitch;
+	reg signed [`OPS_BIT_WIDTH-1:0] 	scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
 	reg signed [`REC_VAL_BIT_WIDTH-1:0]	latched_throttle, latched_yaw, latched_pitch, latched_roll;
-
 
 	// state names
 	localparam
@@ -195,8 +196,7 @@ module angle_controller (
 				STATE_SCALING: begin
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
-
-					// the decimal point should be shifted...
+					// Apply scaler: (axis_val * scale_multiplier) / Scale_divisor
 					scaled_yaw				<= (mapped_yaw * YAW_SCALE_MULT)			>>> YAW_SCALE_DIV;
 					scaled_roll				<= (mapped_roll * ROLL_SCALE_MULT) 			>>> ROLL_SCALE_DIV;
 					scaled_pitch 			<= (mapped_pitch * PITCH_SCALE_MULT) 		>>> PITCH_SCALE_DIV;
@@ -209,37 +209,37 @@ module angle_controller (
 					// Throttle rate limits
 					if(scaled_throttle > THROTTLE_MAX)
 						throttle_rate_out 	<= THROTTLE_MAX;
-					else if(scaled_throttle < `MOTOR_VAL_MIN)
+					else if(scaled_throttle < MOTOR_VAL_MIN_32BIT)
 						throttle_rate_out 	<= `MOTOR_VAL_MIN;
 					else
-						throttle_rate_out	<= scaled_throttle;
+						throttle_rate_out	<= scaled_throttle[`BITS_EXTRACT-1:0];
 					
 					// Yaw rate limits
 					if(scaled_yaw > YAW_MAX)
-						yaw_rate_out 		<= YAW_MAX;
+						yaw_rate_out 		<= YAW_MAX[`BITS_EXTRACT-1:0];
 					else if(scaled_yaw < YAW_MIN)
-						yaw_rate_out 		<= YAW_MIN;
+						yaw_rate_out 		<= YAW_MIN[`BITS_EXTRACT-1:0];
 					else
-						yaw_rate_out 		<= scaled_yaw;
+						yaw_rate_out 		<= scaled_yaw[`BITS_EXTRACT-1:0];
 					
 					// Roll rate limits
 					if(scaled_roll > ROLL_MAX)
-						roll_rate_out 		<= ROLL_MAX;
+						roll_rate_out 		<= ROLL_MAX[`BITS_EXTRACT-1:0];
 					else if(scaled_roll < ROLL_MIN)
-						roll_rate_out 		<= ROLL_MIN;
+						roll_rate_out 		<= ROLL_MIN[`BITS_EXTRACT-1:0];
 					else
-						roll_rate_out 		<= scaled_roll;
+						roll_rate_out 		<= scaled_roll[`BITS_EXTRACT-1:0];
 					
 					// Pitch rate limits
 					if(scaled_pitch > PITCH_MAX)
-						pitch_rate_out		<= PITCH_MAX;
+						pitch_rate_out		<= PITCH_MAX[`BITS_EXTRACT-1:0];
 					else if(scaled_pitch < PITCH_MIN)
-						pitch_rate_out 		<= PITCH_MIN;
+						pitch_rate_out 		<= PITCH_MIN[`BITS_EXTRACT-1:0];
 					else
-						pitch_rate_out		<= scaled_pitch;
+						pitch_rate_out		<= scaled_pitch[`BITS_EXTRACT-1:0];
 
-					pitch_angle_error		<= mapped_pitch;
-					roll_angle_error		<= mapped_roll;
+					pitch_angle_error		<= mapped_pitch[`BITS_EXTRACT-1:0];
+					roll_angle_error		<= mapped_roll[`BITS_EXTRACT-1:0];
 				end
 				STATE_COMPLETE: begin
 					complete_signal 		<= `TRUE;

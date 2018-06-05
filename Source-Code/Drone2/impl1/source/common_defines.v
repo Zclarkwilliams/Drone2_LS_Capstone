@@ -28,6 +28,13 @@
 // Mathematical bit addition
 `define ONE		1'b1
 
+// MAX MIN fixed point shift in decimal
+`define FIXED_POINT_SHIFT		4'sd4
+`define OPS_BIT_WIDTH			7'd32
+`define SHIFT_OP_BIT_WIDTH		3'd4
+`define	BITS_EXTRACT			6'd16
+`define PADDING_ZEROS 			16'd0
+
 //  A byte of all zeros
 `define BYTE_ALL_ZERO           8'sh00
 `define ALL_ZERO_2BYTE          16'sh0000
