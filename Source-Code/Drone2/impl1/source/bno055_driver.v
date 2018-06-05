@@ -135,8 +135,7 @@ module bno055_driver #(
 	reg  [5:0]led_view_index;                         //  Index in data_rx_reg that is being monitored with status LEDs
 	reg  [5:0]next_led_view_index;                    //  Next value of LED View Index
 	reg  [7:0]data_rx_reg[`DATA_RX_BYTE_REG_CNT-1:0]; //  Store all measurement bytes from i2c read burst
-	reg  rstn_buffer;                                 //  Negedge clears received measurement buffer
-	reg  rx_data_latch_strobe;                        //  Strobe data output register, latch onto current data in rx buffer, asyncronous latch
+	reg  rstn_buffer;                                 //  Negedge clears received measurement buffer//	reg  rx_data_latch_strobe;                        //  Strobe data output register, latch onto current data in rx buffer, asyncronous latch
 	reg  rx_data_latch_tmp; 						  //  Syncronously latched value of the data latch strobe
 	reg  next_imu_good;                               //  Next value of module imu_good bit
 	reg  i2c_number;								  //  The i2c module to call, 0 = i2c EFB #1, 1 = i2c EFB #2
@@ -678,5 +677,3 @@ module bno055_driver #(
 		end
 	end
 endmodule
-
-

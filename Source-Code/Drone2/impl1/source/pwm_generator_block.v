@@ -29,15 +29,12 @@
 
 module pwm_generator_block #(parameter INPUT_BIT_WIDTH = 10)
 							(output wire motor_pwm,
-							 //output wire [2:0] state_out,
-							 input wire [INPUT_BIT_WIDTH-1:0] motor_val,
 							 input wire [15:0] period_counter,
+							 input wire [INPUT_BIT_WIDTH-1:0] motor_val,
 							 input wire [INPUT_BIT_WIDTH-1:0] high_counter,
 							 input wire resetn,
 							 input wire us_clk);
-
-	//assign state_out = state;
-
+	
 	localparam // State names
 		STATE_MIN_COUNT = 3'b001,
 		STATE_PWM_COUNT = 3'b010,
@@ -59,30 +56,29 @@ module pwm_generator_block #(parameter INPUT_BIT_WIDTH = 10)
 		case (state)
 			STATE_MIN_COUNT: begin
 				if (!resetn)
-					next_state = STATE_MIN_COUNT;
+					next_state	= STATE_MIN_COUNT;
 				else if (period_counter == `MIN_PWM_TIME_HIGH_US)
-					next_state = STATE_PWM_COUNT;
+					next_state	= STATE_PWM_COUNT;
 				else
-					next_state = STATE_MIN_COUNT;
+					next_state	= STATE_MIN_COUNT;
 			end
 			STATE_PWM_COUNT: begin
 				if (!resetn)
-					next_state = STATE_MIN_COUNT;
+					next_state	= STATE_MIN_COUNT;
 				else if ((high_counter == motor_val) || (period_counter == `MAX_PWM_TIME_HIGH_US))
-					next_state = STATE_LOW_COUNT;
-				else next_state = STATE_PWM_COUNT;
+					next_state	= STATE_LOW_COUNT;
+				else next_state	= STATE_PWM_COUNT;
 			end
 			STATE_LOW_COUNT: begin
 				if ((!resetn) || (period_counter == `PWM_PERIOD_US))
-					next_state = STATE_MIN_COUNT;
-				else next_state = STATE_LOW_COUNT;
+					next_state	= STATE_MIN_COUNT;
+				else next_state	= STATE_LOW_COUNT;
 			end
 			default:
-				next_state = STATE_MIN_COUNT;
+				next_state		= STATE_MIN_COUNT;
 		endcase
 	end
 
 	// Output logic
-	assign motor_pwm = ((state == STATE_MIN_COUNT) || (state == STATE_PWM_COUNT));
-
+	assign motor_pwm = (!resetn) ? `LOW : ((state == STATE_MIN_COUNT) || (state == STATE_PWM_COUNT));
 endmodule

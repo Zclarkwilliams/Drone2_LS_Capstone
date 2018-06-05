@@ -38,6 +38,4 @@ module us_clk #(parameter CLK_CONVERSION_HIGH = 19,
 		else
 			sys_clk_counter <= sys_clk_counter + 1'b1;
 	end
-
 endmodule
-
