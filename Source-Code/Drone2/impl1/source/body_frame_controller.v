@@ -80,12 +80,12 @@ module body_frame_controller (
 
 	// PID controller rate limiting values
 	localparam signed 
-		ROLL_RATE_MIN  = -16'd250,
-		ROLL_RATE_MAX  =  16'd250,
-		PITCH_RATE_MIN = -16'd250,
-		PITCH_RATE_MAX =  16'd250,
-		YAW_RATE_MIN   = -16'd250,
-		YAW_RATE_MAX   =  16'd250;
+		ROLL_RATE_MIN  = -16'd4000,
+		ROLL_RATE_MAX  =  16'd4000,
+		PITCH_RATE_MIN = -16'd4000,
+		PITCH_RATE_MAX =  16'd4000,
+		YAW_RATE_MIN   = -16'd4000,
+		YAW_RATE_MAX   =  16'd4000;
 
 	/* PID controller proportional/integral/derivative constant values.
 	 * These are determined by first multiplying the value by the specific
@@ -320,5 +320,4 @@ module body_frame_controller (
 		.wait_flag(wait_flag),
 		.resetn(resetn),
 		.us_clk(us_clk));
-
 endmodule
