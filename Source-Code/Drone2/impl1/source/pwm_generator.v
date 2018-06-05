@@ -100,34 +100,34 @@ module pwm_generator (
 	always @(posedge us_clk or negedge resetn) begin
 		if (!resetn) begin
 			// Reset counters
-			high_counter_en <= `FALSE;
-			high_counter 	<= HIGH_COUNTER_ZEROS;
-			period_counter	<= `ALL_ZERO_2BYTE;
+			high_counter_en  <= `FALSE;
+			high_counter 	 <= HIGH_COUNTER_ZEROS;
+			period_counter	 <= `ALL_ZERO_2BYTE;
 			// Start with default values
-			m1_rate 		<= `BYTE_ALL_ZERO;
-			m2_rate 		<= `BYTE_ALL_ZERO;
-			m3_rate 		<= `BYTE_ALL_ZERO;
-			m4_rate 		<= `BYTE_ALL_ZERO;
+			m1_rate 		 <= `BYTE_ALL_ZERO;
+			m2_rate 		 <= `BYTE_ALL_ZERO;
+			m3_rate 		 <= `BYTE_ALL_ZERO;
+			m4_rate 		 <= `BYTE_ALL_ZERO;
 		end
 		else if (period_counter == `PWM_PERIOD_US) begin
 			// Reset counters
-			high_counter_en <= `FALSE;
-			high_counter 	<= HIGH_COUNTER_ZEROS;
-			period_counter	<= `ALL_ZERO_2BYTE;
+			high_counter_en  <= `FALSE;
+			high_counter 	 <= HIGH_COUNTER_ZEROS;
+			period_counter	 <= `ALL_ZERO_2BYTE;
 			// Latch in new values
-			m1_rate 		<= {motor_1_rate, LATCH_APPEND_BITS};
-			m2_rate 		<= {motor_2_rate, LATCH_APPEND_BITS};
-			m3_rate 		<= {motor_3_rate, LATCH_APPEND_BITS};
-			m4_rate 		<= {motor_4_rate, LATCH_APPEND_BITS};
+			m1_rate 		 <= {motor_1_rate, LATCH_APPEND_BITS};
+			m2_rate 		 <= {motor_2_rate, LATCH_APPEND_BITS};
+			m3_rate 		 <= {motor_3_rate, LATCH_APPEND_BITS};
+			m4_rate 		 <= {motor_4_rate, LATCH_APPEND_BITS};
 		end
 		else if (period_counter == `MIN_PWM_TIME_HIGH_US) begin
-			high_counter_en	<= `TRUE;
-			period_counter	<= period_counter + `ONE;
+			high_counter_en	 <= `TRUE;
+			period_counter	 <= period_counter + `ONE;
 		end
 		else begin
-			period_counter	<= period_counter + `ONE;
+			period_counter	 <= period_counter + `ONE;
 			if (high_counter_en)
-				high_counter <= high_counter + `ONE;
+				high_counter <= high_counter   + `ONE;
 		end
 	end
 
