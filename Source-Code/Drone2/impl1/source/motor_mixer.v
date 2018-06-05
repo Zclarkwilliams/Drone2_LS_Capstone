@@ -201,15 +201,13 @@ module motor_mixer (
 						else
 							motor_4_temp <= motor_4_output;
 					end
-
 					motor_mixer_state <= STATE_SEND_OUTPUT;
-
 				end
 				STATE_SEND_OUTPUT: 	begin	//	Reduce the motor_rates to 8 bit for pwm_generator use
-					motor_1_rate		<= motor_1_temp[11:4];
-					motor_2_rate		<= motor_2_temp[11:4];
-					motor_3_rate		<= motor_3_temp[11:4];
-					motor_4_rate		<= motor_4_temp[11:4];
+					motor_1_rate		<= motor_1_temp[11:4] + motor_1_temp[3];
+					motor_2_rate		<= motor_2_temp[11:4] + motor_2_temp[3];
+					motor_3_rate		<= motor_3_temp[11:4] + motor_3_temp[3];
+					motor_4_rate		<= motor_4_temp[11:4] + motor_4_temp[3];
 					motor_mixer_state 	<= STATE_SCALE_RATES;
 				end
 				default begin
