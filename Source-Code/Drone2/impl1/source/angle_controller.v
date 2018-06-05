@@ -167,8 +167,6 @@ module angle_controller (
 		endcase
 	end
 
-
-
 	// output logic
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin

@@ -81,5 +81,4 @@ module pwm_generator_block #(parameter INPUT_BIT_WIDTH = 10)
 
 	// Output logic
 	assign motor_pwm = (!resetn) ? `LOW : ((state == STATE_MIN_COUNT) || (state == STATE_PWM_COUNT));
-
 endmodule

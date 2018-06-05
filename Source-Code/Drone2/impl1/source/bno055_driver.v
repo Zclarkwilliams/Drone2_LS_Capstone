@@ -677,5 +677,3 @@ module bno055_driver #(
 		end
 	end
 endmodule
-
-

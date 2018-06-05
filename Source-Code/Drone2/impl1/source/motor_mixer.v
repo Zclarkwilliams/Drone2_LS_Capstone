@@ -149,10 +149,8 @@ module motor_mixer (
 					yaw_scale			 <= (yaw_rate   >>> MOTOR_RATE_YAW_SCALER);
 					roll_scale			 <= (roll_rate  >>> MOTOR_RATE_ROLL_SCALER);
 					pitch_scale			 <= (pitch_rate >>> MOTOR_RATE_PITCH_SCALER);
-
 					// Throttle does not get scaled because it is equal across all motors
 					n_throttle_rate		 <= throttle_rate;
-
 					// Assign next state
 					motor_mixer_state	 <= STATE_MOTOR_RATE_CALC;
 				end

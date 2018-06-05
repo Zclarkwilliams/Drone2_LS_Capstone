@@ -130,5 +130,4 @@ module pwm_generator (
 				high_counter <= high_counter   + `ONE;
 		end
 	end
-
 endmodule
