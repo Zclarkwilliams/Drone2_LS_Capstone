@@ -80,33 +80,33 @@ module body_frame_controller (
 
 	// PID controller rate limiting values
 	localparam signed 
-		ROLL_RATE_MIN  = -16'd28768,
-		ROLL_RATE_MAX  =  16'd4000,
-		PITCH_RATE_MIN = -16'd28768,
-		PITCH_RATE_MAX =  16'd4000,
-		YAW_RATE_MIN   = -16'd28768,
-		YAW_RATE_MAX   =  16'd4000;
+		ROLL_RATE_MIN  = -16'd250,
+		ROLL_RATE_MAX  =  16'd250,
+		PITCH_RATE_MIN = -16'd250,
+		PITCH_RATE_MAX =  16'd250,
+		YAW_RATE_MIN   = -16'd250,
+		YAW_RATE_MAX   =  16'd250;
 
 	/* PID controller proportional/integral/derivative constant values.
 	 * These are determined by first multiplying the value by the specific
 	 * K_* term and then shifting it using the K_*_SHIFT value.
 	 * Example: value = (value * ROLL_K_P) >>> ROLL_K_P_SHIFT;
 	 */	
-	 localparam // YAW CONTROL PARAMS
+	 localparam signed // YAW CONTROL PARAMS
 		YAW_K_P			= 16'h001F,
 		YAW_K_P_SHIFT	= 4'h4,
 		YAW_K_I			= 16'h0000,
 		YAW_K_I_SHIFT	= 4'h4,
 		YAW_K_D			= 16'h0004,
 		YAW_K_D_SHIFT	= 4'h4;
-	localparam // ROLL CONTROL PARAMS
+	localparam signed // ROLL CONTROL PARAMS
 		ROLL_K_P		= 16'h0004,
 		ROLL_K_P_SHIFT	= 4'h4,
 		ROLL_K_I		= 16'h0000,
 		ROLL_K_I_SHIFT	= 4'h4,
 		ROLL_K_D		= 16'h0001,
 		ROLL_K_D_SHIFT	= 4'h4;
-	localparam // PITCH CONTROL PARAMS
+	localparam signed // PITCH CONTROL PARAMS
 		PITCH_K_P		= 16'h0004,
 		PITCH_K_P_SHIFT = 4'h4,
 		PITCH_K_I		= 16'h0000,
@@ -322,4 +322,3 @@ module body_frame_controller (
 		.us_clk(us_clk));
 
 endmodule
-
