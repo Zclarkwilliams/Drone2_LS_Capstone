@@ -39,10 +39,9 @@ module pwm_generator (
 	input wire resetn,
 	input wire us_clk);
 
-	localparam
-		LATCH_APPEND_BITS = 2'b00;
-	localparam
-		HIGH_COUNTER_ZEROS = 10'd0;
+	// params for padding the zeros and counter high/zero values
+	localparam LATCH_APPEND_BITS = 2'b00;
+	localparam HIGH_COUNTER_ZEROS = 10'd0;
 	
 	// Internal counters
 	reg [15:0] period_counter;
