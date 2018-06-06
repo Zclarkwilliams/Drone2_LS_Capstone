@@ -102,6 +102,7 @@ module flight_mode	(//	Module Outputs
 	reg			err_flag;									// error flag to make sure if motors running land and stay landed						
 	reg			sys_rdy;									// Initialization of system and timer complete
 	reg			first_start;								// Flag to catch if first start after power off for sys_rdy timer
+	reg			take_off_start;								// Flag to check if drone on ground for auto-take-off mode
 	reg  		[MODE_BIT_WIDTH-1:0] 	mode;				// assigning modes of flight
 	reg	 		[SW_AB_BIT_WIDTH-1:0] 	swa_swb_position;	// SWA & SWB position assingnment
 	reg signed 	[TIMER_BIT_WIDTH-1:0]	init_timer;			// System initialization timer
@@ -109,14 +110,14 @@ module flight_mode	(//	Module Outputs
 // ----------------------------------	Asynchronous Control ---------------------------------	//
 
 	// Debug LEDs assignment to monitor module functionality 
-	assign DEBUG_LEDs = (!sys_rdy) ? init_timer : swa_swb_position;
+	assign DEBUG_LEDs = (!sys_rdy) ? sys_rdy : swa_swb_position;
 	
 	// Set init flag so as to know if calibration and first run occured
 	assign imu_rdy = `TRUE;//((imu_calib_status == CALIB_DONE_VAL)) ? `FALSE : `TRUE;
 	
 	// Reset signal control, it is asynchronous
 	// TODO: test && for setting sys_rdy to resetn 
-	assign resetn = machxo3_switch_reset_n & soft_reset_n ;//& sys_rdy;
+	assign resetn = machxo3_switch_reset_n & soft_reset_n;//& sys_rdy;
 	
 	// Get the SWA & SWB positions
 	always @(swa_swb_val) begin
@@ -190,111 +191,138 @@ module flight_mode	(//	Module Outputs
 					if(/*err_flag ||*/ sys_rdy) begin 
 						if ((swa_swb_position == SW_AB_10 || swa_swb_position == SW_AB_11) && (curr_throttle_val <= `MOTOR_VAL_MIN))
 							if (curr_throttle_val <= `MOTOR_VAL_MIN)
-								mode	<= MODE_USER_CNTRL_IMU;
+								mode			<= MODE_USER_CNTRL_IMU;
 						else
-							mode		<= MODE_STASIS;
+							mode				<= MODE_STASIS;
 					end
 					else begin
-						rec_data_sel	<= `REC_SEL_OFF;
-						imu_data_sel	<= `IMU_SEL_DISABLE;
-						mode			<= MODE_STASIS;
+						rec_data_sel			<= `REC_SEL_OFF;
+						imu_data_sel			<= `IMU_SEL_DISABLE;
+						mode					<= MODE_STASIS;
 					end
 				end
 				MODE_USER_CNTRL_IMU: begin
 					if(swa_swb_position == SW_AB_11)
-						mode			<= MODE_USER_CNTRL_NO_IMU;
+						mode					<= MODE_USER_CNTRL_NO_IMU;
 					else if(swa_swb_position == SW_AB_20 && curr_avg_motor_rate <= `MOTOR_VAL_MIN)
-						mode			<= MODE_TAKE_OFF;
+						mode					<= MODE_TAKE_OFF;
 					else if(swa_swb_position == SW_AB_20 && curr_avg_motor_rate > `MOTOR_VAL_MIN)
-						mode			<= MODE_HOVER;
+						mode					<= MODE_HOVER;
 					else if(swa_swb_position == SW_AB_0X && curr_avg_motor_rate > `MOTOR_VAL_MIN)
-						mode			<= MODE_AUTO_LAND;
+						mode					<= MODE_AUTO_LAND;
 					else if(swa_swb_position == SW_AB_0X && curr_avg_motor_rate <= `MOTOR_VAL_MIN)
-						mode			<= MODE_STASIS;
+						mode					<= MODE_STASIS;
 					else begin
-						rec_data_sel	<= `REC_SEL_PASS_THROUGH;
-						imu_data_sel	<= `IMU_SEL_PASS_THROUGH;
-						mode			<= MODE_USER_CNTRL_IMU;	
+						rec_data_sel			<= `REC_SEL_PASS_THROUGH;
+						imu_data_sel			<= `IMU_SEL_PASS_THROUGH;
+						mode					<= MODE_USER_CNTRL_IMU;	
 					end
 				end
 				MODE_USER_CNTRL_NO_IMU: begin
 					if(swa_swb_position == SW_AB_10)
-						mode			<= MODE_USER_CNTRL_IMU;
+						mode					<= MODE_USER_CNTRL_IMU;
 					else if(swa_swb_position == SW_AB_21 && curr_avg_motor_rate <= `MOTOR_VAL_MIN)
-						mode			<= MODE_TAKE_OFF;
+						mode					<= MODE_TAKE_OFF;
 					else if(swa_swb_position == SW_AB_21 && curr_avg_motor_rate > `MOTOR_VAL_MIN)
-						mode			<= MODE_HOVER;
+						mode					<= MODE_HOVER;
 					else if(swa_swb_position == SW_AB_0X && curr_avg_motor_rate > `MOTOR_VAL_MIN)
-						mode			<= MODE_AUTO_LAND;
+						mode					<= MODE_AUTO_LAND;
 					else if(swa_swb_position == SW_AB_0X && curr_avg_motor_rate <= `MOTOR_VAL_MIN)
-						mode			<= MODE_STASIS;
+						mode					<= MODE_STASIS;
 					else begin
-						rec_data_sel	<= `REC_SEL_PASS_THROUGH;
-						imu_data_sel	<= `IMU_SEL_DISABLE;
-						mode			<= MODE_USER_CNTRL_NO_IMU;	
+						rec_data_sel			<= `REC_SEL_PASS_THROUGH;
+						imu_data_sel			<= `IMU_SEL_DISABLE;
+						mode					<= MODE_USER_CNTRL_NO_IMU;	
 					end
 				end
 				MODE_TAKE_OFF: begin	//	Take off from motor off to hovering
 					if(swa_swb_position == SW_AB_10) begin
-						if (curr_throttle_val >= curr_avg_motor_rate)	// TODO: Change this to an average motor value instead of curr_motor_val
-							mode		<= MODE_USER_CNTRL_NO_IMU;
-						else
-							mode		<= MODE_HOVER; // wait till user increases throttle to stay in flight
+						if (curr_throttle_val >= curr_avg_motor_rate) begin	// TODO: Change this to an average motor value instead of curr_motor_val
+							take_off_start		<= `FALSE;
+							mode				<= MODE_USER_CNTRL_NO_IMU;
+						end
+						else begin
+							take_off_start		<= `FALSE;
+							mode				<= MODE_HOVER; // wait till user increases throttle to stay in flight
+						end
 					end
 					else if(swa_swb_position == SW_AB_11) begin
-						if (curr_throttle_val >= curr_avg_motor_rate) // TODO: Change this to an average motor value instead of curr_motor_val
-							mode		<= MODE_USER_CNTRL_IMU;
-						else
-							mode		<= MODE_HOVER; // wait till user increases throttle to stay in flight
+						if (curr_throttle_val >= curr_avg_motor_rate)  begin// TODO: Change this to an average motor value instead of curr_motor_val
+							take_off_start		<= `FALSE;
+							mode				<= MODE_USER_CNTRL_IMU;
+						end
+						else begin
+							take_off_start		<= `FALSE;
+							mode				<= MODE_HOVER; // wait till user increases throttle to stay in flight
+						end
 					end
-					else if (curr_avg_motor_rate >= `HOVER_THROTTLE_VAL)
-						mode			<= MODE_HOVER;
+					else if (curr_avg_motor_rate >= `HOVER_THROTTLE_VAL) begin
+						take_off_start			<= `FALSE;
+						mode					<= MODE_HOVER;
+					end
 					else begin
-						rec_data_sel	<= `REC_SEL_AUTO_TAKE_OFF;
-						imu_data_sel	<= `IMU_SEL_PASS_THROUGH;
-						mode			<= MODE_TAKE_OFF;
+						if(!take_off_start)  begin// if we are taking off make sure we are on the ground throttle_val == 0
+							if(curr_throttle_val > `MOTOR_VAL_MIN) begin
+								take_off_start	<= `FALSE;
+								rec_data_sel	<= `REC_SEL_PASS_THROUGH;
+								imu_data_sel	<= `IMU_SEL_PASS_THROUGH;
+								mode			<= MODE_TAKE_OFF;
+							end
+							else begin
+								take_off_start	<= `TRUE;
+								rec_data_sel	<= `REC_SEL_AUTO_TAKE_OFF;
+								imu_data_sel	<= `IMU_SEL_PASS_THROUGH;
+								mode			<= MODE_TAKE_OFF;
+							end
+						end
+						else begin
+							take_off_start			<= `TRUE;
+							rec_data_sel			<= `REC_SEL_AUTO_TAKE_OFF;
+							imu_data_sel			<= `IMU_SEL_PASS_THROUGH;
+							mode					<= MODE_TAKE_OFF;
+						end
 					end
 				end
 				MODE_HOVER: begin
 					if (swa_swb_position == SW_AB_0X && curr_avg_motor_rate >= `MOTOR_VAL_MIN)						
-						mode			<= MODE_AUTO_LAND;
+						mode					<= MODE_AUTO_LAND;
 					else if(swa_swb_position == SW_AB_10) begin
 						if (curr_throttle_val >= `HOVER_THROTTLE_VAL)
-							mode		<= MODE_USER_CNTRL_IMU;
+							mode				<= MODE_USER_CNTRL_IMU;
 						else
-							mode		<= MODE_HOVER; // wait till user increases throttle to stay in flight
+							mode				<= MODE_HOVER; // wait till user increases throttle to stay in flight
 					end
 					else if(swa_swb_position == SW_AB_11) begin
 						if (curr_throttle_val >= `HOVER_THROTTLE_VAL)
-							mode		<= MODE_USER_CNTRL_NO_IMU;
+							mode				<= MODE_USER_CNTRL_NO_IMU;
 						else
-							mode		<= MODE_HOVER; // wait till user increases throttle to stay in flight
+							mode				<= MODE_HOVER; // wait till user increases throttle to stay in flight
 					end
 					else begin // Keep hovering until otherwise instructed
-						rec_data_sel	<= `REC_SEL_HOVER;
-						imu_data_sel	<= `IMU_SEL_PASS_THROUGH;
-						mode			<= MODE_HOVER;
+						rec_data_sel			<= `REC_SEL_HOVER;
+						imu_data_sel			<= `IMU_SEL_PASS_THROUGH;
+						mode					<= MODE_HOVER;
 					end
 				end
 				MODE_AUTO_LAND: begin
 					if (curr_avg_motor_rate <= `MOTOR_VAL_MIN)
-						mode			<= MODE_STASIS;
+						mode					<= MODE_STASIS;
 					else if ((swa_swb_position == SW_AB_10) && (curr_throttle_val >= curr_avg_motor_rate))
-						mode			<= MODE_USER_CNTRL_IMU;
+						mode					<= MODE_USER_CNTRL_IMU;
 					else if ((swa_swb_position == SW_AB_11) && (curr_throttle_val >= curr_avg_motor_rate))
-						mode			<= MODE_USER_CNTRL_NO_IMU;
+						mode					<= MODE_USER_CNTRL_NO_IMU;
 					else begin
-						rec_data_sel	<= `REC_SEL_AUTO_LAND;
-						imu_data_sel	<= `IMU_SEL_PASS_THROUGH;
-						mode			<= MODE_AUTO_LAND;
+						rec_data_sel			<= `REC_SEL_AUTO_LAND;
+						imu_data_sel			<= `IMU_SEL_PASS_THROUGH;
+						mode					<= MODE_AUTO_LAND;
 					end
 				end
 				default: begin // should never reach here treat as a reset
-					err_flag			<= `TRUE;
+					err_flag					<= `TRUE;
 					if(curr_avg_motor_rate > `MOTOR_VAL_MIN)
-						mode			<= MODE_AUTO_LAND;
+						mode					<= MODE_AUTO_LAND;
 					else
-						mode			<= MODE_STASIS;
+						mode					<= MODE_STASIS;
 				end
 			endcase
 		end
