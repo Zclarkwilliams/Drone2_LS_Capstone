@@ -54,6 +54,15 @@
         <Source name="impl1/source/motor_mixer.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
+        <Source name="impl1/source/rec_data_buff.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/source/im_data_buff.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/source/flight_mode.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
         <Source name="Drone2.lpf" type="Logic Preference" type_short="LPF">
             <Options/>
         </Source>

@@ -82,7 +82,8 @@ module angle_controller (
 		MAPPING_SUBS 		= 500;
 	
 	// Pad with zeros on front to compare as 32 bit number
-	localparam signed MOTOR_VAL_MIN_32BIT = {`PADDING_ZEROS, `MOTOR_VAL_MIN};
+	localparam signed 
+		MOTOR_VAL_MIN_32BIT = {`PADDING_ZEROS, `MOTOR_VAL_MIN};
 	
 	// Mapping input Padding Zeros
 	localparam signed

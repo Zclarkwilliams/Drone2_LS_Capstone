@@ -82,5 +82,33 @@
 `define MOTOR_VAL_MIN					16'sh0020
 `define MOTOR_VAL_MAX					16'sh0FA0
 
-//	Value to add to value before bit shift rounding to help rounding error
-`define MOTOR_RATE_ROUND_UP_VAL 		8'd127
+/************************************************************ 
+ *
+ *	Flight_Mode Module Defines
+ *
+ ************************************************************/
+
+//	Flight mode module select control line widths
+`define IMU_DATA_SEL_BIT_WIDTH		2'd2
+`define REC_DATA_SEL_BIT_WIDTH		3'd4
+
+/************************************************************ 
+ *
+ *	IMU_Data_Buffer and Rec_Data_Buffer (MUX) Module Defines
+ *
+ ************************************************************/
+ 
+ //	Motor rate values for flight modes
+`define HOVER_THROTTLE_VAL			8'd185
+ 
+ // Select-able control modes for outputs 
+ //	Receiver Data Buffer
+ `define REC_SEL_OFF				4'h0
+ `define REC_SEL_AUTO_TAKE_OFF		4'h1
+ `define REC_SEL_HOVER 				4'h2
+ `define REC_SEL_PASS_THROUGH		4'h3
+ `define REC_SEL_AUTO_LAND			4'h4
+
+ // IMU Data Buffer
+ `define IMU_SEL_DISABLE			2'h0
+ `define IMU_SEL_PASS_THROUGH		2'h1

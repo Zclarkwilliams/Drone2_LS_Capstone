@@ -104,7 +104,8 @@ module drone2 (
 	wire imu_data_valid_monitor;
 	wire imu_good;
 	wire imu_data_valid;
-	wire [7:0] imu_debug_out;
+	wire [7:0] imu_debug_out; 
+	wire [7:0] calib_status;
 	
 	//-------- Body_Frame_Controller Wires --------//
 	wire [`PID_RATE_BIT_WIDTH-1:0] 
@@ -122,6 +123,32 @@ module drone2 (
 		motor_3_rate,
 		motor_4_rate;
 	
+	//------------- Flight Mode Wires -------------//
+	wire [`REC_VAL_BIT_WIDTH-1:0] 		
+		yaw_val_buff,
+		roll_val_buff,
+		pitch_val_buff,
+		throttle_val_buff;
+	wire [`MOTOR_RATE_BIT_WIDTH-1:0]	curr_avg_motor_rate;
+	wire [`IMU_DATA_SEL_BIT_WIDTH-1:0]	imu_data_sel;
+	wire [`REC_DATA_SEL_BIT_WIDTH-1:0]	rec_data_sel;
+	wire [15:0]	flight_mode_debug_leds;
+
+	//---------- IMU Data Buffer Wires ------------//
+	wire [`IMU_VAL_BIT_WIDTH-1:0] 
+		rate_x_buff,
+		rate_y_buff,
+		rate_z_buff,
+		angle_x_buff,
+		angle_y_buff,
+		angle_z_buff,
+		x_lin_rate_buff,
+		y_lin_rate_buff,
+		z_lin_rate_buff,
+		x_lin_accel_buff,
+		y_lin_accel_buff,
+		z_lin_accel_buff;
+	
 	//--------------- Clock Wires -----------------//
 	wire sys_clk;
 	wire us_clk;
@@ -129,7 +156,7 @@ module drone2 (
 	//---------------- Reset Wires ----------------//
 	wire resetn;
 	wire soft_reset_n;
-	assign resetn = (machxo3_switch_reset_n | soft_reset_n);
+	assign soft_reset_n  = `HIGH; // SET HIGH TILL INTEGRATED/USED AT ALL
 
 	/**
 	| 	Generate System Clock
@@ -142,7 +169,7 @@ module drone2 (
 	
 	/**
 	|	Then scale system clock down to 1 microsecond
-	|		us_clk.v
+	|		file - us_clk.v
 	*/	
 	us_clk us_clk_divider (
 		.us_clk(us_clk),
@@ -150,12 +177,40 @@ module drone2 (
 		.resetn(resetn));
 	
 	/**
+	|	Using SWA and SWB from controller this sets the different flight modes possible
+	|		file - flight_mode.v
+	*/	
+	//for testing set the calibration of the imu as all good 8'hFF
+	//assign calib_status = 8'hFF;
+
+	flight_mode flight_mode	(
+		//	Module Outputs
+		.resetn(resetn),
+		.imu_data_sel(imu_data_sel),
+		.rec_data_sel(rec_data_sel),
+		.curr_avg_motor_rate(curr_avg_motor_rate),
+		//	DEBUG LEDs
+		.DEBUG_LEDs(flight_mode_debug_leds),
+		//	Module Inputs
+		.swa_swb_val(swa_swb_val),
+		.curr_motor_1_rate(motor_1_rate),
+		.curr_motor_2_rate(motor_2_rate),
+		.curr_motor_3_rate(motor_3_rate),
+		.curr_motor_4_rate(motor_4_rate),
+		.imu_calib_status(calib_status),
+		.curr_throttle_val(throttle_val),
+		.soft_reset_n(soft_reset_n),
+		.machxo3_switch_reset_n(machxo3_switch_reset_n),
+		.us_clk(us_clk));
+	
+	/**
 	| 	IMU Management and Control Module
-	|		bno055_driver.v
+	|		file - bno055_driver.v
 	*/
 	bno055_driver imu (
 		// Outputs
 		.imu_good(imu_good),
+		.calib_status(calib_status),
 		.valid_strobe(imu_data_valid),
 		.gyro_rate_x(x_rotation_rate),
 		.gyro_rate_y(y_rotation_rate),
@@ -184,6 +239,43 @@ module drone2 (
 		.ac_active(ac_active));
 
 	/**
+	|	Controls the data output from the bno055_driver module which is fed 
+	|	to the angle_controller and body_frame_controller according to the
+	|	flight_mode module and SWA/SWB position.
+	|	Simply this module enables and disables the IMU to the system.
+	| 		file - imu_data_receiver.v
+	*/
+	imu_data_buffer imu_data_buffer (
+		// Outputs
+		.rate_x_buff(rate_x_buff),
+		.rate_y_buff(rate_y_buff),
+		.rate_z_buff(rate_z_buff),
+		.angle_x_buff(angle_x_buff),
+		.angle_y_buff(angle_y_buff),
+		.angle_z_buff(angle_z_buff), 
+		.lin_accel_x_buff(x_lin_accel_buff),
+		.lin_accel_y_buff(y_lin_accel_buff), 
+		.lin_accel_z_buff(z_lin_accel_buff), 
+		.x_vel_buff(x_lin_rate_buff),
+		.y_vel_buff(y_lin_rate_buff),
+		.z_vel_buff(z_lin_rate_buff),
+		// Inputs
+		.angle_x(x_rotation),
+		.angle_y(y_rotation),
+		.angle_z(z_rotation),
+		.rate_x(x_rotation_rate),
+		.rate_y(y_rotation_rate),
+		.rate_z(z_rotation_rate),
+		.lin_accel_x(x_linear_accel),
+		.lin_accel_y(y_linear_accel), 
+		.lin_accel_z(z_linear_accel), 
+		.x_vel(x_linear_rate),
+		.y_vel(y_linear_rate),
+		.z_vel(z_linear_rate),
+		.imu_data_sel(imu_data_sel),
+		.us_clk(us_clk));
+
+	/**
 	|	Get Receiver Inputs and Convert to 0-255 Module	
 	| 		file - receiver.v
 	*/
@@ -208,6 +300,26 @@ module drone2 (
 		.resetn(resetn));
 
 	/**
+	|	Controls the data the angle_controller sees according to the
+	|	flight_mode module and SWA/SWB position.
+	| 		file - rec_data_receiver.v
+	*/
+	rec_data_buffer	rec_data_buffer(
+		// Outputs
+		.yaw_val_buff(yaw_val_buff),
+		.roll_val_buff(roll_val_buff),
+		.pitch_val_buff(pitch_val_buff),
+		.throttle_val_buff(throttle_val_buff),
+		// Inputs
+		.yaw_rec_val(yaw_val),
+		.roll_rec_val(roll_val),
+		.pitch_rec_val(pitch_val),
+		.throttle_rec_val(throttle_val),
+		.curr_motor_rate(curr_avg_motor_rate),
+		.rec_data_sel(rec_data_sel),
+		.us_clk(us_clk));
+
+	/**
 	|	Take IMU provided orientation angle and user provided target angle and 
 	|	subract them to get the error angle rate to get to target angle position
 	| 		file - angle_controller.v
@@ -223,13 +335,13 @@ module drone2 (
 		.complete_signal(ac_valid_strobe),
 		.active_signal(ac_active),
 		// Inputs
-		.throttle_target(throttle_val),
-		.yaw_target(yaw_val),
-		.roll_target(roll_val),
-		.pitch_target(pitch_val),
-		.yaw_actual(z_rotation),
-		.roll_actual(y_rotation),
-		.pitch_actual(x_rotation),
+		.throttle_target(throttle_val_buff),
+		.yaw_target(yaw_val_buff),
+		.roll_target(roll_val_buff),
+		.pitch_target(pitch_val_buff),
+		.yaw_actual(angle_z_buff),
+		.roll_actual(angle_y_buff),
+		.pitch_actual(angle_x_buff),
 		.start_signal(imu_data_valid),
 		.resetn(resetn),
 		.us_clk(us_clk));
@@ -240,7 +352,7 @@ module drone2 (
 	| 		file - body_frame_controller.v
 	*/
 	body_frame_controller bfc (
-		// Outputs
+		// Outpus
 		.yaw_rate_out(yaw_rate),
 		.roll_rate_out(roll_rate),
 		.pitch_rate_out(pitch_rate),
@@ -251,9 +363,9 @@ module drone2 (
 		.yaw_target(yaw_target_rate),
 		.roll_target(roll_target_rate),
 		.pitch_target(pitch_target_rate),
-		.roll_rotation(x_rotation_rate),
-		.pitch_rotation(y_rotation_rate),
-		.yaw_rotation(z_rotation_rate),
+		.roll_rotation(rate_x_buff),
+		.pitch_rotation(rate_y_buff),
+		.yaw_rotation(rate_z_buff),
 		.roll_angle_error(roll_angle_error),
 		.pitch_angle_error(pitch_angle_error),
 		.start_signal(ac_valid_strobe),
@@ -321,4 +433,3 @@ module drone2 (
 			end
 	end
 endmodule
-
