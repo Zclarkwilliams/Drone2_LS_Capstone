@@ -79,40 +79,48 @@ module body_frame_controller (
 		STATE_COMPLETE = 4'b1000;
 
 	// PID controller rate limiting values
-	localparam signed 
-		ROLL_RATE_MIN  = -16'd4000,
-		ROLL_RATE_MAX  =  16'd4000,
-		PITCH_RATE_MIN = -16'd4000,
-		PITCH_RATE_MAX =  16'd4000,
-		YAW_RATE_MIN   = -16'd4000,
-		YAW_RATE_MAX   =  16'd4000;
+	localparam signed [`OPS_BIT_WIDTH-1:0]
+		ROLL_RATE_MIN  = -250 << `FIXED_POINT_SHIFT,
+		ROLL_RATE_MAX  =  250 << `FIXED_POINT_SHIFT,
+		PITCH_RATE_MIN = -250 << `FIXED_POINT_SHIFT,
+		PITCH_RATE_MAX =  250 << `FIXED_POINT_SHIFT,
+		YAW_RATE_MIN   = -250 << `FIXED_POINT_SHIFT,
+		YAW_RATE_MAX   =  250 << `FIXED_POINT_SHIFT;
 
 	/* PID controller proportional/integral/derivative constant values.
 	 * These are determined by first multiplying the value by the specific
 	 * K_* term and then shifting it using the K_*_SHIFT value.
 	 * Example: value = (value * ROLL_K_P) >>> ROLL_K_P_SHIFT;
 	 */	
-	 localparam signed // YAW CONTROL PARAMS
-		YAW_K_P			= 16'h001F,
-		YAW_K_P_SHIFT	= 4'h4,
-		YAW_K_I			= 16'h0000,
-		YAW_K_I_SHIFT	= 4'h4,
-		YAW_K_D			= 16'h0004,
-		YAW_K_D_SHIFT	= 4'h4;
-	localparam signed // ROLL CONTROL PARAMS
-		ROLL_K_P		= 16'h0004,
-		ROLL_K_P_SHIFT	= 4'h4,
-		ROLL_K_I		= 16'h0000,
-		ROLL_K_I_SHIFT	= 4'h4,
-		ROLL_K_D		= 16'h0001,
-		ROLL_K_D_SHIFT	= 4'h4;
-	localparam signed // PITCH CONTROL PARAMS
-		PITCH_K_P		= 16'h0004,
-		PITCH_K_P_SHIFT = 4'h4,
-		PITCH_K_I		= 16'h0000,
-		PITCH_K_I_SHIFT = 4'h4,
-		PITCH_K_D		= 16'h0001,
-		PITCH_K_D_SHIFT = 4'h4;
+	 // YAW CONTROL PARAMS
+	 localparam signed [`OPS_BIT_WIDTH-1:0]
+		YAW_K_P			= 48, // d48 no oscillating -> d56 oscillates
+		YAW_K_I			= 0,
+		YAW_K_D			= 5;
+	localparam signed [`SHIFT_OP_BIT_WIDTH-1:0]
+		YAW_K_P_SHIFT	= 4,
+		YAW_K_I_SHIFT	= 4,
+		YAW_K_D_SHIFT	= 4;
+		
+	// ROLL CONTROL PARAMS
+	localparam signed [`OPS_BIT_WIDTH-1:0]
+		ROLL_K_P		= 5,
+		ROLL_K_I		= 3,
+		ROLL_K_D		= 4;
+	localparam signed [`SHIFT_OP_BIT_WIDTH-1:0]
+		ROLL_K_P_SHIFT	= 4,
+		ROLL_K_I_SHIFT	= 4,
+		ROLL_K_D_SHIFT	= 4;
+		
+	// PITCH CONTROL PARAMS
+	localparam signed [`OPS_BIT_WIDTH-1:0]
+		PITCH_K_P		= 5,
+		PITCH_K_I		= 3,
+		PITCH_K_D		= 4;
+	localparam signed [`SHIFT_OP_BIT_WIDTH-1:0]
+		PITCH_K_P_SHIFT = 4,
+		PITCH_K_I_SHIFT = 4,
+		PITCH_K_D_SHIFT = 4;
 
 	// state variables
 	reg [STATE_BIT_WIDTH-1:0] state, next_state;

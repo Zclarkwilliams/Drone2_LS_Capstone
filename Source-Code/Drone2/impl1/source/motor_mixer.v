@@ -79,17 +79,19 @@ module motor_mixer (
 		STATE_BOUNDARY_CHECK	= 2,
 		STATE_SEND_OUTPUT		= 3;
 	reg [1:0] motor_mixer_state;
-
+	
 	//	Bias to add as a buffer to the motor equation
-	localparam signed 
-		MOTOR_1_RATE_BIAS		= 16'd0,
-		MOTOR_2_RATE_BIAS		= 16'd0,
-		MOTOR_3_RATE_BIAS		= 16'd0,
-		MOTOR_4_RATE_BIAS		= 16'd0;
+	localparam BIAS_BIT_WIDTH = 6'd16;
+	localparam signed [BIAS_BIT_WIDTH-1:0]
+		MOTOR_1_RATE_BIAS		= 0,
+		MOTOR_2_RATE_BIAS		= 0,
+		MOTOR_3_RATE_BIAS		= 0,
+		MOTOR_4_RATE_BIAS		= 0;
 
 	//	Scaler to set proportions of yaw, roll, and pitch
 	//  Shift to change impact of roll, pitch, and yaw
-	localparam
+	localparam SCALER_BIT_WIDTH = 1'd1;
+	localparam [SCALER_BIT_WIDTH-1:0]
 		MOTOR_RATE_YAW_SCALER 	= 1'd1,
 		MOTOR_RATE_ROLL_SCALER	= 1'd1,
 		MOTOR_RATE_PITCH_SCALER	= 1'd1;
