@@ -94,7 +94,7 @@ module body_frame_controller (
 	 */	
 	 // YAW CONTROL PARAMS
 	 localparam signed [`OPS_BIT_WIDTH-1:0]
-		YAW_K_P			= 51, // d48 no oscillating -> d56 oscillates
+		YAW_K_P			= 48, // d48 no oscillating -> d56 oscillates
 		YAW_K_I			= 0,
 		YAW_K_D			= 5;
 	localparam signed [`SHIFT_OP_BIT_WIDTH-1:0]

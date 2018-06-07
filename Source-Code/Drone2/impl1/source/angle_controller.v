@@ -65,14 +65,14 @@ module angle_controller (
 	// scale factors (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	// Multiplier Scaler Values
 	localparam signed [`OPS_BIT_WIDTH-1:0]
-		YAW_SCALE_MULT 		= 1,
+		YAW_SCALE_MULT 		= 48,
 		ROLL_SCALE_MULT 	= 36,
 		PITCH_SCALE_MULT 	= 32,
 		THROTTLE_SCALE_MULT	= 1;
 	
 	//Divisor Shift Values
 	localparam signed [`SHIFT_OP_BIT_WIDTH-1:0]	
-		YAW_SCALE_DIV 		= 0,
+		YAW_SCALE_DIV 		= 4,
 		PITCH_SCALE_DIV 	= 4,
 		ROLL_SCALE_DIV	 	= 4,
 		THROTTLE_SCALE_DIV	= 0;
