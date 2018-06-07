@@ -87,7 +87,7 @@ module angle_controller (
 	// Mapping input Padding Zeros
 	localparam signed
 		END_PAD				=  2'b0,
-		FRONT_PAD 			= 24'b0,
+		FRONT_PAD 			= 22'b0,
 		THROTTLE_F_PAD		= 20'b0,
 		THROTTLE_R_PAD		=  4'b0;
 
