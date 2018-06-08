@@ -124,15 +124,18 @@ module drone2 (
 		motor_4_rate;
 	
 	//------------- Flight Mode Wires -------------//
+	wire [`MOTOR_RATE_BIT_WIDTH-1:0]	curr_avg_motor_rate;
+	wire [`IMU_DATA_SEL_BIT_WIDTH-1:0]	imu_data_sel;
+	wire [`REC_DATA_SEL_BIT_WIDTH-1:0]	rec_data_sel;
+	wire [`DEBUG_WIRE_BIT_WIDTH-1:0]	flight_mode_debug_leds;
+	
+	//--------- Receiver Data Buffer Wires --------//
 	wire [`REC_VAL_BIT_WIDTH-1:0] 		
 		yaw_val_buff,
 		roll_val_buff,
 		pitch_val_buff,
 		throttle_val_buff;
-	wire [`MOTOR_RATE_BIT_WIDTH-1:0]	curr_avg_motor_rate;
-	wire [`IMU_DATA_SEL_BIT_WIDTH-1:0]	imu_data_sel;
-	wire [`REC_DATA_SEL_BIT_WIDTH-1:0]	rec_data_sel;
-	wire [`DEBUG_WIRE_BIT_WIDTH-1:0]	flight_mode_debug_leds;
+	wire [`DEBUG_WIRE_BIT_WIDTH-1:0]	rec_data_buff_debug_wire;
 
 	//---------- IMU Data Buffer Wires ------------//
 	wire [`IMU_VAL_BIT_WIDTH-1:0] 
@@ -190,7 +193,7 @@ module drone2 (
 		.rec_data_sel(rec_data_sel),
 		.curr_avg_motor_rate(curr_avg_motor_rate),
 		//	DEBUG LEDs
-		.DEBUG_LEDs(flight_mode_debug_leds),
+		.DEBUG_WIRE(flight_mode_debug_leds),
 		//	Module Inputs
 		.swa_swb_val(swa_swb_val),
 		.curr_motor_1_rate(motor_1_rate),
@@ -310,6 +313,8 @@ module drone2 (
 		.roll_val_buff(roll_val_buff),
 		.pitch_val_buff(pitch_val_buff),
 		.throttle_val_buff(throttle_val_buff),
+		// Debug wire to on-board debug_leds
+		.DEBUG_WIRE(rec_data_buff_debug_wire),
 		// Inputs
 		.yaw_rec_val(yaw_val),
 		.roll_rec_val(roll_val),
@@ -424,7 +429,7 @@ module drone2 (
 			DEBUG_LEDs	 <= 16'hAAAA;
 			end
 		else if (!DEBUG_LED_SWITCH_N) begin
-			led_data_out <= ~throttle_val;
+			led_data_out <= ~rec_data_buff_debug_wire;
 			DEBUG_LEDs	 <= throttle_target_rate;
 			end
 		else begin

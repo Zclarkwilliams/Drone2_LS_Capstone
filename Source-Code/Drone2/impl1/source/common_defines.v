@@ -92,6 +92,9 @@
 `define IMU_DATA_SEL_BIT_WIDTH		2'd2
 `define REC_DATA_SEL_BIT_WIDTH		3'd4
 
+// Variance allowed to just jump to throttle output at hover_rate
+`define THROTTLE_VARIANCE  			8'sd10
+
 /************************************************************ 
  *
  *	IMU_Data_Buffer and Rec_Data_Buffer (MUX) Module Defines
