@@ -132,7 +132,7 @@ module drone2 (
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0]	curr_avg_motor_rate;
 	wire [`IMU_DATA_SEL_BIT_WIDTH-1:0]	imu_data_sel;
 	wire [`REC_DATA_SEL_BIT_WIDTH-1:0]	rec_data_sel;
-	wire [15:0]	flight_mode_debug_leds;
+	wire [`DEBUG_WIRE_BIT_WIDTH-1:0]	flight_mode_debug_leds;
 
 	//---------- IMU Data Buffer Wires ------------//
 	wire [`IMU_VAL_BIT_WIDTH-1:0] 
@@ -428,7 +428,7 @@ module drone2 (
 			DEBUG_LEDs	 <= throttle_target_rate;
 			end
 		else begin
-			led_data_out <= ~imu_debug_out;
+			led_data_out <= ~flight_mode_debug_leds;//imu_debug_out;
 			DEBUG_LEDs	 <= y_rotation;
 			end
 	end
