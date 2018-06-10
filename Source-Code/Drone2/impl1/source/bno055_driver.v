@@ -53,7 +53,6 @@
  *  		x_velocity             Linear velocity in the X direction, one byte signed integer
  *  		y_velocity             Linear velocity in the Y direction, one byte signed integer
  *  		z_velocity             Linear velocity in the Z direction, one byte signed integer
- *   	rx_data_latch_strobe   Output rx data latch to upper level module for debugging  
  *
  * TODO: Add module description with description of inputs/outputs
  * 		instead of with the variable. Make this file look like all of
@@ -106,7 +105,6 @@ module bno055_driver #(
 	output reg [15:0]x_velocity,       
 	output reg [15:0]y_velocity,       
 	output reg [15:0]z_velocity,       
-	output reg rx_data_latch_strobe
 );
 
 	reg  read_write_in, next_read_write_in;           //  Value and next value of signal to i2c module to indicate read or write transaction, 1 = read, 0 = write
@@ -135,7 +133,7 @@ module bno055_driver #(
 	reg  [5:0]led_view_index;                         //  Index in data_rx_reg that is being monitored with status LEDs
 	reg  [5:0]next_led_view_index;                    //  Next value of LED View Index
 	reg  [7:0]data_rx_reg[`DATA_RX_BYTE_REG_CNT-1:0]; //  Store all measurement bytes from i2c read burst
-	reg  rstn_buffer;                                 //  Negedge clears received measurement buffer//	reg  rx_data_latch_strobe;                        //  Strobe data output register, latch onto current data in rx buffer, asyncronous latch
+	reg  rstn_buffer;                                 //  Negedge clears received measurement buffer	reg  rx_data_latch_strobe;                        //  Strobe data output register, latch onto current data in rx buffer, asyncronous latch
 	reg  rx_data_latch_tmp; 						  //  Syncronously latched value of the data latch strobe
 	reg  next_imu_good;                               //  Next value of module imu_good bit
 	reg  i2c_number;								  //  The i2c module to call, 0 = i2c EFB #1, 1 = i2c EFB #2
