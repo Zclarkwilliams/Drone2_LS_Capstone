@@ -100,7 +100,6 @@ module drone2 (
 		y_linear_accel,
 		z_linear_accel;
 	wire ac_active;
-	wire rx_data_latch_strobe;
 	wire imu_data_valid_monitor;
 	wire imu_good;
 	wire imu_data_valid;
@@ -169,7 +168,6 @@ module drone2 (
 		.x_velocity(x_linear_rate),
 		.y_velocity(y_linear_rate),
 		.z_velocity(z_linear_rate),
-		.rx_data_latch_strobe(rx_data_latch_strobe),
 		// DEBUG WIRE
 		.led_data_out(imu_debug_out),
 		// InOuts
