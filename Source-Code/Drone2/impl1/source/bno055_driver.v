@@ -104,7 +104,7 @@ module bno055_driver #(
 	output reg [7:0]calib_status,      
 	output reg [15:0]x_velocity,       
 	output reg [15:0]y_velocity,       
-	output reg [15:0]z_velocity,       
+	output reg [15:0]z_velocity    
 );
 
 	reg  read_write_in, next_read_write_in;           //  Value and next value of signal to i2c module to indicate read or write transaction, 1 = read, 0 = write
