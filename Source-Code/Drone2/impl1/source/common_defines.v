@@ -102,7 +102,7 @@
  ************************************************************/
  
  //	Motor rate values for flight modes
-`define HOVER_THROTTLE_VAL			8'd185
+`define HOVER_THROTTLE_VAL			8'd160
  
  // Select-able control modes for outputs 
  //	Receiver Data Buffer

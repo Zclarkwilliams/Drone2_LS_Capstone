@@ -58,44 +58,51 @@ module flight_mode	(//	Module Outputs
 	localparam CALIB_DONE_VAL = 8'hFF;
 	
 	// SWA and SWB position combination values encoded
-	localparam  SW_AB_BIT_WIDTH = 8;
+	localparam  SW_AB_BIT_WIDTH = 3'd4;
 	localparam [SW_AB_BIT_WIDTH - 1:0] 
-		SW_AB_0X	= 8'h00,
-		SW_AB_10	= 8'h01,
-		SW_AB_20	= 8'h02,
-		SW_AB_11	= 8'h11,
-		SW_AB_21 	= 8'h12;
+		SW_AB_0X				= 0,
+		SW_AB_10				= 1,
+		SW_AB_20				= 2,
+		SW_AB_11				= 3,
+		SW_AB_21 				= 4;
 	
 	// Flight Modes possible 
-	localparam  MODE_BIT_WIDTH = 3'd4;
+	localparam  MODE_BIT_WIDTH = 3'd7;
 	localparam [MODE_BIT_WIDTH-1:0] 
-		MODE_STASIS				= 0,
-		MODE_USER_RESET			= 1,
-		MODE_TAKE_OFF			= 2,
-		MODE_USER_CNTRL_NO_IMU	= 3,
-		MODE_USER_CNTRL_IMU		= 4,
-		MODE_AUTO_LAND 			= 5,
-		MODE_DUMMY 				= 6,
-		MODE_HOVER 				= 7;
+		MODE_STASIS				= 8'b00000001,
+		MODE_USER_RESET			= 8'b00000010,
+		MODE_TAKE_OFF			= 8'b00000100,
+		MODE_USER_CNTRL_NO_IMU	= 8'b00001000,
+		MODE_USER_CNTRL_IMU		= 8'b00010000,
+		MODE_AUTO_LAND 			= 8'b00100000,
+		MODE_DUMMY 				= 8'b01000000,
+		MODE_HOVER 				= 8'b10000000;
 	
 	//	SWA, SWB position decoding from receiver module
 	localparam [`REC_VAL_BIT_WIDTH-1:0]
-		SWA_SWB_0X_MIN	= 118,
-		SWA_SWB_0X_MAX 	= 128,
-		SWA_SWB_10_MIN 	= 220,
-		SWA_SWB_10_MAX 	= 230,
-		SWA_SWB_20_MIN 	=  18,
-		SWA_SWB_20_MAX 	=  28,
-		SWA_SWB_11_MIN 	= 168,
-		SWA_SWB_11_MAX 	= 178,
-		SWA_SWB_12_MIN 	=  68,
-		SWA_SWB_12_MAX 	=  78;
+		SWA_SWB_0X_MIN			= 118,
+		SWA_SWB_0X_MAX 			= 128,
+		SWA_SWB_10_MIN 			= 220,
+		SWA_SWB_10_MAX 			= 230,
+		SWA_SWB_20_MIN 			=  18,
+		SWA_SWB_20_MAX 			=  28,
+		SWA_SWB_11_MIN 			= 168,
+		SWA_SWB_11_MAX 			= 178,
+		SWA_SWB_12_MIN 			=  68,
+		SWA_SWB_12_MAX 			=  78;
 
 	//	System, imu, and other subsystem initialization timer
-	localparam TIMER_BIT_WIDTH = 5'd22;
+	localparam TIMER_BIT_WIDTH = 5'd24;
 	localparam signed [TIMER_BIT_WIDTH-1:0]
-		INIT_TIMER_LENGTH	= 10000000,
+		INIT_TIMER_LENGTH	= 1500000,
 		INIT_TIMER_ZERO 	= 0;
+	
+	// Rise to hover elevation timer setup and params
+	localparam RISE_TO_HOVER_BIT_WIDTH = 5'd21;
+	localparam signed [RISE_TO_HOVER_BIT_WIDTH-1:0] 
+		TIMER_TO_RISE		= 2000000, // 2 seconds
+		TIMER_RISE_IS_ZERO 	= 0;
+	reg signed [RISE_TO_HOVER_BIT_WIDTH-1:0] timer_to_hover;
 	
 	// Variables of regs and wires
 	wire		imu_rdy;									// Initialization of IMU complete verified by calib_status
@@ -104,6 +111,7 @@ module flight_mode	(//	Module Outputs
 	reg			first_start;								// Flag to catch if first start after power off for sys_rdy timer
 	reg			take_off_start;								// Flag to check if drone on ground for auto-take-off mode
 	reg			reset_land;									// Flag to notify that we are on a reset forced landing, i.e. user cannot resume control till landed
+	reg			hover_start;								// Flag to indicate if we have started the rise to hover timer
 	reg  		[MODE_BIT_WIDTH-1:0] 	mode;				// assigning modes of flight
 	reg	 		[SW_AB_BIT_WIDTH-1:0] 	swa_swb_position;	// SWA & SWB position assingnment
 	reg signed 	[TIMER_BIT_WIDTH-1:0]	init_timer;			// System initialization timer
@@ -114,7 +122,7 @@ module flight_mode	(//	Module Outputs
 	initial first_start = `FALSE;
 	
 	// Debug LEDs assignment to monitor module functionality 
-	assign DEBUG_WIRE = (!sys_rdy) ? 8'hAA : curr_avg_motor_rate;//mode;
+	assign DEBUG_WIRE = (!sys_rdy) ? 8'hAA : mode;
 	
 	// Set init flag so as to know if calibration and first run occured
 	assign imu_rdy = ((imu_calib_status == CALIB_DONE_VAL)) ? `FALSE : `TRUE;
@@ -273,8 +281,19 @@ module flight_mode	(//	Module Outputs
 							else begin
 								if (curr_avg_motor_rate < `HOVER_THROTTLE_VAL)
 									mode		<= MODE_TAKE_OFF; // wait till user increases throttle to stay in flight
-								else
-									mode		<= MODE_HOVER; 	  // reached hover throttle value got to hover mode
+								else begin // Hover reached now rise for 2 seconds then switch to HOVER_MODE
+									if (!timer_to_hover) begin
+										hover_start		<= `TRUE;
+										timer_to_hover	<= TIMER_TO_RISE;
+									end
+									else if (timer_to_hover > TIMER_RISE_IS_ZERO)
+										timer_to_hover	<= timer_to_hover - `ONE;
+									else begin
+										mode			<= MODE_HOVER; 	 
+										hover_start		<= `FALSE;
+										timer_to_hover	<= TIMER_RISE_IS_ZERO;
+									end
+								end
 							end
 						end
 						default: begin
