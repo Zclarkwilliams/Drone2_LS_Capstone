@@ -1,13 +1,13 @@
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, 
- * Brett Creeley, 
- * Daniel Christiansen, 
- * Kirk Hooper, 
+ * Ethan Grinnell,
+ * Brett Creeley,
+ * Daniel Christiansen,
+ * Kirk Hooper,
  * Zachary Clark-Williams
  */
- 
+
 /**
  *  Module takes as inputs:
  *		- Target rate & angles from the receiver module
@@ -63,11 +63,11 @@ module angle_controller (
 		ROLL_MAX		=  100 << `FIXED_POINT_SHIFT,
 		ROLL_MIN		= -100 << `FIXED_POINT_SHIFT;
 
-		
+
 	// Mapping input range to other
 	localparam signed [`OPS_BIT_WIDTH-1:0]
 		MAPPING_SUBS 		= 500;
-	
+
 	// Mapping input Padding Zeros
 	localparam signed
 		END_PAD				= 2'b0,
@@ -182,9 +182,9 @@ module angle_controller (
 					active_signal			<= `TRUE;
 					// Apply scaler: (axis_val * scale_multiplier) / Scale_divisor
 					scaled_yaw				<= scale_val(mapped_yaw, `YAW_SCALE_MULT, `YAW_SCALE_SHIFT);
-          scaled_roll				<= scale_val(mapped_roll, `ROLL_SCALE_MULT, `ROLL_SCALE_SHIFT);
-          scaled_pitch 			<= scale_val(mapped_pitch, `PITCH_SCALE_MULT, `PITCH_SCALE_SHIFT);
-          scaled_throttle			<= scale_val(mapped_throttle, `THROTTLE_SCALE_MULT, `THROTTLE_SCALE_SHIFT);
+					scaled_roll				<= scale_val(mapped_roll, `ROLL_SCALE_MULT, `ROLL_SCALE_SHIFT);
+					scaled_pitch 			<= scale_val(mapped_pitch, `PITCH_SCALE_MULT, `PITCH_SCALE_SHIFT);
+					scaled_throttle			<= scale_val(mapped_throttle, `THROTTLE_SCALE_MULT, `THROTTLE_SCALE_SHIFT);
 				end
 				STATE_LIMITING: begin
 					complete_signal 		<= `FALSE;
@@ -197,7 +197,7 @@ module angle_controller (
 						throttle_rate_out 	<= `MOTOR_VAL_MIN;
 					else
 						throttle_rate_out	<= scaled_throttle;
-					
+
 					// Yaw rate limits
 					if(scaled_yaw > YAW_MAX)
 						yaw_rate_out 		<= YAW_MAX;
@@ -205,7 +205,7 @@ module angle_controller (
 						yaw_rate_out 		<= YAW_MIN;
 					else
 						yaw_rate_out 		<= scaled_yaw;
-					
+
 					// Roll rate limits
 					if(scaled_roll > ROLL_MAX)
 						roll_rate_out 		<= ROLL_MAX;
@@ -213,7 +213,7 @@ module angle_controller (
 						roll_rate_out 		<= ROLL_MIN;
 					else
 						roll_rate_out 		<= scaled_roll;
-					
+
 					// Pitch rate limits
 					if(scaled_pitch > PITCH_MAX)
 						pitch_rate_out		<= PITCH_MAX;
@@ -248,14 +248,14 @@ function automatic signed [`RATE_BIT_WIDTH-1:0] scale_val;
 	input reg signed [`RATE_BIT_WIDTH-1:0]		val;
 	input reg signed [`OPS_BIT_WIDTH-1:0]	  	k_mult;
 	input reg signed [`SHIFT_OP_BIT_WIDTH-1:0]	k_shift;
-	
+
 	reg signed [31:0]
 		val_32,
 		scaled;
 
 	localparam
 		SHIFT_BACK 	= 7'd16,
-		ZERO_PAD	= 16'd0; 
+		ZERO_PAD	= 16'd0;
 
 	localparam signed [31:0]
 		OVERFLOW_PROTECTION_MIN = 32'shFFFF8000,
@@ -266,7 +266,7 @@ function automatic signed [`RATE_BIT_WIDTH-1:0] scale_val;
 		val_32 = $signed({val, ZERO_PAD}) >>> SHIFT_BACK;
 		//apply the scalar
 		scaled = (val_32 * k_mult) >>> k_shift;
-		
+
 		//make sure we don't output an overflowed value
 		if (scaled <= OVERFLOW_PROTECTION_MIN)
 			scale_val = OVERFLOW_PROTECTION_MIN;
