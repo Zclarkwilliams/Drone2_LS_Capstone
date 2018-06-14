@@ -31,6 +31,7 @@
 `timescale 1ns / 1ns
 
 `include "common_defines.v"
+`include "pid_parameters.v"
 
 module angle_controller (
 	output reg  signed [`RATE_BIT_WIDTH-1:0] throttle_rate_out,
@@ -62,20 +63,6 @@ module angle_controller (
 		ROLL_MAX		=  100 << `FIXED_POINT_SHIFT,
 		ROLL_MIN		= -100 << `FIXED_POINT_SHIFT;
 
-	// scale factors (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
-	// Multiplier Scaler Values
-	localparam signed [`OPS_BIT_WIDTH-1:0]
-		YAW_SCALE_MULT 		= 48,
-		ROLL_SCALE_MULT 	= 36,
-		PITCH_SCALE_MULT 	= 32,
-		THROTTLE_SCALE_MULT	= 1;
-	
-	//Divisor Shift Values
-	localparam signed [`SHIFT_OP_BIT_WIDTH-1:0]	
-		YAW_SCALE_DIV 		= 4,
-		PITCH_SCALE_DIV 	= 4,
-		ROLL_SCALE_DIV	 	= 4,
-		THROTTLE_SCALE_DIV	= 0;
 		
 	// Mapping input range to other
 	localparam signed [`OPS_BIT_WIDTH-1:0]
@@ -197,10 +184,10 @@ module angle_controller (
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
 					// Apply scaler: (axis_val * scale_multiplier) / Scale_divisor
-					scaled_yaw				<= (mapped_yaw * YAW_SCALE_MULT)			>>> YAW_SCALE_DIV;
-					scaled_roll				<= (mapped_roll * ROLL_SCALE_MULT) 			>>> ROLL_SCALE_DIV;
-					scaled_pitch 			<= (mapped_pitch * PITCH_SCALE_MULT) 		>>> PITCH_SCALE_DIV;
-					scaled_throttle			<= (mapped_throttle * THROTTLE_SCALE_MULT) 	>>> THROTTLE_SCALE_DIV;
+					scaled_yaw				<= (mapped_yaw * `YAW_SCALE_MULT)			>>> `YAW_SCALE_SHIFT;
+					scaled_roll				<= (mapped_roll * `ROLL_SCALE_MULT) 			>>> `ROLL_SCALE_SHIFT;
+					scaled_pitch 			<= (mapped_pitch * `PITCH_SCALE_MULT) 		>>> `PITCH_SCALE_SHIFT;
+					scaled_throttle			<= (mapped_throttle * `THROTTLE_SCALE_MULT) 	>>> `THROTTLE_SCALE_SHIFT;
 				end
 				STATE_LIMITING: begin
 					complete_signal 		<= `FALSE;
