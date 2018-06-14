@@ -34,8 +34,8 @@
 `define SHIFT_OP_BIT_WIDTH		3'd4
 
 //  A byte of all zeros
-`define BYTE_ALL_ZERO           8'sh00
-`define ALL_ZERO_2BYTE          16'sh0000
+`define BYTE_ALL_ZERO            8'sd0
+`define ALL_ZERO_2BYTE          16'sd0
 
 // PWM signal pulse lengths
 `define MIN_PWM_TIME_HIGH_US	16'd1000

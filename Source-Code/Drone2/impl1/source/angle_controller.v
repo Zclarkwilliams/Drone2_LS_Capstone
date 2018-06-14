@@ -251,18 +251,24 @@ module angle_controller (
 			endcase
 		end
 	end
-	
-function automatic signed [15:0] scale_val;
-	input reg signed [15:0] val;
 
-	input reg signed [7:0] k_mult;
-	input reg signed [7:0] k_div;
+/*
+*	scale_val function is created to operate the:
+*		output = (input_value x scaling_value) / scaling_shift
+*	this mitigates intermediate register overflow.
+*/
+function automatic signed [`RATE_BIT_WIDTH-1:0] scale_val;
+	input reg signed [`RATE_BIT_WIDTH-1:0]		val;
+	input reg signed [`OPS_BIT_WIDTH-1:0]	  	k_mult;
+	input reg signed [`SHIFT_OP_BIT_WIDTH-1:0]	k_shift;
 	
 	reg signed [31:0]
 		val_32,
-		k_mult_32,
-		k_div_32,
 		scaled;
+
+	localparam
+		SHIFT_BACK 	= 7'd16,
+		ZERO_PAD	= 16'd0; 
 
 	localparam signed [31:0]
 		OVERFLOW_PROTECTION_MIN = 32'shFFFF8000,
@@ -270,9 +276,9 @@ function automatic signed [15:0] scale_val;
 
 	begin
 		//cast values to the 32 bits
-		val_32 = $signed({val, `ALL_ZERO_2BYTE}) >>> 16;
+		val_32 = $signed({val, ZERO_PAD}) >>> SHIFT_BACK;
 		//apply the scalar
-		scaled = (val_32 * k_mult) >>> k_div;
+		scaled = (val_32 * k_mult) >>> k_shift;
 		
 		//make sure we don't output an overflowed value
 		if (scaled <= OVERFLOW_PROTECTION_MIN)
@@ -280,7 +286,7 @@ function automatic signed [15:0] scale_val;
 		else if (scaled >= OVERFLOW_PROTECTION_MAX)
 			scale_val = OVERFLOW_PROTECTION_MAX;
 		else
-			scale_val = $signed(scaled[15:0]);
+			scale_val = $signed(scaled[`RATE_BIT_WIDTH-1:0]);
 	end
 endfunction
 endmodule
