@@ -70,7 +70,7 @@ module body_frame_controller (
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] latched_pitch_rotation;
 	reg signed [`RATE_BIT_WIDTH-1:0]	latched_roll_angle_error;
 	reg signed [`RATE_BIT_WIDTH-1:0]	latched_pitch_angle_error;
-	
+
 	localparam STATE_BIT_WIDTH = 3'd4;
 	// state names
 	localparam
