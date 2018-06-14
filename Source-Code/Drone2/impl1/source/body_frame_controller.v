@@ -36,6 +36,7 @@
 
 `timescale 1ns / 1ns
 `include "common_defines.v"
+`include "pid_parameters.v"
 
 module body_frame_controller (
 	output wire signed [`PID_RATE_BIT_WIDTH-1:0] yaw_rate_out,
@@ -86,41 +87,6 @@ module body_frame_controller (
 		PITCH_RATE_MAX =  250 << `FIXED_POINT_SHIFT,
 		YAW_RATE_MIN   = -250 << `FIXED_POINT_SHIFT,
 		YAW_RATE_MAX   =  250 << `FIXED_POINT_SHIFT;
-
-	/* PID controller proportional/integral/derivative constant values.
-	 * These are determined by first multiplying the value by the specific
-	 * K_* term and then shifting it using the K_*_SHIFT value.
-	 * Example: value = (value * ROLL_K_P) >>> ROLL_K_P_SHIFT;
-	 */	
-	 // YAW CONTROL PARAMS
-	 localparam signed [`OPS_BIT_WIDTH-1:0]
-		YAW_K_P			= 48, // d48 no oscillating -> d56 oscillates
-		YAW_K_I			= 0,
-		YAW_K_D			= 5;
-	localparam signed [`SHIFT_OP_BIT_WIDTH-1:0]
-		YAW_K_P_SHIFT	= 4,
-		YAW_K_I_SHIFT	= 4,
-		YAW_K_D_SHIFT	= 4;
-		
-	// ROLL CONTROL PARAMS
-	localparam signed [`OPS_BIT_WIDTH-1:0]
-		ROLL_K_P		= 5,
-		ROLL_K_I		= 3,
-		ROLL_K_D		= 4;
-	localparam signed [`SHIFT_OP_BIT_WIDTH-1:0]
-		ROLL_K_P_SHIFT	= 4,
-		ROLL_K_I_SHIFT	= 4,
-		ROLL_K_D_SHIFT	= 4;
-		
-	// PITCH CONTROL PARAMS
-	localparam signed [`OPS_BIT_WIDTH-1:0]
-		PITCH_K_P		= 5,
-		PITCH_K_I		= 3,
-		PITCH_K_D		= 4;
-	localparam signed [`SHIFT_OP_BIT_WIDTH-1:0]
-		PITCH_K_P_SHIFT = 4,
-		PITCH_K_I_SHIFT = 4,
-		PITCH_K_D_SHIFT = 4;
 
 	// state variables
 	reg [STATE_BIT_WIDTH-1:0] state, next_state;
@@ -257,12 +223,11 @@ module body_frame_controller (
 	pid #(
 		.RATE_MIN(YAW_RATE_MIN),
 		.RATE_MAX(YAW_RATE_MAX),
-		.K_P_SHIFT(YAW_K_P_SHIFT),
-		.K_I_SHIFT(YAW_K_I_SHIFT),
-		.K_D_SHIFT(YAW_K_D_SHIFT),
-		.K_P(YAW_K_P),
-		.K_I(YAW_K_I),
-		.K_D(YAW_K_D))
+		.K_P_SHIFT(`YAW_K_P_SHIFT),
+		.K_I_SHIFT(`YAW_K_I_SHIFT),
+		.K_P(`YAW_K_P),
+		.K_I(`YAW_K_I),
+		.K_D(`YAW_K_D))
 	yaw_pid (
 		// Output
 		.rate_out(yaw_rate_out),
@@ -282,12 +247,12 @@ module body_frame_controller (
 	pid #(
 		.RATE_MIN(PITCH_RATE_MIN),
 		.RATE_MAX(PITCH_RATE_MAX),
-		.K_P_SHIFT(PITCH_K_P_SHIFT),
-		.K_I_SHIFT(PITCH_K_I_SHIFT),
-		.K_D_SHIFT(PITCH_K_D_SHIFT),
-		.K_P(PITCH_K_P),
-		.K_I(PITCH_K_I),
-		.K_D(PITCH_K_D))
+		.K_P_SHIFT(`PITCH_K_P_SHIFT),
+		.K_I_SHIFT(`PITCH_K_I_SHIFT),
+		.K_D_SHIFT(`PITCH_K_D_SHIFT),
+		.K_P(`PITCH_K_P),
+		.K_I(`PITCH_K_I),
+		.K_D(`PITCH_K_D))
 	pitch_pid (
 		// Output
 		.rate_out(pitch_rate_out),
@@ -307,12 +272,12 @@ module body_frame_controller (
 	pid #(
 		.RATE_MIN(ROLL_RATE_MIN),
 		.RATE_MAX(ROLL_RATE_MAX),
-		.K_P_SHIFT(ROLL_K_P_SHIFT),
-		.K_I_SHIFT(ROLL_K_I_SHIFT),
-		.K_D_SHIFT(ROLL_K_D_SHIFT),
-		.K_P(ROLL_K_P),
-		.K_I(ROLL_K_I),
-		.K_D(ROLL_K_D))
+		.K_P_SHIFT(`ROLL_K_P_SHIFT),
+		.K_I_SHIFT(`ROLL_K_I_SHIFT),
+		.K_D_SHIFT(`ROLL_K_D_SHIFT),
+		.K_P(`ROLL_K_P),
+		.K_I(`ROLL_K_I),
+		.K_D(`ROLL_K_D))
 	roll_pid (
 		// Output
 		.rate_out(roll_rate_out),
