@@ -39,21 +39,15 @@
 			  input  wire us_clk);
 
 	// working registers
-	reg signed [15:0]//[`OPS_BIT_WIDTH-1:0]
+	reg signed [`OPS_BIT_WIDTH-1:0]
 		error_change, 
 		rotation_total,
 		rotation_error, 
-		//angle_err_temp,
-		//target_rot_temp,
-		//actual_rot_temp,
 		prev_rotation_error,
 		scaled_rotation,
 		rotation_integral,
 		rotation_derivative,
 		rotation_proportional;
-	
-	// PADDING AND EXTEND SIGN BIT TO 32 BITS
-//	localparam SHIFT_TO_LSB = 5'd16;
 	
 	// state names
 	localparam STATE_BIT_WIDTH = 4'd7;
@@ -84,7 +78,7 @@
 		if(!resetn) begin
 			pid_active 		<= `FALSE;
 			pid_complete 	<= `FALSE;
-			rate_out 		<= 16'h0000;
+			rate_out 		<= `ALL_ZERO_2BYTE;
 		end
 		else begin
 			case(state)
@@ -128,7 +122,7 @@
 				default: begin
 					pid_active 				<= `FALSE;
 					pid_complete 			<= `FALSE;
-					rate_out 				<= 16'h0000;
+					rate_out 				<= `ALL_ZERO_2BYTE;
 				end
 			endcase
 		end
@@ -172,23 +166,35 @@
 		end
 	end
 	
-function signed [15:0] scale_val;
+function automatic signed [15:0] scale_val;
 	input reg signed [15:0] val;
-	input reg signed [15:0] k_mult;
-	input reg signed [15:0] k_div;
+
+	input reg signed [7:0] k_mult;
+	input reg signed [7:0] k_div;
 	
-	reg signed 		 [31:0] val_32;
-	reg signed 		 [31:0] k_mult_32;
-	reg signed 		 [31:0] k_div_32;
-	reg signed 		 [31:0] scaled;
-	
+	reg signed [31:0]
+		val_32,
+		k_mult_32,
+		k_div_32,
+		scaled;
+
+	localparam signed [31:0]
+		OVERFLOW_PROTECTION_MIN = 32'shFFFF8000,
+		OVERFLOW_PROTECTION_MAX = 32'sh00007FFF;
+
 	begin
 		//cast values to the 32 bits
-		val_32 		= $signed({val, 16'b0}) >>> 16;
+		val_32 = $signed({val, `ALL_ZERO_2BYTE}) >>> 16;
+		//apply the scalar
+		scaled = (val_32 * k_mult) >>> k_div;
 		
-		scaled		= (val_32 * k_mult) >>> k_div;
-		
-		scale_val 	= $signed({scaled[31], scaled[14:0]});
+		//make sure we don't output an overflowed value
+		if (scaled <= OVERFLOW_PROTECTION_MIN)
+			scale_val = OVERFLOW_PROTECTION_MIN;
+		else if (scaled >= OVERFLOW_PROTECTION_MAX)
+			scale_val = OVERFLOW_PROTECTION_MAX;
+		else
+			scale_val = $signed(scaled[15:0]);
 	end
 endfunction
 endmodule

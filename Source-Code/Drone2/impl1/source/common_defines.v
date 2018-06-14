@@ -30,10 +30,8 @@
 
 // MAX MIN fixed point shift in decimal
 `define FIXED_POINT_SHIFT		4'sd4
-`define OPS_BIT_WIDTH			7'd32
+`define OPS_BIT_WIDTH			5'd16
 `define SHIFT_OP_BIT_WIDTH		3'd4
-`define	BITS_EXTRACT			6'd16
-`define PADDING_ZEROS 			16'd0
 
 //  A byte of all zeros
 `define BYTE_ALL_ZERO           8'sh00
@@ -81,6 +79,3 @@
 //	Min and Max boundary values for to send to ESC's
 `define MOTOR_VAL_MIN					16'sh0020
 `define MOTOR_VAL_MAX					16'sh0FA0
-
-//	Value to add to value before bit shift rounding to help rounding error
-`define MOTOR_RATE_ROUND_UP_VAL 		8'd127
