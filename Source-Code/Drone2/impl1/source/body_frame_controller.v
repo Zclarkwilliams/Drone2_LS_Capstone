@@ -93,7 +93,7 @@ module body_frame_controller (
 
 	// debug wires
 	wire [`DEBUG_WIRE_BIT_WIDTH-1:0] DEBUG_WIRE_YAW, DEBUG_WIRE_ROLL, DEBUG_WIRE_PITCH;
-	assign DEBUG_WIRE = (!resetn) ? 16'hA0A0 : DEBUG_WIRE_PITCH;
+	assign DEBUG_WIRE = (!resetn) ? 16'hAAAA : DEBUG_WIRE_YAW;
 
 	// latch start signal and target/actual rotational angles
 	always @(posedge us_clk or negedge resetn) begin

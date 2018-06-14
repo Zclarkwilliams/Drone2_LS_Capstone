@@ -68,9 +68,6 @@ module angle_controller (
 	localparam signed [`OPS_BIT_WIDTH-1:0]
 		MAPPING_SUBS 		= 500;
 	
-	// Pad with zeros on front to compare as 32 bit number
-	localparam signed MOTOR_VAL_MIN_32BIT = {`PADDING_ZEROS, `MOTOR_VAL_MIN};
-	
 	// Mapping input Padding Zeros
 	localparam signed
 		END_PAD				=  2'b0,
@@ -121,10 +118,10 @@ module angle_controller (
 		end
 		else begin
 			state 				<= next_state;
-			latched_throttle 	<= throttle_target;
 			latched_yaw 		<= yaw_target;
-			latched_pitch 		<= pitch_target;
 			latched_roll 		<= roll_target;
+			latched_pitch 		<= pitch_target;
+			latched_throttle 	<= throttle_target;
 		end
 	end
 
@@ -184,10 +181,10 @@ module angle_controller (
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
 					// Apply scaler: (axis_val * scale_multiplier) / Scale_divisor
-					scaled_yaw				<= (mapped_yaw * `YAW_SCALE_MULT)			>>> `YAW_SCALE_SHIFT;
-					scaled_roll				<= (mapped_roll * `ROLL_SCALE_MULT) 			>>> `ROLL_SCALE_SHIFT;
-					scaled_pitch 			<= (mapped_pitch * `PITCH_SCALE_MULT) 		>>> `PITCH_SCALE_SHIFT;
-					scaled_throttle			<= (mapped_throttle * `THROTTLE_SCALE_MULT) 	>>> `THROTTLE_SCALE_SHIFT;
+					scaled_yaw				<= scale_val(mapped_yaw, `YAW_SCALE_MULT, `YAW_SCALE_SHIFT);
+          scaled_roll				<= scale_val(mapped_roll, `ROLL_SCALE_MULT, `ROLL_SCALE_SHIFT);
+          scaled_pitch 			<= scale_val(mapped_pitch, `PITCH_SCALE_MULT, `PITCH_SCALE_SHIFT);
+          scaled_throttle			<= scale_val(mapped_throttle, `THROTTLE_SCALE_MULT, `THROTTLE_SCALE_SHIFT);
 				end
 				STATE_LIMITING: begin
 					complete_signal 		<= `FALSE;
@@ -196,37 +193,37 @@ module angle_controller (
 					// Throttle rate limits
 					if(scaled_throttle > THROTTLE_MAX)
 						throttle_rate_out 	<= THROTTLE_MAX;
-					else if(scaled_throttle < MOTOR_VAL_MIN_32BIT)
+					else if(scaled_throttle < `MOTOR_VAL_MIN)
 						throttle_rate_out 	<= `MOTOR_VAL_MIN;
 					else
-						throttle_rate_out	<= scaled_throttle[`BITS_EXTRACT-1:0];
+						throttle_rate_out	<= scaled_throttle;
 					
 					// Yaw rate limits
 					if(scaled_yaw > YAW_MAX)
-						yaw_rate_out 		<= YAW_MAX[`BITS_EXTRACT-1:0];
+						yaw_rate_out 		<= YAW_MAX;
 					else if(scaled_yaw < YAW_MIN)
-						yaw_rate_out 		<= YAW_MIN[`BITS_EXTRACT-1:0];
+						yaw_rate_out 		<= YAW_MIN;
 					else
-						yaw_rate_out 		<= scaled_yaw[`BITS_EXTRACT-1:0];
+						yaw_rate_out 		<= scaled_yaw;
 					
 					// Roll rate limits
 					if(scaled_roll > ROLL_MAX)
-						roll_rate_out 		<= ROLL_MAX[`BITS_EXTRACT-1:0];
+						roll_rate_out 		<= ROLL_MAX;
 					else if(scaled_roll < ROLL_MIN)
-						roll_rate_out 		<= ROLL_MIN[`BITS_EXTRACT-1:0];
+						roll_rate_out 		<= ROLL_MIN;
 					else
-						roll_rate_out 		<= scaled_roll[`BITS_EXTRACT-1:0];
+						roll_rate_out 		<= scaled_roll;
 					
 					// Pitch rate limits
 					if(scaled_pitch > PITCH_MAX)
-						pitch_rate_out		<= PITCH_MAX[`BITS_EXTRACT-1:0];
+						pitch_rate_out		<= PITCH_MAX;
 					else if(scaled_pitch < PITCH_MIN)
-						pitch_rate_out 		<= PITCH_MIN[`BITS_EXTRACT-1:0];
+						pitch_rate_out 		<= PITCH_MIN;
 					else
-						pitch_rate_out		<= scaled_pitch[`BITS_EXTRACT-1:0];
+						pitch_rate_out		<= scaled_pitch;
 
-					pitch_angle_error		<= mapped_pitch[`BITS_EXTRACT-1:0];
-					roll_angle_error		<= mapped_roll[`BITS_EXTRACT-1:0];
+					pitch_angle_error		<= mapped_pitch;
+					roll_angle_error		<= mapped_roll;
 				end
 				STATE_COMPLETE: begin
 					complete_signal 		<= `TRUE;
@@ -241,4 +238,42 @@ module angle_controller (
 			endcase
 		end
 	end
+
+/*
+*	scale_val function is created to operate the:
+*		output = (input_value x scaling_value) / scaling_shift
+*	this mitigates intermediate register overflow.
+*/
+function automatic signed [`RATE_BIT_WIDTH-1:0] scale_val;
+	input reg signed [`RATE_BIT_WIDTH-1:0]		val;
+	input reg signed [`OPS_BIT_WIDTH-1:0]	  	k_mult;
+	input reg signed [`SHIFT_OP_BIT_WIDTH-1:0]	k_shift;
+	
+	reg signed [31:0]
+		val_32,
+		scaled;
+
+	localparam
+		SHIFT_BACK 	= 7'd16,
+		ZERO_PAD	= 16'd0; 
+
+	localparam signed [31:0]
+		OVERFLOW_PROTECTION_MIN = 32'shFFFF8000,
+		OVERFLOW_PROTECTION_MAX = 32'sh00007FFF;
+
+	begin
+		//cast values to the 32 bits
+		val_32 = $signed({val, ZERO_PAD}) >>> SHIFT_BACK;
+		//apply the scalar
+		scaled = (val_32 * k_mult) >>> k_shift;
+		
+		//make sure we don't output an overflowed value
+		if (scaled <= OVERFLOW_PROTECTION_MIN)
+			scale_val = OVERFLOW_PROTECTION_MIN;
+		else if (scaled >= OVERFLOW_PROTECTION_MAX)
+			scale_val = OVERFLOW_PROTECTION_MAX;
+		else
+			scale_val = $signed(scaled[`RATE_BIT_WIDTH-1:0]);
+	end
+endfunction
 endmodule
