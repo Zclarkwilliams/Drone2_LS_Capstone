@@ -31,7 +31,7 @@ module pwm_generator (
 	output wire motor_2_pwm,
 	output wire motor_3_pwm,
 	output wire motor_4_pwm,
-	//output wire [2:0] state_out,
+	// output wire [2:0] state_out,
 	input wire [`MOTOR_RATE_BIT_WIDTH - 1:0] motor_1_rate,
 	input wire [`MOTOR_RATE_BIT_WIDTH - 1:0] motor_2_rate,
 	input wire [`MOTOR_RATE_BIT_WIDTH - 1:0] motor_3_rate,

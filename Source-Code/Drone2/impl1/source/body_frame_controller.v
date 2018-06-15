@@ -99,14 +99,12 @@ module body_frame_controller (
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
 			start_flag					<= `FALSE;
-
 			// Angle rates from the angle_controller
 			latched_yaw_target			<= `ALL_ZERO_2BYTE;
 			latched_roll_target			<= `ALL_ZERO_2BYTE;
 			latched_pitch_target		<= `ALL_ZERO_2BYTE;
 			latched_roll_angle_error	<= `ALL_ZERO_2BYTE;
 			latched_pitch_angle_error	<= `ALL_ZERO_2BYTE;
-
 			// Angle rates from the imu
 			latched_yaw_rotation		<= `ALL_ZERO_2BYTE;
 			latched_roll_rotation		<= `ALL_ZERO_2BYTE;
@@ -119,7 +117,6 @@ module body_frame_controller (
 			latched_pitch_target		<= pitch_target;
 			latched_roll_angle_error	<= roll_angle_error;
 			latched_pitch_angle_error	<= pitch_angle_error;
-
 			// Angle rates from the imu
 			latched_yaw_rotation		<= ~yaw_rotation + `ONE;
 			latched_roll_rotation		<= roll_rotation;
@@ -172,13 +169,13 @@ module body_frame_controller (
   						next_state	= STATE_WAITING;
   				end
   				STATE_STARTING: begin
-  					if((yaw_active) && (pitch_active) && (roll_active))
+  					if(yaw_active && pitch_active && roll_active)
   						next_state	= STATE_ACTIVE;
   					else
   						next_state	= STATE_STARTING;
   				end
   				STATE_ACTIVE: begin
-  					if((yaw_complete) && (pitch_complete) && (roll_complete))
+  					if(yaw_complete && pitch_complete && roll_complete)
   						next_state	= STATE_COMPLETE;
   					else
   						next_state	= STATE_ACTIVE;
@@ -293,4 +290,5 @@ module body_frame_controller (
 		.wait_flag(wait_flag),
 		.resetn(resetn),
 		.us_clk(us_clk));
+
 endmodule

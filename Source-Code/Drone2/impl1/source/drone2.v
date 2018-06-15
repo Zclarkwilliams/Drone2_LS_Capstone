@@ -131,8 +131,8 @@ module drone2 (
 	assign resetn = (machxo3_switch_reset_n | soft_reset_n);
 
 	/**
-	| 	Generate System Clock
-	*/
+	 * Generate System Clock
+	 */
 	defparam OSCH_inst.NOM_FREQ = "38.00";
 	OSCH OSCH_inst (
 		.STDBY(1'b0),
@@ -140,18 +140,18 @@ module drone2 (
        	.SEDSTDBY());
 
 	/**
-	|	Then scale system clock down to 1 microsecond
-	|		us_clk.v
-	*/
+	 * Then scale system clock down to 1 microsecond
+	 *		file - us_clk.v
+	 */
 	us_clk us_clk_divider (
 		.us_clk(us_clk),
 		.sys_clk(sys_clk),
 		.resetn(resetn));
 
 	/**
-	| 	IMU Management and Control Module
-	|		bno055_driver.v
-	*/
+	 * IMU Management and Control Module
+	 *		file - bno055_driver.v
+	 */
 	bno055_driver imu (
 		// Outputs
 		.imu_good(imu_good),
@@ -182,9 +182,9 @@ module drone2 (
 		.ac_active(ac_active));
 
 	/**
-	|	Get Receiver Inputs and Convert to 0-255 Module
-	| 		file - receiver.v
-	*/
+	 * Gets inputs from the physical receiver and converts them to 0-255.
+	 * 		file - receiver.v
+	 */
 	receiver receiver (
 		// Outputs
 		.throttle_val(throttle_val),
@@ -206,10 +206,11 @@ module drone2 (
 		.resetn(resetn));
 
 	/**
-	|	Take IMU provided orientation angle and user provided target angle and
-	|	subract them to get the error angle rate to get to target angle position
-	| 		file - angle_controller.v
-	*/
+	 *	Take IMU provided orientation angle and user provided target angle and
+	 *	subract them to get the error angle rate to get to target angle
+	 *	position.
+	 * 		file - angle_controller.v
+	 */
 	angle_controller ac (
 		// Outputs
 		.throttle_rate_out(throttle_target_rate),
@@ -233,10 +234,10 @@ module drone2 (
 		.us_clk(us_clk));
 
 	/**
-	|	Take error rate angles from angle_controller and current rotational
-	|	angle rates and feed them into a PID to get corrective control.
-	| 		file - body_frame_controller.v
-	*/
+     * Take error rate angles from angle_controller and current rotational
+	 * angle rates and feed them into a PID to get corrective control.
+	 *		file - body_frame_controller.v
+	 */
 	body_frame_controller bfc (
 		// Outputs
 		.yaw_rate_out(yaw_rate),
@@ -259,10 +260,10 @@ module drone2 (
 		.us_clk(us_clk));
 
 	/**
-	|	Get axis rates and calculate respective motor rates to acheive correct
-	|	drone movements
-	| 		file - motor_mixer.v
-	*/
+	 * Get axis rates and calculate respective motor rates to acheive correct
+	 * drone movements.
+	 *		file - motor_mixer.v
+	 */
 	motor_mixer motor_mixer (
 		// Outputs
 		.motor_1_rate(motor_1_rate),
@@ -278,10 +279,10 @@ module drone2 (
 		.resetn(resetn));
 
 	/**
-	|	Take respective motor rate outputs from motor mixer and convert the
-	|	0-250 value to a PWM output to ESCs
-	| 		file - pwm_generator.v
-	*/
+	 * Take respective motor rate outputs from motor mixer and convert the
+	 * 0-250 value to a PWM output to ESCs.
+	 *		file - pwm_generator.v
+	 */
 	pwm_generator pwm_generator (
 		// Outputs
 		.motor_1_pwm(motor_1_pwm),
@@ -297,11 +298,9 @@ module drone2 (
 		.resetn(resetn));
 
 	/**
-	|
-	|	The secotion below is for use with Debug LEDs and other
-	|	debuging output pins and LEDs.
-	|
-	*/
+	 * The secotion below is for use with Debug LEDs and other
+	 * debuging output pins and LEDs.
+	 */
 
 	// Update on board LEDs, all inputs are active low
 	always @(posedge sys_clk) begin
