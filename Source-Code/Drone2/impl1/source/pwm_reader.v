@@ -44,7 +44,8 @@ module pwm_reader #(
 		STATE_RISE   = 3'b100,
 		STATE_BOUNCE = 3'b101;
 
-    /* Keeps track of the what the pwm is in regards to the pwm reader state machine.
+    /**
+	 * Keeps track of the what the pwm is in regards to the pwm reader state machine.
 	 * This does not follow the pwm signal exactly.  This allows for detecting a
 	 * possibly unstable pwm signal.
 	 */
@@ -53,9 +54,6 @@ module pwm_reader #(
 	reg [2:0] state;
 
 	// Where the pwm reader stores the count of how long the pulse has been high
-	/* TODO: produce an error bit when this is outside of the range to some degree
-	 *		 (i.e. if it is less than 500us or more than 2500us)
-	 */
 	reg [15:0] time_high_count;
 	// Where the current time high count is stored until the next high pwm pulse
 	reg [15:0] time_high_us;

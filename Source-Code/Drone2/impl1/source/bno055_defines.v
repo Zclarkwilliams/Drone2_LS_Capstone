@@ -40,11 +40,11 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_ADDRESS_B                     8'h29
 `define BNO055_ID                            8'hA0
 
-//PAGE0 REGISTER DEFINITION START
-//"All other configuration parameters and output data", all other in Page1
-//Page0 is the default configuration page
+// PAGE0 REGISTER DEFINITION START
+// "All other configuration parameters and output data", all other in Page1
+// Page0 is the default configuration page
 
-//GENERAL REGISTERS
+// GENERAL REGISTERS
 `define BNO055_CHIP_ID_ADDR                  8'h00
 `define BNO055_ACCEL_REV_ID_ADDR             8'h01
 `define BNO055_MAG_REV_ID_ADDR               8'h02
@@ -54,7 +54,7 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_BL_REV_ID_ADDR                8'h06
 `define BNO055_PAGE_ID_ADDR                  8'h07 //Defaults to page 0 - This register is on page 0 and page 1 at the same location
 
-//ACCEL DATA REGISTER
+// ACCEL DATA REGISTER
 `define BNO055_ACCEL_DATA_X_LSB_ADDR         8'h08
 `define BNO055_ACCEL_DATA_X_MSB_ADDR         8'h09
 `define BNO055_ACCEL_DATA_Y_LSB_ADDR         8'h0A
@@ -62,7 +62,7 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_ACCEL_DATA_Z_LSB_ADDR         8'h0C
 `define BNO055_ACCEL_DATA_Z_MSB_ADDR         8'h0D
 
-//MAG DATA REGISTER
+// MAG DATA REGISTER
 `define BNO055_MAG_DATA_X_LSB_ADDR           8'h0E
 `define BNO055_MAG_DATA_X_MSB_ADDR           8'h0F
 `define BNO055_MAG_DATA_Y_LSB_ADDR           8'h10
@@ -70,7 +70,7 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_MAG_DATA_Z_LSB_ADDR           8'h12
 `define BNO055_MAG_DATA_Z_MSB_ADDR           8'h13
 
-//GYRO DATA REGISTERS
+// GYRO DATA REGISTERS
 `define BNO055_GYRO_DATA_X_LSB_ADDR          8'h14
 `define BNO055_GYRO_DATA_X_MSB_ADDR          8'h15
 `define BNO055_GYRO_DATA_Y_LSB_ADDR          8'h16
@@ -78,7 +78,7 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_GYRO_DATA_Z_LSB_ADDR          8'h18
 `define BNO055_GYRO_DATA_Z_MSB_ADDR          8'h19
 
-//EULER DATA REGISTERS
+// EULER DATA REGISTERS
 `define BNO055_EULER_H_LSB_ADDR              8'h1A //  Z-axis, Heading
 `define BNO055_EULER_H_MSB_ADDR              8'h1B
 `define BNO055_EULER_R_LSB_ADDR              8'h1C //  X-Axis, Roll
@@ -86,7 +86,7 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_EULER_P_LSB_ADDR              8'h1E //  Y-Axis, Pitch
 `define BNO055_EULER_P_MSB_ADDR              8'h1F
 
-//QUATERNION DATA REGISTERS
+// QUATERNION DATA REGISTERS
 `define BNO055_QUATERNION_DATA_W_LSB_ADDR    8'h20
 `define BNO055_QUATERNION_DATA_W_MSB_ADDR    8'h21
 `define BNO055_QUATERNION_DATA_X_LSB_ADDR    8'h22
@@ -96,7 +96,7 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_QUATERNION_DATA_Z_LSB_ADDR    8'h26
 `define BNO055_QUATERNION_DATA_Z_MSB_ADDR    8'h27
 
-//LINEAR ACCELERATION DATA REGISTERS
+// LINEAR ACCELERATION DATA REGISTERS
 `define BNO055_LINEAR_ACCEL_DATA_X_LSB_ADDR  8'h28
 `define BNO055_LINEAR_ACCEL_DATA_X_MSB_ADDR  8'h29
 `define BNO055_LINEAR_ACCEL_DATA_Y_LSB_ADDR  8'h2A
@@ -104,7 +104,7 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_LINEAR_ACCEL_DATA_Z_LSB_ADDR  8'h2C
 `define BNO055_LINEAR_ACCEL_DATA_Z_MSB_ADDR  8'h2D
 
-//GRAVITY DATA REGISTERS
+// GRAVITY DATA REGISTERS
 `define BNO055_GRAVITY_DATA_X_LSB_ADDR       8'h2E
 `define BNO055_GRAVITY_DATA_X_MSB_ADDR       8'h2F
 `define BNO055_GRAVITY_DATA_Y_LSB_ADDR       8'h30
@@ -112,10 +112,10 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_GRAVITY_DATA_Z_LSB_ADDR       8'h32
 `define BNO055_GRAVITY_DATA_Z_MSB_ADDR       8'h33
 
-//TEMPERATURE DATA REGISTER
+// TEMPERATURE DATA REGISTER
 `define BNO055_TEMP_ADDR                     8'h34
 
-//STATUS REGISTERS
+// STATUS REGISTERS
 `define BNO055_CALIB_STAT_ADDR               8'h35
 `define BNO055_SELFTEST_RESULT_ADDR          8'h36
 `define BNO055_INTR_STAT_ADDR                8'h37
@@ -124,22 +124,22 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_SYS_STAT_ADDR                 8'h39
 `define BNO055_SYS_ERR_ADDR                  8'h3A
 
-//UNIT SELECTION REGISTER
+// UNIT SELECTION REGISTER
 `define BNO055_UNIT_SEL_ADDR                 8'h3B
 `define BNO055_DATA_SELECT_ADDR              8'h3C
 
-//MODE REGISTERS
+// MODE REGISTERS
 `define BNO055_OPR_MODE_ADDR                 8'h3D
 `define BNO055_PWR_MODE_ADDR                 8'h3E
 
 `define BNO055_SYS_TRIGGER_ADDR              8'h3F
 `define BNO055_TEMP_SOURCE_ADDR              8'h40
 
-//AXIS REMAP REGISTERS
+// AXIS REMAP REGISTERS
 `define BNO055_AXIS_MAP_CONFIG_ADDR          8'h41
 `define BNO055_AXIS_MAP_SIGN_ADDR            8'h42
 
-//SIC REGISTERS
+// SIC REGISTERS
 `define BNO055_SIC_MATRIX_0_LSB_ADDR         8'h43
 `define BNO055_SIC_MATRIX_0_MSB_ADDR         8'h44
 `define BNO055_SIC_MATRIX_1_LSB_ADDR         8'h45
@@ -159,7 +159,7 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_SIC_MATRIX_8_LSB_ADDR         8'h53
 `define BNO055_SIC_MATRIX_8_MSB_ADDR         8'h54
 
-//ACCELEROMETER OFFSET REGISTERS
+// ACCELEROMETER OFFSET REGISTERS
 `define BNO055_ACCEL_OFFSET_X_LSB_ADDR       8'h55
 
 `define BNO055_ACCEL_OFFSET_X_MSB_ADDR       8'h56
@@ -168,7 +168,7 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_ACCEL_OFFSET_Z_LSB_ADDR       8'h59
 `define BNO055_ACCEL_OFFSET_Z_MSB_ADDR       8'h5A
 
-//MAGNETOMETER OFFSET REGISTERS
+// MAGNETOMETER OFFSET REGISTERS
 `define BNO055_MAG_OFFSET_X_LSB_ADDR         8'h5B
 `define BNO055_MAG_OFFSET_X_MSB_ADDR         8'h5C
 `define BNO055_MAG_OFFSET_Y_LSB_ADDR         8'h5D
@@ -176,7 +176,7 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_MAG_OFFSET_Z_LSB_ADDR         8'h5F
 `define BNO055_MAG_OFFSET_Z_MSB_ADDR         8'h60
 
-//GYROSCOPE OFFSET REGISTERS
+// GYROSCOPE OFFSET REGISTERS
 `define BNO055_GYRO_OFFSET_X_LSB_ADDR        8'h61
 `define BNO055_GYRO_OFFSET_X_MSB_ADDR        8'h62
 `define BNO055_GYRO_OFFSET_Y_LSB_ADDR        8'h63
@@ -184,15 +184,15 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_GYRO_OFFSET_Z_LSB_ADDR        8'h65
 `define BNO055_GYRO_OFFSET_Z_MSB_ADDR        8'h66
 
-//BNO055_REG
+// BNO055_REG
 `define BNO055_ACCEL_RADIUS_LSB_ADDR         8'h67
 `define BNO055_ACCEL_RADIUS_MSB_ADDR         8'h68
 `define BNO055_MAG_RADIUS_LSB_ADDR           8'h69
 `define BNO055_MAG_RADIUS_MSB_ADDR           8'h6A
-//Offsets 8'h6B through 8'h7F are reserved
-//PAGE0 REGISTER DEFINITION END*/
+// Offsets 8'h6B through 8'h7F are reserved
+// PAGE0 REGISTER DEFINITION END*/
 
-//PAGE1 REGISTER DEFINITION START*/
+// PAGE1 REGISTER DEFINITION START*/
 // Sensor specific configuration data
 // Offsets 0 - 6 are reserved
 `define BNO055_PAGE_ID_ADDR                  8'h07 //Defaults to page 0 - This register is on page 0 and page 1 at the same location
@@ -219,10 +219,10 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_GYR_DUR_Z                     8'h1D
 `define BNO055_GYR_AM_THRES                  8'h1E
 `define BNO055_GYR_AM_SET                    8'h1F
-//Offsets 8'h20 through 8'h4F are reserved
-//Offsets 8'h50 - 8'h5F are for "UNIQUE_ID"
-//Offsets 8'h60 through 8'h7F are reserved
-//PAGE1 REGISTER DEFINITION END*/
+// Offsets 8'h20 through 8'h4F are reserved
+// Offsets 8'h50 - 8'h5F are for "UNIQUE_ID"
+// Offsets 8'h60 through 8'h7F are reserved
+// PAGE1 REGISTER DEFINITION END*/
 
 //                  CONSTANTS                  //
 // BNO055_POWERMODE
@@ -230,7 +230,7 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_POWER_MODE_LOWPOWER           8'h01
 `define BNO055_POWER_MODE_SUSPEND            8'h02
 
-//BNO055_OPMODE
+// BNO055_OPMODE
 `define BNO055_OPERATION_MODE_CONFIG         8'h00// DEFAULT
 `define BNO055_OPERATION_MODE_ACCONLY        8'h01
 `define BNO055_OPERATION_MODE_MAGONLY        8'h02
@@ -245,7 +245,7 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_OPERATION_MODE_NDOF_FMC_OFF   8'h0B
 `define BNO055_OPERATION_MODE_NDOF           8'h0C
 
-//BNO055_AXIS_REMAP_CONFIG
+// BNO055_AXIS_REMAP_CONFIG
 `define BNO055_REMAP_CONFIG_P0               8'h21
 `define BNO055_REMAP_CONFIG_P1               8'h24// DEFAULT
 `define BNO055_REMAP_CONFIG_P2               8'h24
@@ -255,7 +255,7 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_REMAP_CONFIG_P6               8'h21
 `define BNO055_REMAP_CONFIG_P7               8'h24
 
-//BNO055_AXIS_REMAP_SIGN
+// BNO055_AXIS_REMAP_SIGN
 `define BNO055_REMAP_SIGN_P0                 8'h04
 `define BNO055_REMAP_SIGN_P1                 8'h00// DEFAULT
 `define BNO055_REMAP_SIGN_P2                 8'h06
@@ -266,7 +266,7 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_REMAP_SIGN_P7                 8'h05
 
 
-//Indices of measurement data in rx_data_reg
+// Indices of measurement data in rx_data_reg
 `define ACC_DATA_X_LSB_INDEX                 0
 `define ACC_DATA_X_MSB_INDEX                 1
 `define ACC_DATA_Y_LSB_INDEX                 2
@@ -286,7 +286,7 @@ MIT license, all text above must be included in any redistribution
 `define GYR_DATA_Z_LSB_INDEX                 16
 `define GYR_DATA_Z_MSB_INDEX                 17
 //  **** NOTE ****
-//  These do not follow the same sequence as other registers, instead of X, Y, Z, these are sequenced, Z, X, Y
+// These do not follow the same sequence as other registers, instead of X, Y, Z, these are sequenced, Z, X, Y
 `define EUL_DATA_Z_LSB_INDEX                 18 //  Yaw/Heading, Z-Axis
 `define EUL_DATA_Z_MSB_INDEX                 19
 `define EUL_DATA_X_LSB_INDEX                 20 //  Roll, X-Axis
@@ -400,7 +400,7 @@ Total: 46 bytes
 
 */
 
-//Indices of calibration data in cal_data_reg
+// Indices of calibration data in cal_data_reg
 `define ACCEL_OFFSET_X_LSB_INDEX 0
 `define ACCEL_OFFSET_X_MSB_INDEX 1
 `define ACCEL_OFFSET_Y_LSB_INDEX 2
@@ -444,8 +444,7 @@ Total: 46 bytes
 `define RUN_MS_TIMER            1'b1         //  Flag that starts multi ms timer
 `define CLEAR_MS_TIMER          1'b0         //  Flag that stops/clears multi ms timer
 
-//
-//  State Definitions
+// State Definitions
 //
 // Initial default state of IMU FSM
 

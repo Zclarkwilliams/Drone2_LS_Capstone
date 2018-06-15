@@ -42,7 +42,7 @@
 	reg signed [`OPS_BIT_WIDTH-1:0]
 		error_change,
 		rotation_total,
-		rotation_error, 
+		rotation_error,
 		prev_rotation_error,
 		scaled_rotation,
 		rotation_integral,
@@ -62,7 +62,7 @@
 	// state variables
 	reg [STATE_BIT_WIDTH-1:0] state, next_state;
 
-	//Debug wire assign to monitor values on 16 led daughter board
+	// Debug wire assign to monitor values on 16 led daughter board
 	assign DEBUG_WIRE = rotation_total[`DEBUG_WIRE_BIT_WIDTH-1:0];
 
 	// update state
@@ -167,11 +167,11 @@
 	end
 
 
-/*
-*	scale_val function is created to operate the:
-*		output = (input_value x scaling_value) / scaling_shift
-*	this mitigates intermediate register overflow.
-*/
+/**
+ * scale_val function is created to operate the:
+ *		output = (input_value x scaling_value) / scaling_shift
+ *	this mitigates intermediate register overflow.
+ */
 function automatic signed [`RATE_BIT_WIDTH-1:0] scale_val;
 	input reg signed [`RATE_BIT_WIDTH-1:0]		val;
 	input reg signed [`OPS_BIT_WIDTH-1:0]	  	k_mult;
@@ -190,12 +190,12 @@ function automatic signed [`RATE_BIT_WIDTH-1:0] scale_val;
 		OVERFLOW_PROTECTION_MAX = 32'sh00007FFF;
 
 	begin
-		//cast values to the 32 bits
+		// cast values to the 32 bits
 		val_32 = $signed({val, ZERO_PAD}) >>> SHIFT_BACK;
-		//apply the scalar
+		// apply the scalar
 		scaled = (val_32 * k_mult) >>> k_shift;
 
-		//make sure we don't output an overflowed value
+		// make sure we don't output an overflowed value
 		if (scaled <= OVERFLOW_PROTECTION_MIN)
 			scale_val = OVERFLOW_PROTECTION_MIN;
 		else if (scaled >= OVERFLOW_PROTECTION_MAX)

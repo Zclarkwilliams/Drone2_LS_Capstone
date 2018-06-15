@@ -72,7 +72,7 @@ module motor_mixer (
 	output reg  [`MOTOR_RATE_BIT_WIDTH-1:0]  motor_3_rate,
 	output reg  [`MOTOR_RATE_BIT_WIDTH-1:0]  motor_4_rate);
 
-	/*	Params for states and state size	*/
+	// Params for states and state size
 	localparam [1:0]
 		STATE_SCALE_RATES		= 0,
 		STATE_MOTOR_RATE_CALC 	= 1,
@@ -80,7 +80,7 @@ module motor_mixer (
 		STATE_SEND_OUTPUT		= 3;
 	reg [1:0] motor_mixer_state;
 
-	//	Bias to add as a buffer to the motor equation
+	// Bias to add as a buffer to the motor equation
 	localparam BIAS_BIT_WIDTH = 6'd16;
 	localparam signed [BIAS_BIT_WIDTH-1:0]
 		MOTOR_1_RATE_BIAS		= 0,
@@ -88,15 +88,17 @@ module motor_mixer (
 		MOTOR_3_RATE_BIAS		= 0,
 		MOTOR_4_RATE_BIAS		= 0;
 
-	//	Scaler to set proportions of yaw, roll, and pitch
-	//  Shift to change impact of roll, pitch, and yaw
+	/**
+	 * Scaler to set proportions of yaw, roll, and pitch
+	 * Shift to change impact of roll, pitch, and yaw
+	 */
 	localparam SCALER_BIT_WIDTH = 1'd1;
 	localparam [SCALER_BIT_WIDTH-1:0]
 		MOTOR_RATE_YAW_SCALER 	= 1'd1,
 		MOTOR_RATE_ROLL_SCALER	= 1'd1,
 		MOTOR_RATE_PITCH_SCALER	= 1'd1;
 
-	/*	Motor specific variables per axis	*/
+	// Motor specific variables per axis
 	reg signed [`RATE_BIT_WIDTH-1:0]
 		yaw_scale,
 		roll_scale,
@@ -122,7 +124,7 @@ module motor_mixer (
 		motor_4_temp;
 
 	always @(posedge sys_clk or negedge resetn) begin
-		if (!resetn) begin //On reset input LOW set all variables to zero
+		if (!resetn) begin // On reset input LOW set all variables to zero
 			yaw_scale					 <= `ALL_ZERO_2BYTE;
 			roll_scale					 <= `ALL_ZERO_2BYTE;
 			pitch_scale					 <= `ALL_ZERO_2BYTE;
@@ -206,7 +208,7 @@ module motor_mixer (
 					end
 					motor_mixer_state 	 <= STATE_SEND_OUTPUT;
 				end
-				STATE_SEND_OUTPUT: 	begin	//	Reduce the motor_rates to 8 bit for pwm_generator use
+				STATE_SEND_OUTPUT: 	begin	// Reduce the motor_rates to 8 bit for pwm_generator use
 					motor_1_rate		 <= motor_1_temp[11:4] + motor_1_temp[3];
 					motor_2_rate		 <= motor_2_temp[11:4] + motor_2_temp[3];
 					motor_3_rate		 <= motor_3_temp[11:4] + motor_3_temp[3];
