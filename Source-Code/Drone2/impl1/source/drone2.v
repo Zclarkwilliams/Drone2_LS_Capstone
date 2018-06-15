@@ -17,7 +17,7 @@
  * @motor_3_pwm:  signal to drive the ESC connected to motor 3
  * @motor_4_pwm:  signal to drive the ESC connected to motor 4
  * @rstn_imu:	  signal to reset IMU from FPGA
- * @led_data_out: signal mapping data to FPGA board's 8 LEDs 
+ * @led_data_out: signal mapping data to FPGA board's 8 LEDs
  *
  * Inputs:
  * @yaw_pwm: 	  signal from yaw on the rc/receiver
@@ -66,7 +66,7 @@ module drone2 (
 	inout wire scl_2);
 
 	//--------------- Receiver Wires --------------//
-	wire [`REC_VAL_BIT_WIDTH-1:0] 
+	wire [`REC_VAL_BIT_WIDTH-1:0]
 		throttle_val,
 		yaw_val,
 		roll_val,
@@ -74,9 +74,9 @@ module drone2 (
 		aux1_val,
 		aux2_val,
 		swa_swb_val;
-	
+
 	//---------- Angle_Controller Wires -----------//
-	wire [`RATE_BIT_WIDTH-1:0] 
+	wire [`RATE_BIT_WIDTH-1:0]
 		throttle_target_rate,
 		yaw_target_rate,
 		roll_target_rate,
@@ -86,7 +86,7 @@ module drone2 (
 	wire ac_valid_strobe;
 
 	//---------------- IMU Wires ------------------//
-	wire [`IMU_VAL_BIT_WIDTH-1:0] 
+	wire [`IMU_VAL_BIT_WIDTH-1:0]
 		x_linear_rate,
 		y_linear_rate,
 		z_linear_rate,
@@ -104,23 +104,23 @@ module drone2 (
 	wire imu_good;
 	wire imu_data_valid;
 	wire [7:0] imu_debug_out;
-	
+
 	//-------- Body_Frame_Controller Wires --------//
-	wire [`PID_RATE_BIT_WIDTH-1:0] 
+	wire [`PID_RATE_BIT_WIDTH-1:0]
 		yaw_rate,
 		roll_rate,
 		pitch_rate;
-	wire bf_active;	
+	wire bf_active;
 	wire bf_valid_strobe;
 	wire [`DEBUG_WIRE_BIT_WIDTH-1:0] bfc_debug_wire;
-	
+
 	//------------- Motor_Mixer Wires -------------//
-	wire [`MOTOR_RATE_BIT_WIDTH-1:0] 
+	wire [`MOTOR_RATE_BIT_WIDTH-1:0]
 		motor_1_rate,
 		motor_2_rate,
 		motor_3_rate,
 		motor_4_rate;
-	
+
 	//--------------- Clock Wires -----------------//
 	wire sys_clk;
 	wire us_clk;
@@ -138,16 +138,16 @@ module drone2 (
 		.STDBY(1'b0),
        	.OSC(sys_clk),
        	.SEDSTDBY());
-	
+
 	/**
 	|	Then scale system clock down to 1 microsecond
 	|		us_clk.v
-	*/	
+	*/
 	us_clk us_clk_divider (
 		.us_clk(us_clk),
 		.sys_clk(sys_clk),
 		.resetn(resetn));
-	
+
 	/**
 	| 	IMU Management and Control Module
 	|		bno055_driver.v
@@ -163,8 +163,8 @@ module drone2 (
 		.euler_angle_y(y_rotation),
 		.euler_angle_z(z_rotation),
 		.linear_accel_x(x_linear_accel),
-		.linear_accel_y(y_linear_accel), 
-		.linear_accel_z(z_linear_accel), 
+		.linear_accel_y(y_linear_accel),
+		.linear_accel_z(z_linear_accel),
 		.x_velocity(x_linear_rate),
 		.y_velocity(y_linear_rate),
 		.z_velocity(z_linear_rate),
@@ -182,7 +182,7 @@ module drone2 (
 		.ac_active(ac_active));
 
 	/**
-	|	Get Receiver Inputs and Convert to 0-255 Module	
+	|	Get Receiver Inputs and Convert to 0-255 Module
 	| 		file - receiver.v
 	*/
 	receiver receiver (
@@ -206,7 +206,7 @@ module drone2 (
 		.resetn(resetn));
 
 	/**
-	|	Take IMU provided orientation angle and user provided target angle and 
+	|	Take IMU provided orientation angle and user provided target angle and
 	|	subract them to get the error angle rate to get to target angle position
 	| 		file - angle_controller.v
 	*/
@@ -233,7 +233,7 @@ module drone2 (
 		.us_clk(us_clk));
 
 	/**
-	|	Take error rate angles from angle_controller and current rotational 	
+	|	Take error rate angles from angle_controller and current rotational
 	|	angle rates and feed them into a PID to get corrective control.
 	| 		file - body_frame_controller.v
 	*/
@@ -259,7 +259,7 @@ module drone2 (
 		.us_clk(us_clk));
 
 	/**
-	|	Get axis rates and calculate respective motor rates to acheive correct 
+	|	Get axis rates and calculate respective motor rates to acheive correct
 	|	drone movements
 	| 		file - motor_mixer.v
 	*/

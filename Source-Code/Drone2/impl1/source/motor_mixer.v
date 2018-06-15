@@ -31,9 +31,9 @@
  *	how the motors are reference, i.e. which one is 1, 2, 3, and 4. Below
  *	is an image of the motor referencing numbers and thier spin direction.
  *
- *		 		    ----->  |	  | <----- 
- *		 		    Motor_1 |	  | Motor_2 
- *		 		    	\   V	  V   /     
+ *		 		    ----->  |	  | <-----
+ *		 		    Motor_1 |	  | Motor_2
+ *		 		    	\   V	  V   /
  *		 				 \			 /
  *		 				  \			/
  *		 				   /-------\
@@ -79,7 +79,7 @@ module motor_mixer (
 		STATE_BOUNDARY_CHECK	= 2,
 		STATE_SEND_OUTPUT		= 3;
 	reg [1:0] motor_mixer_state;
-	
+
 	//	Bias to add as a buffer to the motor equation
 	localparam BIAS_BIT_WIDTH = 6'd16;
 	localparam signed [BIAS_BIT_WIDTH-1:0]
@@ -97,25 +97,25 @@ module motor_mixer (
 		MOTOR_RATE_PITCH_SCALER	= 1'd1;
 
 	/*	Motor specific variables per axis	*/
-	reg signed [`RATE_BIT_WIDTH-1:0] 
+	reg signed [`RATE_BIT_WIDTH-1:0]
 		yaw_scale,
 		roll_scale,
 		pitch_scale,
 		n_throttle_rate;
-	
-	reg signed [`RATE_BIT_WIDTH-1:0] 
+
+	reg signed [`RATE_BIT_WIDTH-1:0]
 		motor_1_offset,
 		motor_2_offset,
 		motor_3_offset,
 		motor_4_offset;
-	
-	reg signed [`RATE_BIT_WIDTH-1:0] 
+
+	reg signed [`RATE_BIT_WIDTH-1:0]
 		motor_1_output,
 		motor_2_output,
 		motor_3_output,
 		motor_4_output;
 
-	reg signed [`RATE_BIT_WIDTH-1:0] 
+	reg signed [`RATE_BIT_WIDTH-1:0]
 		motor_1_temp,
 		motor_2_temp,
 		motor_3_temp,

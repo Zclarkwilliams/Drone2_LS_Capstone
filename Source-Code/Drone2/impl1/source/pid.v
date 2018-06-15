@@ -40,7 +40,7 @@
 
 	// working registers
 	reg signed [`OPS_BIT_WIDTH-1:0]
-		error_change, 
+		error_change,
 		rotation_total,
 		rotation_error, 
 		prev_rotation_error,
@@ -48,7 +48,7 @@
 		rotation_integral,
 		rotation_derivative,
 		rotation_proportional;
-	
+
 	// state names
 	localparam STATE_BIT_WIDTH = 4'd7;
 	localparam [STATE_BIT_WIDTH-1:0]
@@ -165,7 +165,7 @@
 			endcase
 		end
 	end
-	
+
 
 /*
 *	scale_val function is created to operate the:
@@ -176,14 +176,14 @@ function automatic signed [`RATE_BIT_WIDTH-1:0] scale_val;
 	input reg signed [`RATE_BIT_WIDTH-1:0]		val;
 	input reg signed [`OPS_BIT_WIDTH-1:0]	  	k_mult;
 	input reg signed [`SHIFT_OP_BIT_WIDTH-1:0]	k_shift;
-	
+
 	reg signed [31:0]
 		val_32,
 		scaled;
 
 	localparam
 		SHIFT_BACK 	= 7'd16,
-		ZERO_PAD	= 16'd0; 
+		ZERO_PAD	= 16'd0;
 
 	localparam signed [31:0]
 		OVERFLOW_PROTECTION_MIN = 32'shFFFF8000,
@@ -194,7 +194,7 @@ function automatic signed [`RATE_BIT_WIDTH-1:0] scale_val;
 		val_32 = $signed({val, ZERO_PAD}) >>> SHIFT_BACK;
 		//apply the scalar
 		scaled = (val_32 * k_mult) >>> k_shift;
-		
+
 		//make sure we don't output an overflowed value
 		if (scaled <= OVERFLOW_PROTECTION_MIN)
 			scale_val = OVERFLOW_PROTECTION_MIN;

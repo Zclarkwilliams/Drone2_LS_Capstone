@@ -1,10 +1,10 @@
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, 
- * Brett Creeley, 
- * Daniel Christiansen, 
- * Kirk Hooper, 
+ * Ethan Grinnell,
+ * Brett Creeley,
+ * Daniel Christiansen,
+ * Kirk Hooper,
  * Zachary Clark-Williams
  */
 
@@ -34,7 +34,7 @@ module pwm_generator_block #(parameter INPUT_BIT_WIDTH = 10)
 							 input wire [INPUT_BIT_WIDTH-1:0] high_counter,
 							 input wire resetn,
 							 input wire us_clk);
-	
+
 	localparam // State names
 		STATE_MIN_COUNT = 3'b001,
 		STATE_PWM_COUNT = 3'b010,

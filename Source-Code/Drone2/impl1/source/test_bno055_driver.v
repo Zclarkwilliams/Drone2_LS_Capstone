@@ -75,7 +75,7 @@ module bno055_module_tb();
 			end
 		end
 	end
-	
+
 	always@(posedge ac_active_cmd, negedge rstn) begin
 		if (~rstn)
 			ac_active <= `LOW;
@@ -88,7 +88,7 @@ module bno055_module_tb();
 			#1;
 		end
 	end
-	
+
 	always@(posedge sys_clk, negedge rstn) begin
 		if (~rstn)
 			ac_active_cmd <= `LOW;
@@ -98,8 +98,8 @@ module bno055_module_tb();
 			ac_active_cmd <= `LOW;
 		else
 			ac_active_cmd <= `LOW;
-		
-	
+
+
 	end
 
 	assign ( pull1, strong0 ) scl_1 = 1'b1;

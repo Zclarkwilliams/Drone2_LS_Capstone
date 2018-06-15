@@ -1,10 +1,10 @@
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, 
- * Brett Creeley, 
- * Daniel Christiansen, 
- * Kirk Hooper, 
+ * Ethan Grinnell,
+ * Brett Creeley,
+ * Daniel Christiansen,
+ * Kirk Hooper,
  * Zachary Clark-Williams
  */
 
@@ -36,7 +36,7 @@ module pwm_reader #(
 	 input wire resetn);
 
 	// PWM reader FSM states
-	localparam [2:0] 
+	localparam [2:0]
 		STATE_INIT   = 3'b000,
 		STATE_LOW    = 3'b001,
 		STATE_HIGH   = 3'b010,

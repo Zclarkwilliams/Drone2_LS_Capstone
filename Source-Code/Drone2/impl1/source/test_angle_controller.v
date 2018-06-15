@@ -3,7 +3,7 @@
  * Team 32 Drone2 SOC
  * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
  */
- 
+
 `timescale 1ps / 1ps
 `default_nettype none
 `include "common_defines.v"
@@ -20,27 +20,27 @@ module test_angle_controller;
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] yaw_actual   = 0;
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] pitch_actual = 0;
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] roll_actual  = 0;
-	
+
 	// IMU linear acceleration vectors
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] x_linear_accel = 0;
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] y_linear_accel = 0;
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] z_linear_accel = 0;
-	
+
 	wire signed [`RATE_BIT_WIDTH-1:0] throttle_rate_out;
 	wire signed [`RATE_BIT_WIDTH-1:0] yaw_rate_out;
 	wire signed [`RATE_BIT_WIDTH-1:0] pitch_rate_out;
 	wire signed [`RATE_BIT_WIDTH-1:0] roll_rate_out;
-	
+
 	wire signed [`RATE_BIT_WIDTH-1:0] pitch_angle_error;
 	wire signed [`RATE_BIT_WIDTH-1:0] roll_angle_error;
-	
+
 	reg  resetn;
 	wire sys_clk;
 	wire us_clk;
 	wire complete_signal;
 	wire active_signal;
 	reg  start_signal;
-	
+
 
 	defparam OSCH_inst.NOM_FREQ = "38.00";
 	OSCH OSCH_inst (.STDBY(1'b0),
@@ -105,7 +105,7 @@ module test_angle_controller;
 		resetn = 1;
 		#10 resetn = 0;
 		#10 resetn = 1;
-		
+
 		$display("%t: %m Set initial values",$time);
 		run_test(
 		.task_throttle_target(0),
@@ -116,7 +116,7 @@ module test_angle_controller;
 		.task_pitch_actual(0),
 		.task_roll_actual(0)
 		);
-		
+
 		$display("\n%t: %m Test neutral stick positions, throttle to 50 percent with angles of value 0 from IMU",$time);
 		run_test(
 		.task_throttle_target(125),
@@ -138,7 +138,7 @@ module test_angle_controller;
 		.task_yaw_actual(0),
 		.task_pitch_actual(0),
 		.task_roll_actual(0)
-		);	
+		);
 
 		$display("%t: %m Test complete", $time);
 		$stop;
