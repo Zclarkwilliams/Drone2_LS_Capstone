@@ -1,13 +1,13 @@
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, 
- * Brett Creeley, 
- * Daniel Christiansen, 
- * Kirk Hooper, 
+ * Ethan Grinnell,
+ * Brett Creeley,
+ * Daniel Christiansen,
+ * Kirk Hooper,
  * Zachary Clark-Williams
  */
- 
+
 /**
 
  *  Module inouts:
@@ -15,14 +15,14 @@
  *  		inout scl_2,          I2C Secondary EFB SDA wire
  *  		inout sda_1,          I2C Primary   EFB SDA wire
  *  		inout sda_2,          I2C Secondary EFB SDA wire
- 
+
  *  Module takes as inputs:
  *  		sys_clk                 master clock
  *  		ac_active               Handshake signal from angle controller acknowledging the data valid strobe
  *  		rstn                    async negative reset signal 0 = reset, 1 = not reset
- 
+
  * Module provides as output (all values are 16-bit, 2's complement):
- *  		led_data_out,          Module calibration status output for LED indication of IMU operating state      
+ *  		led_data_out,          Module calibration status output for LED indication of IMU operating state
  *  		rstn_imu               Low active reset signal to IMU hardware to trigger reset
  *  		imu_good               The IMU is either in an error or initial bootup states, measurements not yet active
  *  		valid_strobe           Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
@@ -67,44 +67,44 @@ module bno055_driver #(
 	parameter INIT_TIME = 15'd650
 )
 (
- 	inout wire scl_1,                  
-	inout wire scl_2,                  
-	inout wire sda_1,                  
-	inout wire sda_2,                  
-	input wire rstn,                   
-	output wire [7:0]led_data_out,     
-	input  wire sys_clk,               
+ 	inout wire scl_1,
+	inout wire scl_2,
+	inout wire sda_1,
+	inout wire sda_2,
+	input wire rstn,
+	output wire [7:0]led_data_out,
+	input  wire sys_clk,
 	input wire ac_active,
-	output wire rstn_imu,              
-	output reg  imu_good,              
-	output reg  valid_strobe,          
-	output reg [15:0]accel_rate_x,     
-	output reg [15:0]accel_rate_y,     
-	output reg [15:0]accel_rate_z,     
-	output reg [15:0]magneto_rate_x,   
-	output reg [15:0]magneto_rate_y,   
-	output reg [15:0]magneto_rate_z,   
-	output reg [15:0]gyro_rate_x,      
-	output reg [15:0]gyro_rate_y,      
-	output reg [15:0]gyro_rate_z,      
-	output reg [15:0]euler_angle_x,    
-	output reg [15:0]euler_angle_y,    
-	output reg [15:0]euler_angle_z,    
+	output wire rstn_imu,
+	output reg  imu_good,
+	output reg  valid_strobe,
+	output reg [15:0]accel_rate_x,
+	output reg [15:0]accel_rate_y,
+	output reg [15:0]accel_rate_z,
+	output reg [15:0]magneto_rate_x,
+	output reg [15:0]magneto_rate_y,
+	output reg [15:0]magneto_rate_z,
+	output reg [15:0]gyro_rate_x,
+	output reg [15:0]gyro_rate_y,
+	output reg [15:0]gyro_rate_z,
+	output reg [15:0]euler_angle_x,
+	output reg [15:0]euler_angle_y,
+	output reg [15:0]euler_angle_z,
 	output reg [15:0]quaternion_data_w,
 	output reg [15:0]quaternion_data_x,
 	output reg [15:0]quaternion_data_y,
 	output reg [15:0]quaternion_data_z,
-	output reg [15:0]linear_accel_x,   
-	output reg [15:0]linear_accel_y,   
-	output reg [15:0]linear_accel_z,   
-	output reg [15:0]gravity_accel_x,  
-	output reg [15:0]gravity_accel_y,  
-	output reg [15:0]gravity_accel_z,  
-	output reg [7:0]temperature,       
-	output reg [7:0]calib_status,      
-	output reg [15:0]x_velocity,       
-	output reg [15:0]y_velocity,       
-	output reg [15:0]z_velocity    
+	output reg [15:0]linear_accel_x,
+	output reg [15:0]linear_accel_y,
+	output reg [15:0]linear_accel_z,
+	output reg [15:0]gravity_accel_x,
+	output reg [15:0]gravity_accel_y,
+	output reg [15:0]gravity_accel_z,
+	output reg [7:0]temperature,
+	output reg [7:0]calib_status,
+	output reg [15:0]x_velocity,
+	output reg [15:0]y_velocity,
+	output reg [15:0]z_velocity
 );
 
 	reg  read_write_in, next_read_write_in;           //  Value and next value of signal to i2c module to indicate read or write transaction, 1 = read, 0 = write
@@ -226,7 +226,7 @@ module bno055_driver #(
 			valid_strobe_enable     <= `FALSE;
 		end
 	end
-	
+
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn)
 			valid_strobe      <= `LOW;
@@ -654,7 +654,7 @@ module bno055_driver #(
 					next_data_reg          = `BYTE_ALL_ZERO;
 					next_data_tx           = `BYTE_ALL_ZERO;
 					if( (read_write_in == `I2C_READ)) begin //  Only latch data if this was a read
-						rx_data_latch_strobe = `HIGH;	
+						rx_data_latch_strobe = `HIGH;
 					end
 					next_bno055_state      = return_state;
 				end

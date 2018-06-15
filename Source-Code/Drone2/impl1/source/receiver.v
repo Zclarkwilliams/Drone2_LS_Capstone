@@ -1,10 +1,10 @@
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, 
- * Brett Creeley, 
- * Daniel Christiansen, 
- * Kirk Hooper, 
+ * Ethan Grinnell,
+ * Brett Creeley,
+ * Daniel Christiansen,
+ * Kirk Hooper,
  * Zachary Clark-Williams
  */
 
@@ -47,7 +47,7 @@ module receiver (
 	input wire us_clk,
 	input wire resetn);
 
-	wire [`PWM_TIME_BIT_WIDTH - 1:0] 
+	wire [`PWM_TIME_BIT_WIDTH - 1:0]
 		throttle_pwm_pulse_length_us,
 		yaw_pwm_pulse_length_us,
 		roll_pwm_pulse_length_us,
@@ -121,7 +121,7 @@ module receiver (
 		.us_clk(us_clk));
 
 	// AUX1 input/output module instances
-	pwm_reader #(`AUX1_DEFAULT_PULSE_TIME_HIGH_US) 
+	pwm_reader #(`AUX1_DEFAULT_PULSE_TIME_HIGH_US)
 	aux1_reader (
 		// Output
 		.pwm_pulse_length_us(aux1_pwm_pulse_length_us),
@@ -136,9 +136,9 @@ module receiver (
 		// Inputs
 		.pwm_time_high_us(aux1_pwm_pulse_length_us),
 		.us_clk(us_clk));
-		
-	// AUX2 input/output module instances	
-	pwm_reader #(`AUX2_DEFAULT_PULSE_TIME_HIGH_US) 
+
+	// AUX2 input/output module instances
+	pwm_reader #(`AUX2_DEFAULT_PULSE_TIME_HIGH_US)
 	aux2_reader (
 		// Output
 		.pwm_pulse_length_us(aux2_pwm_pulse_length_us),
@@ -154,8 +154,8 @@ module receiver (
 		.pwm_time_high_us(aux2_pwm_pulse_length_us),
 		.us_clk(us_clk));
 
-	// SWA/SWB input/output module instances	
-	pwm_reader #(`SWAB_DEFAULT_PULSE_TIME_HIGH_US) 
+	// SWA/SWB input/output module instances
+	pwm_reader #(`SWAB_DEFAULT_PULSE_TIME_HIGH_US)
 	swa_swb_reader (
 		// Output
 		.pwm_pulse_length_us(swa_swb_pwm_pulse_length_us),

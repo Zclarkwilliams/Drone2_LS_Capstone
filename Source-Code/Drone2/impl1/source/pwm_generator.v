@@ -1,10 +1,10 @@
 /**
  * ECE 412-413 Capstone Winter/Spring 2018
  * Team 32 Drone2 SOC
- * Ethan Grinnell, 
- * Brett Creeley, 
- * Daniel Christiansen, 
- * Kirk Hooper, 
+ * Ethan Grinnell,
+ * Brett Creeley,
+ * Daniel Christiansen,
+ * Kirk Hooper,
  * Zachary Clark-Williams
  */
 
@@ -42,7 +42,7 @@ module pwm_generator (
 	// params for padding the zeros and counter high/zero values
 	localparam LATCH_APPEND_BITS = 2'b00;
 	localparam HIGH_COUNTER_ZEROS = 10'd0;
-	
+
 	// Internal counters
 	reg [15:0] period_counter;
 	reg [`MOTOR_RATE_BIT_WIDTH + 1:0] high_counter;
@@ -62,7 +62,7 @@ module pwm_generator (
 		.high_counter(high_counter),
 		.resetn(resetn),
 		.us_clk(us_clk));
-	
+
 	// Motor_2 PWM Generator Block
 	pwm_generator_block pwm2 (
 		// Output
@@ -73,7 +73,7 @@ module pwm_generator (
 		.high_counter(high_counter),
 		.resetn(resetn),
 		.us_clk(us_clk));
-		
+
 	// Motor_3 PWM Generator Block
 	pwm_generator_block pwm3 (
 		// Output
@@ -84,7 +84,7 @@ module pwm_generator (
 		.high_counter(high_counter),
 		.resetn(resetn),
 		.us_clk(us_clk));
-	
+
 	// Motor_4 PWM Generator Block
 	pwm_generator_block pwm4 (
 		// Output
