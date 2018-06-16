@@ -81,6 +81,7 @@ module drone2 (
 		yaw_target_rate,
 		roll_target_rate,
 		pitch_target_rate,
+		yaw_angle_error,
 		roll_angle_error,
 		pitch_angle_error;
 	wire ac_valid_strobe;
@@ -217,6 +218,7 @@ module drone2 (
 		.yaw_rate_out(yaw_target_rate),
 		.roll_rate_out(roll_target_rate),
 		.pitch_rate_out(pitch_target_rate),
+		.yaw_angle_error(yaw_angle_error),
 		.pitch_angle_error(pitch_angle_error),
 		.roll_angle_error(roll_angle_error),
 		.complete_signal(ac_valid_strobe),
@@ -253,6 +255,7 @@ module drone2 (
 		.roll_rotation(x_rotation_rate),
 		.pitch_rotation(y_rotation_rate),
 		.yaw_rotation(z_rotation_rate),
+		.yaw_angle_error(yaw_angle_error),
 		.roll_angle_error(roll_angle_error),
 		.pitch_angle_error(pitch_angle_error),
 		.start_signal(ac_valid_strobe),

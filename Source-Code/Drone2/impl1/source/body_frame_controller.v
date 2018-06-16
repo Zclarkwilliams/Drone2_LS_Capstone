@@ -50,6 +50,7 @@ module body_frame_controller (
 	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] 	roll_rotation,
 	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] 	pitch_rotation,
 	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] 	yaw_rotation,
+	input wire signed [`RATE_BIT_WIDTH-1:0]		yaw_angle_error,
 	input wire signed [`RATE_BIT_WIDTH-1:0]		roll_angle_error,
 	input wire signed [`RATE_BIT_WIDTH-1:0] 	pitch_angle_error,
 	input wire start_signal,
@@ -68,6 +69,7 @@ module body_frame_controller (
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] latched_yaw_rotation;
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] latched_roll_rotation;
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] latched_pitch_rotation;
+	reg signed [`RATE_BIT_WIDTH-1:0]	latched_yaw_angle_error;
 	reg signed [`RATE_BIT_WIDTH-1:0]	latched_roll_angle_error;
 	reg signed [`RATE_BIT_WIDTH-1:0]	latched_pitch_angle_error;
 
@@ -103,6 +105,7 @@ module body_frame_controller (
 			latched_yaw_target			<= `ALL_ZERO_2BYTE;
 			latched_roll_target			<= `ALL_ZERO_2BYTE;
 			latched_pitch_target		<= `ALL_ZERO_2BYTE;
+			latched_yaw_angle_error		<= `ALL_ZERO_2BYTE;
 			latched_roll_angle_error	<= `ALL_ZERO_2BYTE;
 			latched_pitch_angle_error	<= `ALL_ZERO_2BYTE;
 			// Angle rates from the imu
@@ -115,6 +118,7 @@ module body_frame_controller (
 			latched_yaw_target			<= yaw_target;
 			latched_roll_target			<= roll_target;
 			latched_pitch_target		<= pitch_target;
+			latched_yaw_angle_error		<= yaw_angle_error;
 			latched_roll_angle_error	<= roll_angle_error;
 			latched_pitch_angle_error	<= pitch_angle_error;
 			// Angle rates from the imu
@@ -131,6 +135,7 @@ module body_frame_controller (
 			latched_yaw_rotation		<= latched_yaw_rotation;
 			latched_roll_rotation		<= latched_roll_rotation;
 			latched_pitch_rotation		<= latched_pitch_rotation;
+			latched_yaw_angle_error		<= latched_yaw_angle_error;
 			latched_roll_angle_error	<= latched_roll_angle_error;
 			latched_pitch_angle_error	<= latched_pitch_angle_error;
 		end
@@ -142,6 +147,7 @@ module body_frame_controller (
 			latched_yaw_rotation		<= latched_yaw_rotation;
 			latched_roll_rotation		<= latched_roll_rotation;
 			latched_pitch_rotation		<= latched_pitch_rotation;
+			latched_yaw_angle_error		<= latched_yaw_angle_error;
 			latched_roll_angle_error	<= latched_roll_angle_error;
 			latched_pitch_angle_error	<= latched_pitch_angle_error;
 		end
@@ -235,7 +241,7 @@ module body_frame_controller (
 		// Input
 		.target_rotation(latched_yaw_target),
 		.actual_rotation(latched_yaw_rotation),
-		.angle_error(`ALL_ZERO_2BYTE),
+		.angle_error(latched_yaw_angle_error),
 		.start_flag(start_flag),
 		.wait_flag(wait_flag),
 		.resetn(resetn),
