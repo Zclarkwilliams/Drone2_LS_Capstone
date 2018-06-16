@@ -92,11 +92,12 @@ module angle_controller (
 		
 	// angle value aliases
 	// 5760/4 = 1440 = 90˚ and 4320 = 270˚
-	localparam	ANGLE_360_DEG = 5760, 
-				ANGLE_270_DEG = 4320, 
-				ANGLE_180_DEG = 2880, 
-				ANGLE_90_DEG  = 1440,
-				ANGLE_0_DEG   = 0;
+	localparam
+		ANGLE_360_DEG = 5760, 
+		ANGLE_270_DEG = 4320, 
+		ANGLE_180_DEG = 2880, 
+		ANGLE_90_DEG  = 1440,
+		ANGLE_0_DEG   = 0;
 	
 	// state variables
 	reg [4:0] state, next_state;
@@ -182,7 +183,9 @@ module angle_controller (
 					active_signal 			<= `TRUE;
 					
 					//Track change in yaw angle
-					if ( ( yaw_target_angle_tracking + latched_yaw - 125) > (ANGLE_360_DEG*4) ) // Which means target angle will be > 360˚ and needs to wrap around to something  > 0˚
+					if (latched_throttle < 10) //Throttle is off or nearly off, use current IMU angle as the tracked angle
+						yaw_target_angle_tracking <= yaw_actual;
+					else if ( ( yaw_target_angle_tracking + latched_yaw - 125) > (ANGLE_360_DEG*4) ) // Which means target angle will be > 360˚ and needs to wrap around to something  > 0˚
 						yaw_target_angle_tracking <= yaw_target_angle_tracking + latched_yaw - 125 - ANGLE_360_DEG*4;
 					else if ( ( yaw_target_angle_tracking + latched_yaw - 125) < ANGLE_0_DEG ) // Which means target angle will be < 0˚ and needs to wrap around to something  < 360˚
 						yaw_target_angle_tracking <= ANGLE_360_DEG*4 + yaw_target_angle_tracking + latched_yaw - 125;
