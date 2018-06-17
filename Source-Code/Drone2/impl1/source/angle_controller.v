@@ -173,6 +173,7 @@ module angle_controller (
 			yaw_rate_out 	 <= `ALL_ZERO_2BYTE;
 			roll_rate_out 	 <= `ALL_ZERO_2BYTE;
 			pitch_rate_out	 <= `ALL_ZERO_2BYTE;
+			yaw_target_angle <= `ALL_ZERO_2BYTE;
 
 		end
 		else begin
