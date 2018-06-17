@@ -41,7 +41,7 @@ module yaw_angle_accumulator (
 
 	reg signed [31:0] 				 body_yaw_angle_tracking;
 	reg [`REC_VAL_BIT_WIDTH-1:0]	 latched_throttle_pwm_value_input;
-	reg [`REC_VAL_BIT_WIDTH-1:0]	 latched_yaw_pwm_value_input;
+	reg signed [8:0]	 			 latched_yaw_pwm_value_input; // This is intentionally 9 bits wide
 	reg signed [`RATE_BIT_WIDTH-1:0] latched_yaw_angle_imu;
 
 	// state names
@@ -94,7 +94,7 @@ module yaw_angle_accumulator (
 			STATE_WAITING: begin
 				if(start_flag) begin
 					latched_throttle_pwm_value_input = throttle_pwm_value_input;
-					latched_yaw_pwm_value_input      = yaw_pwm_value_input;
+					latched_yaw_pwm_value_input      = {1'b0, yaw_pwm_value_input};
 					latched_yaw_angle_imu            = yaw_angle_imu;
 					next_state                       = STATE_CALC_TRACK_ANGLE;
 				end
@@ -141,16 +141,16 @@ module yaw_angle_accumulator (
 						body_yaw_angle_tracking <= (latched_yaw_angle_imu*4);
 						$display("body_yaw_angle_tracking obtained from IMU rotation value: %d", (latched_yaw_angle_imu*4));
 					end
-					else if ( ( body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input - 125)) > (ANGLE_360_DEG*4) ) begin // Which means target angle will be > 360˚ and needs to wrap around to something  > 0˚
-						body_yaw_angle_tracking <= (body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input - 125) - (ANGLE_360_DEG*4));
+					else if ( ( body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input) - 125) > (ANGLE_360_DEG*4) ) begin // Which means target angle will be > 360˚ and needs to wrap around to something  > 0˚
+						body_yaw_angle_tracking <= (body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input) - 125 - (ANGLE_360_DEG*4));
 						$display("tracking angle wrap around in positive direction");
 					end
-					else if ( ( body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input - 125)) < ANGLE_0_DEG ) begin // Which means target angle will be < 0˚ and needs to wrap around to something  < 360˚
-						body_yaw_angle_tracking <= ((ANGLE_360_DEG*4) + body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input - 125));
+					else if ( ( body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input) - 125) < ANGLE_0_DEG ) begin // Which means target angle will be < 0˚ and needs to wrap around to something  < 360˚
+						body_yaw_angle_tracking <= (body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input) - 125 + (ANGLE_360_DEG*4));
 						$display("tracking angle wrap around in negative direction");
 					end
 					else begin 
-						body_yaw_angle_tracking <= (body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input - 125));
+						body_yaw_angle_tracking <= (body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input) - 125);
 						$display("tracking angle normal update");
 					end
 				end
@@ -163,7 +163,7 @@ module yaw_angle_accumulator (
 						$display("body_yaw_angle obtained from IMU rotation value due to idle throttle");
 					end
 					else begin //Divide by 4 to scale this larger number down to ANGLE_360_DEG again, to compare to IMU yaw rotation values
-						body_yaw_angle 		<= (body_yaw_angle_tracking>>>2);
+						body_yaw_angle 		<= $signed(body_yaw_angle_tracking>>2);
 						$display("body_yaw_angle obtained from tracking angle");
 					end
 				end
@@ -176,11 +176,11 @@ module yaw_angle_accumulator (
 						$display("body_yaw_angle obtained from IMU rotation value due to idle throttle");
 					end
 					else if((body_yaw_angle > ANGLE_270_DEG) && (latched_yaw_angle_imu < ANGLE_90_DEG)) begin
-						yaw_angle_error 	<= ((ANGLE_360_DEG - body_yaw_angle) + latched_yaw_angle_imu);
+						yaw_angle_error 	<= (body_yaw_angle - ANGLE_360_DEG - latched_yaw_angle_imu);
 						$display("yaw_angle_error wrap around in the positive direction");
 					end
 					else if( (latched_yaw_angle_imu > ANGLE_270_DEG) && (body_yaw_angle < ANGLE_90_DEG)) begin
-						yaw_angle_error 	<= ((latched_yaw_angle_imu - ANGLE_360_DEG) - body_yaw_angle);
+						yaw_angle_error 	<= (ANGLE_360_DEG - latched_yaw_angle_imu + body_yaw_angle);
 						$display("yaw_angle_error wrap around in the negative direction");
 					end
 					else begin
