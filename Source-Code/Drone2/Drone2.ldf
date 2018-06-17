@@ -63,6 +63,9 @@
         <Source name="impl1/impl1.xcf" type="Programming Project File" type_short="Programming">
             <Options/>
         </Source>
+        <Source name="test_yaw/test_yaw.spf" type="Simulation Project File" type_short="SPF">
+            <Options/>
+        </Source>
     </Implementation>
     <Strategy name="Strategy1" file="Drone21.sty"/>
 </BaliProject>

@@ -41,11 +41,12 @@ module test_angle_controller;
 	wire complete_signal;
 	wire active_signal;
 	reg  start_signal;
-	int i,j;
+	integer i;
+	integer j;
 
 	// angle value aliases
 	// 5760/4 = 1440 = 90˚ and 4320 = 270˚
-	localparam
+	localparam signed
 		ANGLE_360_DEG = 5760, 
 		ANGLE_270_DEG = 4320, 
 		ANGLE_180_DEG = 2880, 
@@ -107,12 +108,12 @@ module test_angle_controller;
 					$display("%t: %m Yaw PWM Value Latch =\t%d",$time, DUT.latched_yaw);
 					$display("%t: %m Yaw rate out =\t%d",$time, yaw_rate_out);
 					$display("%t: %m Yaw angle error =\t%d",$time, yaw_angle_error);
-					$display("%t: %m Yaw tracking angle =\t%d",$time, DUT.yaw_target_angle_tracking);
+					$display("%t: %m Yaw tracking angle =\t%d",$time, (DUT.yaw_target_angle_tracking));
 					$display("%t: %m Yaw mapped value =\t%d",$time, DUT.mapped_yaw);
 					$display("%t: %m Yaw actual value =\t%d",$time, DUT.yaw_actual);
 					$display("%t: %m Yaw rate out       (BIN) =\t%b",$time, yaw_rate_out);
 					$display("%t: %m Yaw angle error    (BIN) =\t%b",$time, yaw_angle_error);
-					$display("%t: %m Yaw tracking angle (BIN) =\t%b",$time, DUT.yaw_target_angle_tracking);
+					$display("%t: %m Yaw tracking angle (BIN) =\t%b",$time, (DUT.yaw_target_angle_tracking));
 					$display("%t: %m Yaw mapped value   (BIN) =\t%b",$time, DUT.mapped_yaw);
 					//$display("%t: %m Pitch rate out =%d",$time, pitch_rate_out);
 					//$display("%t: %m Pitch angle error =%d",$time, pitch_angle_error);

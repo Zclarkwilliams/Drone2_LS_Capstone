@@ -93,7 +93,7 @@ module angle_controller (
 		
 	// angle value aliases
 	// 5760/4 = 1440 = 90˚ and 4320 = 270˚
-	localparam
+	localparam signed
 		ANGLE_360_DEG = 5760, 
 		ANGLE_270_DEG = 4320, 
 		ANGLE_180_DEG = 2880, 
@@ -127,7 +127,6 @@ module angle_controller (
 			latched_yaw 		<= `ALL_ZERO_2BYTE;
 			latched_pitch 		<= `ALL_ZERO_2BYTE;
 			latched_roll 		<= `ALL_ZERO_2BYTE;
-			yaw_target_angle_tracking <= `ALL_ZERO_2BYTE;
 		end
 		else begin
 			state 				<= next_state;
@@ -135,7 +134,6 @@ module angle_controller (
 			latched_roll 		<= roll_target;
 			latched_pitch 		<= pitch_target;
 			latched_throttle 	<= throttle_target;
-			yaw_target_angle_tracking <= yaw_target_angle_tracking;
 		end
 	end
 
@@ -174,6 +172,8 @@ module angle_controller (
 			roll_rate_out 	 <= `ALL_ZERO_2BYTE;
 			pitch_rate_out	 <= `ALL_ZERO_2BYTE;
 			yaw_target_angle <= `ALL_ZERO_2BYTE;
+			yaw_target_angle_tracking <= `ALL_ZERO_2BYTE;
+			mapped_yaw       <= `ALL_ZERO_2BYTE;
 
 		end
 		else begin
@@ -188,38 +188,45 @@ module angle_controller (
 					
 					//Track change in yaw angle
 					if (latched_throttle < 10) begin //Throttle is off or nearly off, use current IMU angle as the tracked angle
-						$display("Latching IMU rotation value %d", yaw_actual);
 						yaw_target_angle_tracking <= yaw_actual;
+						$display("yaw_target_angle_tracking obtained from IMU rotation value: %d", yaw_target_angle_tracking);
 					end
 					else if ( ( yaw_target_angle_tracking + $signed(latched_yaw - 125)) > (ANGLE_360_DEG*4) ) begin // Which means target angle will be > 360˚ and needs to wrap around to something  > 0˚
 						yaw_target_angle_tracking <= yaw_target_angle_tracking + $signed(latched_yaw - 125) - ANGLE_360_DEG*4;
-						$display("Wrap around in positive direction, tracking angle: %d", yaw_target_angle_tracking);
+						$display("tracking angle wrap around in positive direction");
 					end
 					else if ( ( yaw_target_angle_tracking + $signed(latched_yaw - 125)) < ANGLE_0_DEG ) begin // Which means target angle will be < 0˚ and needs to wrap around to something  < 360˚
 						yaw_target_angle_tracking <= ANGLE_360_DEG*4 + yaw_target_angle_tracking + $signed(latched_yaw - 125);
-						$display("Wrap around in negative direction, tracking angle: %d", yaw_target_angle_tracking);
+						$display("tracking angle wrap around in negative direction");
 					end
 					else begin 
 						yaw_target_angle_tracking <= yaw_target_angle_tracking + $signed(latched_yaw - 125);
-						$display("Normal update, tracking angle: %d", yaw_target_angle_tracking);
+						$display("tracking angle normal update");
 					end
 					
-					//Divide by 4 to scale this larger number down to ANGLE_360_DEG again, to compare to IMU yaw rotation values
-					yaw_target_angle 		<= yaw_target_angle_tracking>>>2;
+					if (latched_throttle < 10) begin //Throttle is off or nearly off, use current IMU angle as the target angle also
+						yaw_target_angle <= yaw_actual;
+						$display("yaw_target_angle obtained from IMU rotation value due to idle throttle");
+					end
+					else begin //Divide by 4 to scale this larger number down to ANGLE_360_DEG again, to compare to IMU yaw rotation values
+						yaw_target_angle 		<= yaw_target_angle_tracking>>>2;
+						$display("yaw_target_angle obtained from tracking angle");
+					end
 
-					mapped_throttle 		<= {THROTTLE_F_PAD, latched_throttle, THROTTLE_R_PAD};
 					if((yaw_target_angle > ANGLE_270_DEG) && (yaw_actual < ANGLE_90_DEG)) begin
 						mapped_yaw 			<= (ANGLE_360_DEG - yaw_target_angle) + yaw_actual;
-						$display("Wrap around in the positive direction, mapped_yaw: %d", mapped_yaw);
+						$display("mapped_yaw wrap around in the positive direction");
 					end
 					else if( (yaw_actual > ANGLE_270_DEG) && (yaw_target_angle < ANGLE_90_DEG)) begin
 						mapped_yaw 			<= (yaw_actual - ANGLE_360_DEG) - yaw_target_angle;
-						$display("Wrap around in the negative direction, mapped_yaw: %d", mapped_yaw);
+						$display("mapped_yaw wrap around in the negative direction");
 					end
 					else begin
 						mapped_yaw 			<= yaw_target_angle - yaw_actual;
-						$display("Normal update, mapped_yaw: %d", mapped_yaw);
+						$display("mapped_yaw normal update");
 					end
+					
+					mapped_throttle 		<= {THROTTLE_F_PAD, latched_throttle, THROTTLE_R_PAD};
 					mapped_roll 			<= $signed({FRONT_PAD, latched_roll,  END_PAD}) - MAPPING_SUBS + roll_actual; // roll value from IMU is flipped, add instead of subtract
 					mapped_pitch 			<= $signed({FRONT_PAD, latched_pitch, END_PAD}) - MAPPING_SUBS - pitch_actual;
 				end
