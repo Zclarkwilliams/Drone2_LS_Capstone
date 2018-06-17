@@ -40,8 +40,8 @@ module yaw_angle_accumulator (
 
 
 	reg signed [31:0] 				 body_yaw_angle_tracking;
-	reg [`REC_VAL_BIT_WIDTH-1:0]	 latched_throttle;
-	reg [`REC_VAL_BIT_WIDTH-1:0]	 latched_yaw;
+	reg [`REC_VAL_BIT_WIDTH-1:0]	 latched_throttle_pwm_value_input;
+	reg [`REC_VAL_BIT_WIDTH-1:0]	 latched_yaw_pwm_value_input;
 	reg signed [`RATE_BIT_WIDTH-1:0] latched_yaw_angle_imu;
 
 	// state names
@@ -89,17 +89,14 @@ module yaw_angle_accumulator (
 	end
 
 	// next state logic
-	always @(*) begin
-		latched_throttle      = latched_throttle;
-		latched_yaw           = latched_yaw;
-		latched_yaw_angle_imu = latched_yaw_angle_imu;
+	always @(state or start_flag) begin
 		case(state)
 			STATE_WAITING: begin
 				if(start_flag) begin
-					latched_throttle      = throttle_pwm_value_input;
-					latched_yaw           = yaw_pwm_value_input;
-					latched_yaw_angle_imu = yaw_angle_imu;
-					next_state            = STATE_CALC_TRACK_ANGLE;
+					latched_throttle_pwm_value_input = throttle_pwm_value_input;
+					latched_yaw_pwm_value_input      = yaw_pwm_value_input;
+					latched_yaw_angle_imu            = yaw_angle_imu;
+					next_state                       = STATE_CALC_TRACK_ANGLE;
 				end
 				else
 					next_state = STATE_WAITING;
@@ -140,20 +137,20 @@ module yaw_angle_accumulator (
 				STATE_CALC_TRACK_ANGLE: begin
 					complete_signal 		<= `FALSE;
 					active_signal 			<= `TRUE;
-					if (latched_throttle < 10) begin //Throttle is off or nearly off, use current IMU angle as the tracked angle
+					if (latched_throttle_pwm_value_input < 10) begin //Throttle is off or nearly off, use current IMU angle as the tracked angle
 						body_yaw_angle_tracking <= (latched_yaw_angle_imu*4);
-						$display("body_yaw_angle_tracking obtained from IMU rotation value: %d", body_yaw_angle_tracking);
+						$display("body_yaw_angle_tracking obtained from IMU rotation value: %d", (latched_yaw_angle_imu*4));
 					end
-					else if ( ( body_yaw_angle_tracking + $signed(latched_yaw - 125)) > (ANGLE_360_DEG*4) ) begin // Which means target angle will be > 360˚ and needs to wrap around to something  > 0˚
-						body_yaw_angle_tracking <= body_yaw_angle_tracking + $signed(latched_yaw - 125) - ANGLE_360_DEG*4;
+					else if ( ( body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input - 125)) > (ANGLE_360_DEG*4) ) begin // Which means target angle will be > 360˚ and needs to wrap around to something  > 0˚
+						body_yaw_angle_tracking <= (body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input - 125) - (ANGLE_360_DEG*4));
 						$display("tracking angle wrap around in positive direction");
 					end
-					else if ( ( body_yaw_angle_tracking + $signed(latched_yaw - 125)) < ANGLE_0_DEG ) begin // Which means target angle will be < 0˚ and needs to wrap around to something  < 360˚
-						body_yaw_angle_tracking <= ANGLE_360_DEG*4 + body_yaw_angle_tracking + $signed(latched_yaw - 125);
+					else if ( ( body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input - 125)) < ANGLE_0_DEG ) begin // Which means target angle will be < 0˚ and needs to wrap around to something  < 360˚
+						body_yaw_angle_tracking <= ((ANGLE_360_DEG*4) + body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input - 125));
 						$display("tracking angle wrap around in negative direction");
 					end
 					else begin 
-						body_yaw_angle_tracking <= body_yaw_angle_tracking + $signed(latched_yaw - 125);
+						body_yaw_angle_tracking <= (body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input - 125));
 						$display("tracking angle normal update");
 					end
 				end
@@ -161,7 +158,7 @@ module yaw_angle_accumulator (
 					$display("body_yaw_angle_tracking=%d", body_yaw_angle_tracking);
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
-					if (latched_throttle < 10) begin //Throttle is off or nearly off, use current IMU angle as the target angle also
+					if (latched_throttle_pwm_value_input < 10) begin //Throttle is off or nearly off, use current IMU angle as the target angle also
 						body_yaw_angle 		<= latched_yaw_angle_imu;
 						$display("body_yaw_angle obtained from IMU rotation value due to idle throttle");
 					end
@@ -174,20 +171,20 @@ module yaw_angle_accumulator (
 					$display("body_yaw_angle=%d", body_yaw_angle);
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
-					if (latched_throttle < 10) begin //Throttle is off or nearly off, use current IMU angle as the target angle also
-						yaw_angle_error 		<= 0;
+					if (latched_throttle_pwm_value_input < 10) begin //Throttle is off or nearly off, use current IMU angle as the target angle also
+						yaw_angle_error 	<= 0;
 						$display("body_yaw_angle obtained from IMU rotation value due to idle throttle");
 					end
 					else if((body_yaw_angle > ANGLE_270_DEG) && (latched_yaw_angle_imu < ANGLE_90_DEG)) begin
-						yaw_angle_error 	<= (ANGLE_360_DEG - body_yaw_angle) + latched_yaw_angle_imu;
+						yaw_angle_error 	<= ((ANGLE_360_DEG - body_yaw_angle) + latched_yaw_angle_imu);
 						$display("yaw_angle_error wrap around in the positive direction");
 					end
 					else if( (latched_yaw_angle_imu > ANGLE_270_DEG) && (body_yaw_angle < ANGLE_90_DEG)) begin
-						yaw_angle_error 	<= (latched_yaw_angle_imu - ANGLE_360_DEG) - body_yaw_angle;
+						yaw_angle_error 	<= ((latched_yaw_angle_imu - ANGLE_360_DEG) - body_yaw_angle);
 						$display("yaw_angle_error wrap around in the negative direction");
 					end
 					else begin
-						yaw_angle_error 	<= body_yaw_angle - latched_yaw_angle_imu;
+						yaw_angle_error 	<= (body_yaw_angle - latched_yaw_angle_imu);
 						$display("yaw_angle_error normal update");
 					end
 				end

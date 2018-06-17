@@ -73,8 +73,8 @@ module test_angle_controller;
 					yaw_angle_imu            = task_yaw_angle_imu           ;
 					start_signal    = 1;
 					repeat (2) @(posedge us_clk); start_signal    = 0; repeat (8) @(posedge us_clk);
-					$display("%t: %m Yaw PWM Value Latch\t\t = %d",$time, DUT.latched_yaw);
-					$display("%t: %m Yaw IMU value\t\t\t = %d",$time, DUT.yaw_angle_imu);
+					$display("%t: %m Yaw PWM Value Latch\t\t = %d",$time, DUT.latched_yaw_pwm_value_input);
+					$display("%t: %m Yaw IMU value\t\t\t = %d",$time, DUT.latched_yaw_angle_imu);
 					$display("%t: %m Yaw angle\t\t\t = %d",$time, body_yaw_angle);
 					$display("%t: %m Yaw angle error\t\t = %d",$time, yaw_angle_error);
 					$display("%t: %m Yaw tracking angle\t = %d",$time, (DUT.body_yaw_angle_tracking));
@@ -94,31 +94,45 @@ module test_angle_controller;
 		run_test(
 		.task_throttle_pwm_value_input(0),
 		.task_yaw_pwm_value_input(0),
-		.task_yaw_angle_imu(250)
+		.task_yaw_angle_imu(249)
 		);
 
 		
 		$display("\n%t: %m Test neutral stick positions, throttle to 50 percent with angles of value 0 from IMU",$time);
 		run_test(
 		.task_throttle_pwm_value_input(125),
-		.task_yaw_pwm_value_input(250),
-		.task_yaw_angle_imu(250)
+		.task_yaw_pwm_value_input(249),
+		.task_yaw_angle_imu(249)
 		);
 
 		j = 0;
 		for(i = 0; i < 250; i=i+1) begin
-			if(((125*j)+125) > (ANGLE_360_DEG*4))
+			if(((31*j)+124) > ANGLE_360_DEG)
 				j = 0;
 			$display("\n%t: %m Test yaw at max PWM input (250), throttle to 50 percent",$time);
-			$display("%t: %m i=%d, j=%d, yaw_angle_imu input =%d",$time, i, j, ((125*j)+125));
+			$display("%t: %m i=%d, j=%d, yaw_angle_imu input =%d",$time, i, j, ((31*j)+124));
 			run_test(
 			.task_throttle_pwm_value_input(125),
-			.task_yaw_pwm_value_input(250),
-			.task_yaw_angle_imu(((125*j)+125))
+			.task_yaw_pwm_value_input(249),
+			.task_yaw_angle_imu(((31*j)+124))
 			);
 			j = j+1;
 		end
 
+		
+		j = 0;
+		for(i = 250; i == 0; i=i-1) begin
+			if(((31*j)+124) < ANGLE_0_DEG)
+				j = 250;
+			$display("\n%t: %m Test yaw at max PWM input (250), throttle to 50 percent",$time);
+			$display("%t: %m i=%d, j=%d, yaw_angle_imu input =%d",$time, i, j, ((31*j)+124));
+			run_test(
+			.task_throttle_pwm_value_input(125),
+			.task_yaw_pwm_value_input(249),
+			.task_yaw_angle_imu(((31*j)+124))
+			);
+			j = j-1;
+		end
 		$display("%t: %m Test complete", $time);
 		$stop;
 	end
