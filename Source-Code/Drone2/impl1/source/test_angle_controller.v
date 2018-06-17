@@ -41,7 +41,7 @@ module test_angle_controller;
 	wire complete_signal;
 	wire active_signal;
 	reg  start_signal;
-	int i;
+	int i,j;
 
 	// angle value aliases
 	// 5760/4 = 1440 = 90˚ and 4320 = 270˚
@@ -150,18 +150,22 @@ module test_angle_controller;
 		.task_roll_actual(0)
 		);
 
+		j = 0;
 		for(i = 0; i < 250; i=i+1) begin
 			$display("\n%t: %m Test yaw at max PWM input (250), throttle to 50 percent, 0 linear acceleration, with angles of value 0 from IMU",$time);
-			$display("%t: %m i=%d",$time, i);
+			if(((125*j)+125) > (ANGLE_360_DEG*4))
+				j = 0;
+			$display("%t: %m i=%d, j=%d, yaw_actual input =%d",$time, i, j, ((125*j)+125));
 			run_test(
 			.task_throttle_target(125),
 			.task_yaw_target(250),
 			.task_roll_target(0),
 			.task_pitch_target(0),
-			.task_yaw_actual(((125*i)+125)),
+			.task_yaw_actual(((125*j)+125)),
 			.task_pitch_actual(0),
 			.task_roll_actual(0)
 			);
+			j = j+1;
 		end
 
 		$display("%t: %m Test complete", $time);
