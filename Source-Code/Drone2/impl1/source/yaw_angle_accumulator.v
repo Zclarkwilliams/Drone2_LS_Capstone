@@ -48,8 +48,8 @@ module yaw_angle_accumulator (
 	localparam
 		STATE_WAITING           = 5'b00001,
 		STATE_CALC_TRACK_ANGLE  = 5'b00010,
-		STATE_CALC_TARGET_ANGLE = 5'b00100,
-		STATE_CALC_BODY_ANGLE   = 5'b01000,
+		STATE_CALC_BODY_ANGLE   = 5'b00100,
+		STATE_CALC_ANGLE_ERROR  = 5'b01000,
 		STATE_COMPLETE          = 5'b10000;
 		
 	// angle value aliases
@@ -105,12 +105,12 @@ module yaw_angle_accumulator (
 					next_state = STATE_WAITING;
 			end
 			STATE_CALC_TRACK_ANGLE: begin
-				next_state = STATE_CALC_TARGET_ANGLE;
-			end
-			STATE_CALC_TARGET_ANGLE: begin
 				next_state = STATE_CALC_BODY_ANGLE;
 			end
 			STATE_CALC_BODY_ANGLE: begin
+				next_state = STATE_CALC_ANGLE_ERROR;
+			end
+			STATE_CALC_ANGLE_ERROR: begin
 				next_state = STATE_COMPLETE;
 			end
 			STATE_COMPLETE: begin
@@ -157,7 +157,7 @@ module yaw_angle_accumulator (
 						$display("tracking angle normal update");
 					end
 				end
-				STATE_CALC_TARGET_ANGLE: begin
+				STATE_CALC_BODY_ANGLE: begin
 					$display("body_yaw_angle_tracking=%d", body_yaw_angle_tracking);
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
@@ -170,7 +170,7 @@ module yaw_angle_accumulator (
 						$display("body_yaw_angle obtained from tracking angle");
 					end
 				end
-				STATE_CALC_BODY_ANGLE: begin
+				STATE_CALC_ANGLE_ERROR: begin
 					$display("body_yaw_angle=%d", body_yaw_angle);
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
