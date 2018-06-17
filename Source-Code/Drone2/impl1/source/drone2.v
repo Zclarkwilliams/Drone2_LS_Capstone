@@ -74,6 +74,13 @@ module drone2 (
 		aux1_val,
 		aux2_val,
 		swa_swb_val;
+		
+	//-------- Yaw Angle Accumulator Wires --------//
+	wire [`RATE_BIT_WIDTH-1:0]
+		yaac_yaw_angle_error,
+		body_yaw_angle_target,
+		yaac_active,
+		yaac_complete;
 
 	//---------- Angle_Controller Wires -----------//
 	wire [`RATE_BIT_WIDTH-1:0]
@@ -180,7 +187,7 @@ module drone2 (
 		.rstn(resetn),
 		.sys_clk(sys_clk),
 		.rstn_imu(rstn_imu),
-		.ac_active(ac_active));
+		.next_mod_active(yaac_active));
 
 	/**
 	 * Gets inputs from the physical receiver and converts them to 0-255.
@@ -205,10 +212,28 @@ module drone2 (
 		.swa_swb_pwm(swa_swb_pwm),
 		.us_clk(us_clk),
 		.resetn(resetn));
+		
+	/**
+	 *	Takes accumulated yaw PWM value to calculate the current desired
+	 *   yaw rotation. Uses the IMU provided yaw Euler angle to calculate an angle
+	 *   error from this desired body angle
+	 * 		file - yaw_angle_accumulator.v
+	 */
+	yaw_angle_accumulator  YAAc(
+		.body_yaw_angle_target(body_yaw_angle_target),
+		.yaw_angle_error(yaac_yaw_angle_error),
+		.active_signal(yaac_active),
+		.complete_signal(yaac_complete),
+		.throttle_pwm_value_input(throttle_val),
+		.yaw_pwm_value_input(yaw_val),
+		.yaw_angle_imu(z_rotation),
+		.start_signal(imu_data_valid),
+		.resetn(resetn),
+		.us_clk(us_clk));
 
 	/**
 	 *	Take IMU provided orientation angle and user provided target angle and
-	 *	subract them to get the error angle rate to get to target angle
+	 *	subtract them to get the error angle rate to get to target angle
 	 *	position.
 	 * 		file - angle_controller.v
 	 */
@@ -225,13 +250,13 @@ module drone2 (
 		.active_signal(ac_active),
 		// Inputs
 		.throttle_target(throttle_val),
-		.yaw_target(yaw_val),
+		.body_yaw_angle_target(body_yaw_angle_target),
 		.roll_target(roll_val),
 		.pitch_target(pitch_val),
-		.yaw_actual(z_rotation),
+		.yaw_angle_error_in(yaac_yaw_angle_error),
 		.roll_actual(y_rotation),
 		.pitch_actual(x_rotation),
-		.start_signal(imu_data_valid),
+		.start_signal(yaac_complete),
 		.resetn(resetn),
 		.us_clk(us_clk));
 
@@ -263,7 +288,7 @@ module drone2 (
 		.us_clk(us_clk));
 
 	/**
-	 * Get axis rates and calculate respective motor rates to acheive correct
+	 * Get axis rates and calculate respective motor rates to achieve correct
 	 * drone movements.
 	 *		file - motor_mixer.v
 	 */

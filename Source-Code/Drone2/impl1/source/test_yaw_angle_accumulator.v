@@ -77,10 +77,7 @@ module test_angle_controller;
 					$display("%t: %m Yaw IMU value\t\t\t = %d",$time, DUT.latched_yaw_angle_imu);
 					$display("%t: %m Yaw angle\t\t\t = %d",$time, body_yaw_angle);
 					$display("%t: %m Yaw angle error\t\t = %d",$time, yaw_angle_error);
-					//$display("%t: %m Yaw tracking angle\t = %d",$time, (DUT.body_yaw_angle_tracking));
-					//$display("%t: %m Yaw body angle       (BIN) = %b",$time, body_yaw_angle);
-					//$display("%t: %m Yaw body angle error (BIN) = %b",$time, yaw_angle_error);
-					//$display("%t: %m Yaw tracking angle   (BIN) = %b",$time, (DUT.body_yaw_angle_tracking));
+					$display("%t: %m Yaw tracking angle\t = %d",$time, (DUT.body_yaw_angle_tracking));
 				end
 			endtask
 
@@ -118,6 +115,10 @@ module test_angle_controller;
 			);
 			j = j+1;
 		end
+		
+		$display("\n\n\n\n%t: %m Now reversing directions\n\n\n\n",$time);
+
+
 		$display("%t: %m Set initial values",$time);
 		run_test(
 		.task_throttle_pwm_value_input(0),
@@ -133,7 +134,6 @@ module test_angle_controller;
 		.task_yaw_angle_imu(5760)
 		);
 
-		$display("\n\n%t: %m Now reversing directions\n\n",$time);
 		j = 0;
 		for(i = 0; i < 250; i=i+1) begin
 			if((ANGLE_360_DEG-(31*j)) < ANGLE_0_DEG)

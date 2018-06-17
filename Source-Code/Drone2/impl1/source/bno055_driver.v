@@ -18,7 +18,7 @@
 
  *  Module takes as inputs:
  *  		sys_clk                 master clock
- *  		ac_active               Handshake signal from angle controller acknowledging the data valid strobe
+ *  		next_mod_active         Handshake signal from next module acknowledging the data valid strobe
  *  		rstn                    async negative reset signal 0 = reset, 1 = not reset
 
  * Module provides as output (all values are 16-bit, 2's complement):
@@ -74,7 +74,7 @@ module bno055_driver #(
 	input wire rstn,
 	output wire [7:0]led_data_out,
 	input  wire sys_clk,
-	input wire ac_active,
+	input wire next_mod_active,
 	output wire rstn_imu,
 	output reg  imu_good,
 	output reg  valid_strobe,
@@ -233,13 +233,13 @@ module bno055_driver #(
 		else if (valid_strobe_enable == `TRUE) begin
 			if(~valid_strobe)                             // Valid not yet asserted
 				valid_strobe      <= `HIGH;
-			else if( valid_strobe && (~ac_active))        // Hold strobe until AC active
+			else if( valid_strobe && (~next_mod_active))  // Hold strobe until the next module active
 				valid_strobe      <= `HIGH;
 			else                                          // De-assert valid strobe
 				valid_strobe      <= `LOW;
 		end
 		else begin
-			if( valid_strobe && (~ac_active))             // Hold strobe until AC active
+			if( valid_strobe && (~next_mod_active))       // Hold strobe until the next module is active
 				valid_strobe      <= `HIGH;
 			else
 				valid_strobe <= `LOW;
