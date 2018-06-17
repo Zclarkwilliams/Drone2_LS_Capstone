@@ -141,16 +141,16 @@ module yaw_angle_accumulator (
 						body_yaw_angle_tracking <= (latched_yaw_angle_imu*4);
 						$display("body_yaw_angle_tracking obtained from IMU rotation value: %d", (latched_yaw_angle_imu*4));
 					end
-					else if ( ( body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input) - 125) > (ANGLE_360_DEG*4) ) begin // Which means target angle will be > 360˚ and needs to wrap around to something  > 0˚
-						body_yaw_angle_tracking <= (body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input) - 125 - (ANGLE_360_DEG*4));
+					else if ( ( body_yaw_angle_tracking + (latched_yaw_pwm_value_input - 125)) > (ANGLE_360_DEG*4) ) begin // Which means target angle will be > 360˚ and needs to wrap around to something  > 0˚
+						body_yaw_angle_tracking <= (body_yaw_angle_tracking + (latched_yaw_pwm_value_input - 125) - (ANGLE_360_DEG*4));
 						$display("tracking angle wrap around in positive direction");
 					end
-					else if ( ( body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input) - 125) < ANGLE_0_DEG ) begin // Which means target angle will be < 0˚ and needs to wrap around to something  < 360˚
-						body_yaw_angle_tracking <= (body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input) - 125 + (ANGLE_360_DEG*4));
+					else if ( ( body_yaw_angle_tracking + (latched_yaw_pwm_value_input - 125)) < ANGLE_0_DEG ) begin // Which means target angle will be < 0˚ and needs to wrap around to something  < 360˚
+						body_yaw_angle_tracking <= (body_yaw_angle_tracking + (latched_yaw_pwm_value_input - 125) + (ANGLE_360_DEG*4));
 						$display("tracking angle wrap around in negative direction");
 					end
 					else begin 
-						body_yaw_angle_tracking <= (body_yaw_angle_tracking + $signed(latched_yaw_pwm_value_input) - 125);
+						body_yaw_angle_tracking <= (body_yaw_angle_tracking + (latched_yaw_pwm_value_input - 125));
 						$display("tracking angle normal update");
 					end
 				end
@@ -163,7 +163,7 @@ module yaw_angle_accumulator (
 						$display("body_yaw_angle obtained from IMU rotation value due to idle throttle");
 					end
 					else begin //Divide by 4 to scale this larger number down to ANGLE_360_DEG again, to compare to IMU yaw rotation values
-						body_yaw_angle 		<= $signed(body_yaw_angle_tracking>>2);
+						body_yaw_angle 		<= body_yaw_angle_tracking>>2;
 						$display("body_yaw_angle obtained from tracking angle");
 					end
 				end
