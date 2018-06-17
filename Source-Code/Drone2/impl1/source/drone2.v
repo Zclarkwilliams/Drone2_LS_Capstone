@@ -78,7 +78,6 @@ module drone2 (
 	//-------- Yaw Angle Accumulator Wires --------//
 	wire [`RATE_BIT_WIDTH-1:0]
 		yaac_yaw_angle_error,
-		body_yaw_angle_target,
 		yaac_active,
 		yaac_complete;
 
@@ -220,7 +219,6 @@ module drone2 (
 	 * 		file - yaw_angle_accumulator.v
 	 */
 	yaw_angle_accumulator  YAAc(
-		.body_yaw_angle_target(body_yaw_angle_target),
 		.yaw_angle_error(yaac_yaw_angle_error),
 		.active_signal(yaac_active),
 		.complete_signal(yaac_complete),
@@ -250,10 +248,9 @@ module drone2 (
 		.active_signal(ac_active),
 		// Inputs
 		.throttle_target(throttle_val),
-		.body_yaw_angle_target(body_yaw_angle_target),
+		.yaw_angle_error_in(yaac_yaw_angle_error),
 		.roll_target(roll_val),
 		.pitch_target(pitch_val),
-		.yaw_angle_error_in(yaac_yaw_angle_error),
 		.roll_actual(y_rotation),
 		.pitch_actual(x_rotation),
 		.start_signal(yaac_complete),

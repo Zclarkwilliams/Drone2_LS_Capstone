@@ -44,7 +44,6 @@ module angle_controller (
 	output reg  active_signal,
 	output reg  complete_signal,
 	input  wire [`REC_VAL_BIT_WIDTH-1:0] throttle_target,
-	input  wire signed [`RATE_BIT_WIDTH-1:0] body_yaw_angle_target,
 	input  wire [`REC_VAL_BIT_WIDTH-1:0] pitch_target,
 	input  wire [`REC_VAL_BIT_WIDTH-1:0] roll_target,
 	input  wire signed [`RATE_BIT_WIDTH-1:0] yaw_angle_error_in,
@@ -81,7 +80,6 @@ module angle_controller (
 	reg signed [`OPS_BIT_WIDTH-1:0] 	scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
 	reg signed [`REC_VAL_BIT_WIDTH-1:0]	latched_throttle, latched_pitch, latched_roll;
 	reg signed [`REC_VAL_BIT_WIDTH-1:0]	latched_yaw_angle_error;
-	reg [`REC_VAL_BIT_WIDTH-1:0]		latched_body_yaw_angle_target;
 
 	// state names
 	localparam
@@ -115,14 +113,12 @@ module angle_controller (
 		if(!resetn) begin
 			state 							<= STATE_WAITING;
 			latched_throttle 				<= `ALL_ZERO_2BYTE;
-			latched_body_yaw_angle_target	<= `ALL_ZERO_2BYTE;
 			latched_yaw_angle_error 		<= `ALL_ZERO_2BYTE;
 			latched_pitch 					<= `ALL_ZERO_2BYTE;
 			latched_roll 					<= `ALL_ZERO_2BYTE;
 		end
 		else begin
 			state 							<= next_state;
-			latched_body_yaw_angle_target	<= body_yaw_angle_target;
 			latched_yaw_angle_error 		<= yaw_angle_error_in;
 			latched_roll 					<= roll_target;
 			latched_pitch 					<= pitch_target;
@@ -177,7 +173,7 @@ module angle_controller (
 					active_signal 			<= `TRUE;
 					
 					mapped_throttle 		<= {THROTTLE_F_PAD, latched_throttle, THROTTLE_R_PAD};
-					mapped_pitch 			<= latched_body_yaw_angle_target;
+					mapped_yaw	 			<= latched_yaw_angle_error;
 					mapped_roll 			<= $signed({FRONT_PAD, latched_roll,  END_PAD}) - MAPPING_SUBS + roll_actual; // roll value from IMU is flipped, add instead of subtract
 					mapped_pitch 			<= $signed({FRONT_PAD, latched_pitch, END_PAD}) - MAPPING_SUBS - pitch_actual;
 				end
