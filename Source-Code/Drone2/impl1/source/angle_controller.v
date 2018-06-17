@@ -47,7 +47,7 @@ module angle_controller (
 	input  wire [`REC_VAL_BIT_WIDTH-1:0] yaw_target,
 	input  wire [`REC_VAL_BIT_WIDTH-1:0] pitch_target,
 	input  wire [`REC_VAL_BIT_WIDTH-1:0] roll_target,
-	input  wire signed [`RATE_BIT_WIDTH-1:0] yaw_actual /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
+	input  wire signed [`RATE_BIT_WIDTH-1:0] yaw_actual,
 	input  wire signed [`RATE_BIT_WIDTH-1:0] pitch_actual,
 	input  wire signed [`RATE_BIT_WIDTH-1:0] roll_actual,
 	input  wire start_signal,
@@ -80,7 +80,8 @@ module angle_controller (
 	reg signed [`OPS_BIT_WIDTH-1:0]		mapped_throttle, mapped_yaw, mapped_roll, mapped_pitch;
 	reg signed [`OPS_BIT_WIDTH-1:0] 	scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
 	reg signed [`OPS_BIT_WIDTH-1:0] 	yaw_target_angle_tracking, yaw_target_angle;
-	reg signed [`REC_VAL_BIT_WIDTH-1:0]	latched_throttle, latched_yaw, latched_pitch, latched_roll;
+	reg signed [`REC_VAL_BIT_WIDTH-1:0]	latched_throttle, latched_pitch, latched_roll;
+	reg [`REC_VAL_BIT_WIDTH-1:0]		latched_yaw;
 
 	// state names
 	localparam
@@ -126,6 +127,7 @@ module angle_controller (
 			latched_yaw 		<= `ALL_ZERO_2BYTE;
 			latched_pitch 		<= `ALL_ZERO_2BYTE;
 			latched_roll 		<= `ALL_ZERO_2BYTE;
+			yaw_target_angle_tracking <= `ALL_ZERO_2BYTE;
 		end
 		else begin
 			state 				<= next_state;
@@ -133,6 +135,7 @@ module angle_controller (
 			latched_roll 		<= roll_target;
 			latched_pitch 		<= pitch_target;
 			latched_throttle 	<= throttle_target;
+			yaw_target_angle_tracking <= yaw_target_angle_tracking;
 		end
 	end
 
@@ -167,9 +170,9 @@ module angle_controller (
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
 			// reset values
-			yaw_rate_out 	<= `ALL_ZERO_2BYTE;
-			roll_rate_out 	<= `ALL_ZERO_2BYTE;
-			pitch_rate_out	<= `ALL_ZERO_2BYTE;
+			yaw_rate_out 	 <= `ALL_ZERO_2BYTE;
+			roll_rate_out 	 <= `ALL_ZERO_2BYTE;
+			pitch_rate_out	 <= `ALL_ZERO_2BYTE;
 
 		end
 		else begin
@@ -183,25 +186,39 @@ module angle_controller (
 					active_signal 			<= `TRUE;
 					
 					//Track change in yaw angle
-					if (latched_throttle < 10) //Throttle is off or nearly off, use current IMU angle as the tracked angle
+					if (latched_throttle < 10) begin //Throttle is off or nearly off, use current IMU angle as the tracked angle
+						$display("Latching IMU rotation value %d", yaw_actual);
 						yaw_target_angle_tracking <= yaw_actual;
-					else if ( ( yaw_target_angle_tracking + latched_yaw - 125) > (ANGLE_360_DEG*4) ) // Which means target angle will be > 360˚ and needs to wrap around to something  > 0˚
-						yaw_target_angle_tracking <= yaw_target_angle_tracking + latched_yaw - 125 - ANGLE_360_DEG*4;
-					else if ( ( yaw_target_angle_tracking + latched_yaw - 125) < ANGLE_0_DEG ) // Which means target angle will be < 0˚ and needs to wrap around to something  < 360˚
-						yaw_target_angle_tracking <= ANGLE_360_DEG*4 + yaw_target_angle_tracking + latched_yaw - 125;
-					else
-						yaw_target_angle_tracking <= yaw_target_angle_tracking + latched_yaw - 125;
+					end
+					else if ( ( yaw_target_angle_tracking + $signed(latched_yaw - 125)) > (ANGLE_360_DEG*4) ) begin // Which means target angle will be > 360˚ and needs to wrap around to something  > 0˚
+						yaw_target_angle_tracking <= yaw_target_angle_tracking + $signed(latched_yaw - 125) - ANGLE_360_DEG*4;
+						$display("Wrap around in positive direction, tracking angle: %d", yaw_target_angle_tracking);
+					end
+					else if ( ( yaw_target_angle_tracking + $signed(latched_yaw - 125)) < ANGLE_0_DEG ) begin // Which means target angle will be < 0˚ and needs to wrap around to something  < 360˚
+						yaw_target_angle_tracking <= ANGLE_360_DEG*4 + yaw_target_angle_tracking + $signed(latched_yaw - 125);
+						$display("Wrap around in negative direction, tracking angle: %d", yaw_target_angle_tracking);
+					end
+					else begin 
+						yaw_target_angle_tracking <= yaw_target_angle_tracking + $signed(latched_yaw - 125);
+						$display("Normal update, tracking angle: %d", yaw_target_angle_tracking);
+					end
 					
 					//Divide by 4 to scale this larger number down to ANGLE_360_DEG again, to compare to IMU yaw rotation values
 					yaw_target_angle 		<= yaw_target_angle_tracking>>>2;
 
 					mapped_throttle 		<= {THROTTLE_F_PAD, latched_throttle, THROTTLE_R_PAD};
-					if((yaw_target_angle > ANGLE_270_DEG) && (yaw_actual < ANGLE_90_DEG))
+					if((yaw_target_angle > ANGLE_270_DEG) && (yaw_actual < ANGLE_90_DEG)) begin
 						mapped_yaw 			<= (ANGLE_360_DEG - yaw_target_angle) + yaw_actual;
-					else if( (yaw_actual > ANGLE_270_DEG) && (yaw_target_angle < ANGLE_90_DEG))
+						$display("Wrap around in the positive direction, mapped_yaw: %d", mapped_yaw);
+					end
+					else if( (yaw_actual > ANGLE_270_DEG) && (yaw_target_angle < ANGLE_90_DEG)) begin
 						mapped_yaw 			<= (yaw_actual - ANGLE_360_DEG) - yaw_target_angle;
-					else
+						$display("Wrap around in the negative direction, mapped_yaw: %d", mapped_yaw);
+					end
+					else begin
 						mapped_yaw 			<= yaw_target_angle - yaw_actual;
+						$display("Normal update, mapped_yaw: %d", mapped_yaw);
+					end
 					mapped_roll 			<= $signed({FRONT_PAD, latched_roll,  END_PAD}) - MAPPING_SUBS + roll_actual; // roll value from IMU is flipped, add instead of subtract
 					mapped_pitch 			<= $signed({FRONT_PAD, latched_pitch, END_PAD}) - MAPPING_SUBS - pitch_actual;
 				end
