@@ -9,24 +9,7 @@
  */
 
 /**
- *  Module takes as inputs:
- *		- Target rate & angles from the receiver module
- * 		- 8-bit values
- * 		- The throttle represents a rate, from 0 to max (???)
- * 		- The yaw is a rate, from  a negative min to a positive max
- * 		- The pitch and roll represent target angles (degrees)
- * 	- Actual pitch and roll angles from the IMU
- * 		- Represent degrees
- * 		- In 16-bit, 2's complement, 12-bits integer, 4-bits fractional
- *
- * Module provides as output (all values are 16-bit, 2's complement):
- *		- Limited throttle rate (>= 0)
- *		- Limited yaw, pitch, and roll rates
- * 	- Represent degrees/second
- *
- * TODO:
- *		Rate limits???
- *		Update this header description to look like other files
+
  */
 `timescale 1ns / 1ns
 
@@ -57,8 +40,8 @@ module throttle_change_limiter (
 		STATE_COMPLETE    = 5'b10000;
 		
 	localparam
-		BUFFER_MAX     = 32, //Power of 2 size of buffer
-		BUFFER_SHIFT_N = 5;  //Number of bits to count to BUFFER_MAX
+		BUFFER_MAX     = 8, //Power of 2 size of buffer
+		BUFFER_SHIFT_N = 3;  //Number of bits to count to BUFFER_MAX
 
 	// state variables
 	reg [4:0] state, next_state;
@@ -121,9 +104,11 @@ module throttle_change_limiter (
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
 			// reset values
+			zero_buffer();
 			throttle_pwm_value_out	<= `BYTE_ALL_ZERO;
 			latched_throttle 		<= `BYTE_ALL_ZERO;
-			zero_buffer();
+			average_throttle 		<= 0;
+			summed_throttle 		<= 0;
 
 		end
 		else begin
@@ -140,7 +125,7 @@ module throttle_change_limiter (
 					if(latched_throttle < 10) //idle throttle, power off
 						zero_buffer();
 					else
-						add_to_buffer(latched_throttle);
+						push_in_buffer(latched_throttle);
 				end
 				STATE_ADDING: begin
 					complete_signal 		<= `FALSE;
@@ -150,13 +135,14 @@ module throttle_change_limiter (
 				STATE_AVERAGING: begin
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
-					average_throttle 		<= summed_throttle>>BUFFER_SHIFT_N;
-					throttle_pwm_value_out  <= average_throttle;
+					average_throttle 		= summed_throttle>>BUFFER_SHIFT_N;
+					throttle_pwm_value_out  = average_throttle;
 				end
 				STATE_COMPLETE: begin
 					complete_signal 		<= `TRUE;
 					active_signal 			<= `FALSE;
-					$display("Throttle input = %d, throttle output = %d", throttle_pwm_value_in, throttle_pwm_value_out);
+					//$display("Throttle input = %d, throttle output = %d", throttle_pwm_value_in, throttle_pwm_value_out);
+					$display("%d\t%d", throttle_pwm_value_in, throttle_pwm_value_out);
 				end
 				default: begin
 					throttle_pwm_value_out <= `BYTE_ALL_ZERO;
@@ -167,25 +153,37 @@ module throttle_change_limiter (
 
 task zero_buffer;
 	begin
-		for(i = 0; i < BUFFER_MAX; i=i+1)
-			latched_throttle_buffer[i] = `BYTE_ALL_ZERO;
+		//$display("Zeroing throttle buffer");
+		for(i = 0; i < BUFFER_MAX; i=i+1) begin
+			latched_throttle_buffer[i] <= `BYTE_ALL_ZERO;
+			//$display("Throttle buffer @%d = %d", i, latched_throttle_buffer[i]);
+		end
 	end
 endtask
 
-task add_to_buffer;
+task push_in_buffer;
 	input reg [7:0]task_latched_throttle;
 	begin
+		//$display("Pushing a value into throttle buffer");
 		latched_throttle_buffer[0] <= task_latched_throttle;
-		for(i = 1; i < BUFFER_MAX; i=i+1)
+		//$display("Throttle buffer pushing to buffer head = %d", latched_throttle_buffer[0]);
+		for(i = 1; i < BUFFER_MAX; i=i+1) begin
+			//$display("Throttle buffer @%d = %d", i, latched_throttle_buffer[i]);
 			latched_throttle_buffer[i] <= latched_throttle_buffer[i-1];
+		end
 	end
 endtask
 
 task add_buffer_contents;
 	reg [7:0]task_latched_throttle;
 	begin
-		for(i = 0; i < BUFFER_MAX; i=i+1)
-			summed_throttle <= summed_throttle+latched_throttle_buffer[i];
+		summed_throttle = 0;
+		//$display("Adding the values stored in the throttle buffer");
+		for(i = 0; i < BUFFER_MAX; i=i+1) begin
+			summed_throttle = summed_throttle+latched_throttle_buffer[i];
+			//$display("Throttle buffer adding value @%d = %d, sum = %d", i, latched_throttle_buffer[i], summed_throttle);
+		end
+		//$display("Buffer sum = %d", summed_throttle);
 	end
 endtask
 

@@ -35,7 +35,7 @@ module test_throttle_change_limiter;
 		.resetn(resetn));
 
 	// line up the parameters here to the ones internal to the receiver module
-	throttle_rate_limiter DUT (
+	throttle_change_limiter DUT (
 		.throttle_pwm_value_in(throttle_pwm_value_in),
 		.throttle_pwm_value_out(throttle_pwm_value_out),
 		.complete_signal(complete_signal),
@@ -51,58 +51,77 @@ module test_throttle_change_limiter;
 			throttle_pwm_value_in = task_throttle_pwm_value_in;
 			start_signal    = 1;
 			repeat (2) @(posedge us_clk); start_signal    = 0; repeat (8) @(posedge us_clk);
-			$display("%t: %m Throttle rate in =%d",$time, DUT.latched_throttle);
-			$display("%t: %m Throttle rate out =%d",$time, DUT.average_throttle);
+			//$display("%t: %m Throttle value in =%d",$time, DUT.latched_throttle);
+			//$display("%t: %m Throttle value sum =%d",$time, DUT.summed_throttle);
+			//$display("%t: %m Throttle value average =%d",$time, DUT.average_throttle);
+			//$display("%t: %m Throttle value out =%d",$time, DUT.throttle_pwm_value_out);
 		end
 	endtask
 
 	initial begin
-		$display("%t: %m Reset throttle rate limiter", $time);
+		//$display("%t: %m Reset throttle rate limiter", $time);
 		resetn = 1;
 		#10 resetn = 0;
 		#10 resetn = 1;
 
-		$display("%t: %m Set initial values",$time);
+		//$display("%t: %m Set initial values",$time);
 		run_test(.task_throttle_pwm_value_in(0));
 
-		$display("\n%t: %m Throttle to 250, MAX",$time);
+		//$display("\n\n\n%t: %m Throttle to 250, MAX",$time);
 		
 		for(i = 0; i < 64; i=i+1) begin
-			$display("\n%t: %m",$time);
+			//$display("%t: %m iteration %d",$time, i);
 			run_test(.task_throttle_pwm_value_in(250));
 		end
 		
 
-		$display("\n%t: %m Throttle to 10, just above idle",$time);
+		//$display("\n\n\n%t: %m Throttle to 10, just above idle",$time);
 		
 		for(i = 0; i < 64; i=i+1) begin
-			$display("\n%t: %m",$time);
+			//$display("%t: %m iteration %d",$time, i);
 			run_test(.task_throttle_pwm_value_in(10));
 		end
 		
-		$display("\n%t: %m Throttle to 250, MAX",$time);
+		//$display("\n%t: %m Throttle to 250, MAX",$time);
 		
 		for(i = 0; i < 64; i=i+1) begin
-			$display("\n%t: %m",$time);
+			//$display("%t: %m iteration %d",$time, i);
 			run_test(.task_throttle_pwm_value_in(250));
 		end
-		$display("\n%t: %m Throttle to 0, idle",$time);
+		//$display("%t: %m Throttle to 0, idle",$time);
 		
 		for(i = 0; i < 64; i=i+1) begin
-			$display("\n%t: %m",$time);
+			//$display("%t: %m iteration %d",$time, i);
 			run_test(.task_throttle_pwm_value_in(0));
 		end
 		
 		
-		$display("\n%t: %m Noisy throttle input +/- 10 of 125",$time);
+		//$display("\n\n\n%t: %m Noisy throttle input +/- 10 of 125",$time);
 		
-		for(i = 0; i < 4; i=i+1) begin
-			$display("\n%t: %m",$time);
+		//$display("%t: %m Throttle to 125, MID",$time);
+		
+		for(i = 0; i < 64; i=i+1) begin
+			//$display("%t: %m iteration %d",$time, i);
+			run_test(.task_throttle_pwm_value_in(125));
+		end
+		
+		for(i = 0; i < 64; i=i+1) begin
+			//$display("%t: %m iteration %d",$time, i);
 			run_test(.task_throttle_pwm_value_in(135));
-			$display("\n%t: %m",$time);
+			//$display("%t: %m",$time);
 			run_test(.task_throttle_pwm_value_in(115));
 		end
 		
+		
+		for(i = 0; i < 64; i=i+1) begin
+			//$display("%t: %m iteration %d",$time, i);
+			run_test(.task_throttle_pwm_value_in(250*0.40));
+		end
+		
+		for(i = 0; i < 64; i=i+1) begin
+			//$display("%t: %m iteration %d",$time, i);
+			run_test(.task_throttle_pwm_value_in(250*0.60));
+		end
 
 		$display("%t: %m Test complete", $time);
 		$stop;
