@@ -40,8 +40,8 @@ module throttle_change_limiter (
 		STATE_COMPLETE    = 5'b10000;
 		
 	localparam
-		BUFFER_MAX     = 8, //Power of 2 size of buffer
-		BUFFER_SHIFT_N = 3;  //Number of bits to count to BUFFER_MAX
+		BUFFER_MAX     = 128, //Power of 2 size of buffer
+		BUFFER_SHIFT_N = 7;  //Number of bits to count to BUFFER_MAX
 
 	// state variables
 	reg [4:0] state, next_state;

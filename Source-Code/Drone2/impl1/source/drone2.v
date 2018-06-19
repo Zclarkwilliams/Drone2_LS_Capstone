@@ -75,6 +75,13 @@ module drone2 (
 		aux2_val,
 		swa_swb_val;
 
+
+	wire [`IMU_VAL_BIT_WIDTH-1:0]
+		throttle_limiter_pwm_value_out,
+		throttle_val;		
+	wire throttle_limiter_complete,
+		throttle_limiter_active;
+		
 	//---------- Angle_Controller Wires -----------//
 	wire [`RATE_BIT_WIDTH-1:0]
 		throttle_target_rate,
@@ -179,7 +186,7 @@ module drone2 (
 		.rstn(resetn),
 		.sys_clk(sys_clk),
 		.rstn_imu(rstn_imu),
-		.ac_active(ac_active));
+		.ac_active(throttle_limiter_active));
 
 	/**
 	 * Gets inputs from the physical receiver and converts them to 0-255.
@@ -205,6 +212,16 @@ module drone2 (
 		.us_clk(us_clk),
 		.resetn(resetn));
 
+	throttle_change_limiter throttle_limiter(
+		.throttle_pwm_value_out(throttle_limiter_pwm_value_out),
+		.complete_signal(throttle_limiter_complete),
+		.active_signal(throttle_limiter_active),
+		.throttle_pwm_value_in(throttle_val),
+		.start_signal(imu_data_valid),
+		.resetn(resetn),
+		.us_clk(us_clk));		
+		
+
 	/**
 	 *	Take IMU provided orientation angle and user provided target angle and
 	 *	subract them to get the error angle rate to get to target angle
@@ -222,14 +239,14 @@ module drone2 (
 		.complete_signal(ac_valid_strobe),
 		.active_signal(ac_active),
 		// Inputs
-		.throttle_target(throttle_val),
+		.throttle_target(throttle_limiter_pwm_value_out),
 		.yaw_target(yaw_val),
 		.roll_target(roll_val),
 		.pitch_target(pitch_val),
 		.yaw_actual(z_rotation),
 		.roll_actual(y_rotation),
 		.pitch_actual(x_rotation),
-		.start_signal(imu_data_valid),
+		.start_signal(throttle_limiter_complete),
 		.resetn(resetn),
 		.us_clk(us_clk));
 
