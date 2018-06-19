@@ -2,7 +2,7 @@
 <BaliProject version="3.2" title="Drone2" device="LCMXO3LF-6900C-5BG256C" default_implementation="impl1">
     <Options/>
     <Implementation title="impl1" dir="impl1" description="impl1" synthesis="lse" default_strategy="Strategy1">
-        <Options def_top="drone2" top="drone2"/>
+        <Options def_top="throttle_change_limiter" top="drone2"/>
         <Source name="impl1/source/I2C_EFB_WB.ipx" type="IPX_Module" type_short="IPX">
             <Options/>
         </Source>
@@ -57,10 +57,16 @@
         <Source name="impl1/source/pid_parameters.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
+        <Source name="impl1/source/throttle_change_limiter.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
         <Source name="Drone2.lpf" type="Logic Preference" type_short="LPF">
             <Options/>
         </Source>
         <Source name="impl1/impl1.xcf" type="Programming Project File" type_short="Programming">
+            <Options/>
+        </Source>
+        <Source name="test_yaw/test_yaw.spf" type="Simulation Project File" type_short="SPF">
             <Options/>
         </Source>
     </Implementation>
