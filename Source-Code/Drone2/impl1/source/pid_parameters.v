@@ -25,7 +25,7 @@
  */
 
 // Multiplyer Scalar Values
-`define YAW_SCALE_MULT		16'sd48
+`define YAW_SCALE_MULT		16'sd6
 `define ROLL_SCALE_MULT		16'sd36
 `define PITCH_SCALE_MULT	16'sd32
 `define THROTTLE_SCALE_MULT	16'sd1
