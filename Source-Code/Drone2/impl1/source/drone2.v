@@ -78,7 +78,8 @@ module drone2 (
 	//-------- Yaw Angle Accumulator Wires --------//
 	wire [`RATE_BIT_WIDTH-1:0]
 		yaac_yaw_angle_error,
-		yaac_active,
+		body_yaw_angle_target;
+	wire yaac_active,
 		yaac_complete;
 
 	//---------- Angle_Controller Wires -----------//
@@ -219,6 +220,7 @@ module drone2 (
 	 * 		file - yaw_angle_accumulator.v
 	 */
 	yaw_angle_accumulator  YAAc(
+		.port body_yaw_angle_target(body_yaw_angle_target),
 		.yaw_angle_error(yaac_yaw_angle_error),
 		.active_signal(yaac_active),
 		.complete_signal(yaac_complete),
@@ -274,11 +276,11 @@ module drone2 (
 		.yaw_target(yaw_target_rate),
 		.roll_target(roll_target_rate),
 		.pitch_target(pitch_target_rate),
-		.roll_rotation(0),
+		.roll_rotation(16'b0),
 		//.roll_rotation(x_rotation_rate),
-		.pitch_rotation(0),
+		.pitch_rotation(16'b0),
 		//.pitch_rotation(y_rotation_rate),
-		.yaw_rotation(0),
+		.yaw_rotation(16'b0),
 		//.yaw_rotation(z_rotation_rate),
 		.yaw_angle_error(yaw_angle_error),
 		.roll_angle_error(roll_angle_error),
@@ -337,7 +339,8 @@ module drone2 (
 			DEBUG_LEDs	 <= 16'hAAAA;
 			end
 		else if (!DEBUG_LED_SWITCH_N) begin
-			led_data_out <= ~throttle_val;
+			led_data_out <= ~yaac_yaw_angle_error[7:0];
+			//led_data_out <= ~throttle_val;
 			DEBUG_LEDs	 <= throttle_target_rate;
 			end
 		else begin
