@@ -79,7 +79,7 @@ module angle_controller (
 	reg signed [`OPS_BIT_WIDTH-1:0]		mapped_throttle, mapped_yaw, mapped_roll, mapped_pitch;
 	reg signed [`OPS_BIT_WIDTH-1:0] 	scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
 	reg signed [`REC_VAL_BIT_WIDTH-1:0]	latched_throttle, latched_pitch, latched_roll;
-	reg signed [`REC_VAL_BIT_WIDTH-1:0]	latched_yaw_angle_error;
+	reg signed [`RATE_BIT_WIDTH-1:0]	latched_yaw_angle_error;
 
 	// state names
 	localparam
