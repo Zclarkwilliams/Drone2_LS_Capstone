@@ -46,6 +46,7 @@ module yaw_angle_accumulator (
 	//reg signed [`RATE_BIT_WIDTH-1:0]    latched_yaw_angle_imu;
 	reg  signed [`RATE_BIT_WIDTH-1:0]	yaw_angle_error;
 	reg  signed [`RATE_BIT_WIDTH-1:0] trash_2_bytes;
+	reg  yaw_stick_out_of_neutral_window = `FALSE;
 
 	// state names
 	localparam [5:0]
@@ -139,20 +140,35 @@ module yaw_angle_accumulator (
 					latched_throttle_pwm_value_input	<= throttle_pwm_value_input;
 					latched_yaw_pwm_value_input     	<= {1'b0, yaw_pwm_value_input};
 					latched_yaw_angle_imu           	<= yaw_angle_imu;
+					yaw_stick_out_of_neutral_window		<= `FALSE;
 				end
 				STATE_CALC_TRACK_ANGLE: begin
 					complete_signal 		<= `FALSE;
 					active_signal 			<= `TRUE;
-					if (latched_throttle_pwm_value_input < 10) //Throttle is off, use current IMU angle as the tracked angle
+					if (latched_throttle_pwm_value_input < 10) begin //Throttle is off, use current IMU angle as the tracked angle
 						body_yaw_angle_target_tracking <= (latched_yaw_angle_imu*4);
-					else if (latched_yaw_pwm_value_input < 130 && latched_yaw_pwm_value_input > 120) //Yaw is neutral stick +/-5 PWM units
-						body_yaw_angle_target_tracking <= body_yaw_angle_target_tracking;
-					else if ( ( body_yaw_angle_target_tracking + (latched_yaw_pwm_value_input - 125)) > (ANGLE_360_DEG*4) ) // Which means target angle will be > 360˚ and needs to wrap around to something  > 0˚
+						yaw_stick_out_of_neutral_window = `FALSE;
+					end
+					else if (latched_yaw_pwm_value_input < 130 && latched_yaw_pwm_value_input > 120) begin //Yaw is neutral stick +/-5 PWM units
+						if(yaw_stick_out_of_neutral_window) begin // If the yaw stick was previously outside of the neutral window, make target window match current IMU angle
+							body_yaw_angle_target_tracking <= (latched_yaw_angle_imu*4);
+							yaw_stick_out_of_neutral_window = `FALSE;
+						end
+						else //Otherwise, leave the target angle alone (This prevents drift)
+							body_yaw_angle_target_tracking <= body_yaw_angle_target_tracking;
+					end
+					else if ( ( body_yaw_angle_target_tracking + (latched_yaw_pwm_value_input - 125)) > (ANGLE_360_DEG*4) ) begin // Which means target angle will be > 360˚ and needs to wrap around to something  > 0˚
 						body_yaw_angle_target_tracking <= (body_yaw_angle_target_tracking + (latched_yaw_pwm_value_input - 125) - (ANGLE_360_DEG*4));
-					else if ( ( body_yaw_angle_target_tracking + (latched_yaw_pwm_value_input - 125)) < ANGLE_0_DEG ) // Which means target angle will be < 0˚ and needs to wrap around to something  < 360˚
+						yaw_stick_out_of_neutral_window = `TRUE;
+					end
+					else if ( ( body_yaw_angle_target_tracking + (latched_yaw_pwm_value_input - 125)) < ANGLE_0_DEG ) begin // Which means target angle will be < 0˚ and needs to wrap around to something  < 360˚
 						body_yaw_angle_target_tracking <= (body_yaw_angle_target_tracking + (latched_yaw_pwm_value_input - 125) + (ANGLE_360_DEG*4));
-					else
+						yaw_stick_out_of_neutral_window = `TRUE;
+					end
+					else begin
 						body_yaw_angle_target_tracking <= (body_yaw_angle_target_tracking + (latched_yaw_pwm_value_input - 125));
+						yaw_stick_out_of_neutral_window = `TRUE;
+					end
 				end
 				STATE_CALC_BODY_ANGLE: begin
 					complete_signal 		<= `FALSE;
@@ -178,9 +194,9 @@ module yaw_angle_accumulator (
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
 					if (yaw_angle_error > ANGLE_90_DEG)
-						yaw_angle_error_out	<= ANGLE_90_DEG;
+						yaw_angle_error_out	<= (ANGLE_90_DEG>>>2);
 					else if (yaw_angle_error < -ANGLE_90_DEG)
-						yaw_angle_error_out	<= -ANGLE_90_DEG;
+						yaw_angle_error_out	<= ((-ANGLE_90_DEG)>>>2);
 					else
 						yaw_angle_error_out	<= yaw_angle_error;
 				end
