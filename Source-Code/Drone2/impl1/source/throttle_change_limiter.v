@@ -27,27 +27,27 @@ module throttle_change_limiter (
 	// working registers
 	reg [`REC_VAL_BIT_WIDTH-1:0] 	scaled_throttle;
 	reg [`REC_VAL_BIT_WIDTH-1:0]	latched_throttle;
-	reg [`REC_VAL_BIT_WIDTH-1:0] 	latched_throttle_buffer[31:0]; // 32x 20ms (0.64 second) buffer of throttle values
+	reg [`REC_VAL_BIT_WIDTH-1:0] 	latched_throttle_buffer[7:0]; // 32x 20ms (0.64 second) buffer of throttle values
 	reg [`OPS_BIT_WIDTH-1:0]	 	summed_throttle;
 	reg [`REC_VAL_BIT_WIDTH-1:0]	average_throttle;
 
 	// state names
 	localparam
-		STATE_WAITING     = 5'b00001,
-		STATE_BUFFERING   = 5'b00010,
-		STATE_ADDING      = 5'b00100,
-		STATE_AVERAGING   = 5'b01000,
-		STATE_COMPLETE    = 5'b10000;
-		
-	localparam
-		BUFFER_MAX     = 32, //Power of 2 size of buffer
-		BUFFER_SHIFT_N = 5;  //Number of bits to count to BUFFER_MAX
+		STATE_WAITING      = 6'b000001,
+		STATE_BUFFERING    = 6'b000010,
+		STATE_ADDING       = 6'b000100,
+		STATE_AVERAGING    = 6'b001000,
+		STATE_LINEAR_SCALE = 6'b010000,
+		STATE_COMPLETE     = 6'b100000;
 
 	// state variables
-	reg [4:0] state, next_state;
+	reg [5:0] state, next_state;
 
 	reg start_flag = `FALSE;
-	integer i;
+	
+	localparam
+		THROTTLE_MID_RANGE_LOW_END = 42,
+		THROTTLE_MID_RANGE_HIGH_END = 209;
 
 	// latch start signal
 	always @(posedge us_clk or negedge resetn) begin
@@ -89,6 +89,9 @@ module throttle_change_limiter (
 				next_state = STATE_AVERAGING;
 			end
 			STATE_AVERAGING: begin
+				next_state = STATE_LINEAR_SCALE;
+			end
+			STATE_LINEAR_SCALE: begin
 				next_state = STATE_COMPLETE;
 			end
 			STATE_COMPLETE: begin
@@ -135,8 +138,17 @@ module throttle_change_limiter (
 				STATE_AVERAGING: begin
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
-					average_throttle 		= summed_throttle>>BUFFER_SHIFT_N;
-					throttle_pwm_value_out  = average_throttle;
+					average_throttle 		<= summed_throttle>>3;
+				end
+				STATE_LINEAR_SCALE: begin
+					complete_signal 		<= `FALSE;
+					active_signal			<= `TRUE;
+					if(average_throttle < THROTTLE_MID_RANGE_LOW_END) //Low throttle value, gets 2x slope
+						throttle_pwm_value_out  <= (2*average_throttle);
+					else if(average_throttle > THROTTLE_MID_RANGE_HIGH_END) //High throttle value also gets 2x slope, throttle = 2*input-252
+						throttle_pwm_value_out  <= ((2*average_throttle)-252);
+					else	//Mid range throttle gets x/2 slope, throttle = input/2+61
+						throttle_pwm_value_out  <= ((average_throttle>>>1)+61);
 				end
 				STATE_COMPLETE: begin
 					complete_signal 		<= `TRUE;
@@ -153,37 +165,42 @@ module throttle_change_limiter (
 
 task zero_buffer;
 	begin
-		//$display("Zeroing throttle buffer");
-		for(i = 0; i < BUFFER_MAX; i=i+1) begin
-			latched_throttle_buffer[i] <= `BYTE_ALL_ZERO;
-			//$display("Throttle buffer @%d = %d", i, latched_throttle_buffer[i]);
-		end
+		latched_throttle_buffer[0] <= `BYTE_ALL_ZERO;
+		latched_throttle_buffer[1] <= `BYTE_ALL_ZERO;
+		latched_throttle_buffer[2] <= `BYTE_ALL_ZERO;
+		latched_throttle_buffer[3] <= `BYTE_ALL_ZERO;
+		latched_throttle_buffer[4] <= `BYTE_ALL_ZERO;
+		latched_throttle_buffer[5] <= `BYTE_ALL_ZERO;
+		latched_throttle_buffer[6] <= `BYTE_ALL_ZERO;
+		latched_throttle_buffer[7] <= `BYTE_ALL_ZERO;
 	end
 endtask
 
 task push_in_buffer;
 	input reg [7:0]task_latched_throttle;
 	begin
-		//$display("Pushing a value into throttle buffer");
+		latched_throttle_buffer[7] <= latched_throttle_buffer[6];
+		latched_throttle_buffer[6] <= latched_throttle_buffer[5];
+		latched_throttle_buffer[5] <= latched_throttle_buffer[4];
+		latched_throttle_buffer[4] <= latched_throttle_buffer[3];
+		latched_throttle_buffer[3] <= latched_throttle_buffer[2];
+		latched_throttle_buffer[2] <= latched_throttle_buffer[1];
+		latched_throttle_buffer[1] <= latched_throttle_buffer[0];
 		latched_throttle_buffer[0] <= task_latched_throttle;
-		//$display("Throttle buffer pushing to buffer head = %d", latched_throttle_buffer[0]);
-		for(i = 1; i < BUFFER_MAX; i=i+1) begin
-			//$display("Throttle buffer @%d = %d", i, latched_throttle_buffer[i]);
-			latched_throttle_buffer[i] <= latched_throttle_buffer[i-1];
-		end
 	end
 endtask
 
 task add_buffer_contents;
 	reg [7:0]task_latched_throttle;
 	begin
-		summed_throttle = 0;
-		//$display("Adding the values stored in the throttle buffer");
-		for(i = 0; i < BUFFER_MAX; i=i+1) begin
-			summed_throttle = summed_throttle+latched_throttle_buffer[i];
-			//$display("Throttle buffer adding value @%d = %d, sum = %d", i, latched_throttle_buffer[i], summed_throttle);
-		end
-		//$display("Buffer sum = %d", summed_throttle);
+		summed_throttle <=	latched_throttle_buffer[0] +
+							latched_throttle_buffer[1] +
+							latched_throttle_buffer[2] +
+							latched_throttle_buffer[3] +
+							latched_throttle_buffer[4] +
+							latched_throttle_buffer[5] +
+							latched_throttle_buffer[6] +
+							latched_throttle_buffer[7];
 	end
 endtask
 
