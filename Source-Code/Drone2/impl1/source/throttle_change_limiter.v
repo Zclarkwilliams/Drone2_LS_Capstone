@@ -27,7 +27,7 @@ module throttle_change_limiter (
 	// working registers
 	reg [`REC_VAL_BIT_WIDTH-1:0] 	scaled_throttle;
 	reg [`REC_VAL_BIT_WIDTH-1:0]	latched_throttle;
-	reg [`REC_VAL_BIT_WIDTH-1:0] 	latched_throttle_buffer[7:0]; // 32x 20ms (0.64 second) buffer of throttle values
+	reg [`REC_VAL_BIT_WIDTH-1:0] 	latched_throttle_buffer[7:0];
 	reg [`OPS_BIT_WIDTH-1:0]	 	summed_throttle;
 	reg [`REC_VAL_BIT_WIDTH-1:0]	average_throttle;
 
@@ -143,11 +143,14 @@ module throttle_change_limiter (
 				STATE_LINEAR_SCALE: begin
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
-					if(average_throttle < THROTTLE_MID_RANGE_LOW_END) //Low throttle value, gets 2x slope
+					//Low throttle value, gets 2x slope
+					if(average_throttle < THROTTLE_MID_RANGE_LOW_END)
 						throttle_pwm_value_out  <= (2*average_throttle);
-					else if(average_throttle > THROTTLE_MID_RANGE_HIGH_END) //High throttle value also gets 2x slope, throttle = 2*input-252
+					 //High throttle value also gets 2x slope, throttle = 2*input-252
+					else if(average_throttle > THROTTLE_MID_RANGE_HIGH_END)
 						throttle_pwm_value_out  <= ((2*average_throttle)-252);
-					else	//Mid range throttle gets x/2 slope, throttle = input/2+61
+					//Mid range throttle gets x/2 slope, throttle = input/2+61
+					else
 						throttle_pwm_value_out  <= ((average_throttle>>>1)+61);
 				end
 				STATE_COMPLETE: begin
