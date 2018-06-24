@@ -15,6 +15,11 @@
 
 `include "common_defines.v"
 
+//Defined outside of the module so BUFFER_MAX is known before port list initialization
+localparam
+	BUFFER_MAX     = 8, //Power of 2 size of buffer
+	BUFFER_SHIFT_N = $clog2(BUFFER_MAX);  //Number of bits to count to BUFFER_MAX
+
 module throttle_change_limiter (
 	output reg [`REC_VAL_BIT_WIDTH-1:0] throttle_pwm_value_out,
 	output reg complete_signal,
@@ -27,7 +32,7 @@ module throttle_change_limiter (
 	// working registers
 	reg [`REC_VAL_BIT_WIDTH-1:0] 	scaled_throttle;
 	reg [`REC_VAL_BIT_WIDTH-1:0]	latched_throttle;
-	reg [`REC_VAL_BIT_WIDTH-1:0] 	latched_throttle_buffer[7:0];
+	reg [`REC_VAL_BIT_WIDTH-1:0] 	latched_throttle_buffer[BUFFER_MAX-1:0];
 	reg [`OPS_BIT_WIDTH-1:0]	 	summed_throttle;
 	reg [`REC_VAL_BIT_WIDTH-1:0]	average_throttle;
 
@@ -138,7 +143,7 @@ module throttle_change_limiter (
 				STATE_AVERAGING: begin
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
-					average_throttle 		<= summed_throttle>>3;
+					average_throttle 		<= summed_throttle>>BUFFER_SHIFT_N;
 				end
 				STATE_LINEAR_SCALE: begin
 					complete_signal 		<= `FALSE;

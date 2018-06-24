@@ -76,9 +76,8 @@ module drone2 (
 		swa_swb_val;
 
 
-	wire [`IMU_VAL_BIT_WIDTH-1:0]
-		throttle_limiter_pwm_value_out,
-		throttle_val;		
+	wire [`REC_VAL_BIT_WIDTH-1:0]
+		throttle_limiter_pwm_value_out;
 	wire throttle_limiter_complete,
 		throttle_limiter_active;
 		
