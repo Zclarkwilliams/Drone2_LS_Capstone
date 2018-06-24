@@ -52,9 +52,9 @@ module drone2 (
 	input wire yaw_pwm,
 	input wire roll_pwm,
 	input wire pitch_pwm,
-	input wire aux1_pwm,
-	input wire aux2_pwm,
-	input wire swa_swb_pwm,
+	input wire aux1_pwm /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
+	input wire aux2_pwm /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
+	input wire swa_swb_pwm /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
 	input wire machxo3_switch_reset_n,
 	// DEBUG IO
 	input wire DEBUG_LED_SWITCH_N,
