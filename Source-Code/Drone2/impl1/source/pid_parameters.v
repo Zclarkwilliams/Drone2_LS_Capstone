@@ -41,7 +41,7 @@
  */
 
 // Multiply and shifts to create YAW PID constants
-`define YAW_K_P		16'sd48 // d48 no oscillating -> d56 oscillates
+`define YAW_K_P		16'sd30 // d48 no oscillating -> d56 oscillates
 `define YAW_K_I		16'sd0
 `define YAW_K_D		16'sd5
 `define YAW_K_P_SHIFT	4'd4

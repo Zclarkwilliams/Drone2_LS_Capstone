@@ -15,7 +15,7 @@
 
 `include "common_defines.v"
 
-module throttle_change_limiter
+module throttle_controller
 	#(
 		parameter BUFFER_MAX     = 8 //Power of 2 size of buffer
 	)
