@@ -25,15 +25,15 @@
  */
 
 // Multiplier Scalar Values
-`define YAW_AC_K_P		16'sd10
-`define ROLL_AC_K_P		16'sd36
-`define PITCH_AC_K_P	16'sd32
-`define THROTTLE_AC_K_P	16'sd1
+`define YAW_AC_K_P				16'sd10
+`define ROLL_AC_K_P				16'sd36
+`define PITCH_AC_K_P			16'sd32
+`define THROTTLE_AC_K_P			16'sd1
 
 // Divisor Shift Values
 `define YAW_AC_K_P_SHIFT		4'd4
-`define PITCH_AC_K_P_SHIFT	4'd4
-`define ROLL_AC_K_P_SHIFT	4'd4
+`define PITCH_AC_K_P_SHIFT		4'd4
+`define ROLL_AC_K_P_SHIFT		4'd4
 `define THROTTLE_AC_K_P_SHIFT	4'd0
 
 /**
@@ -41,26 +41,26 @@
  */
 
 // Multiply and shifts to create YAW PID constants
-`define YAW_K_P		16'sd48 // d48 no oscillating -> d56 oscillates
-`define YAW_K_I		16'sd0
-`define YAW_K_D		16'sd5
-`define YAW_K_P_SHIFT	4'd4
-`define YAW_K_I_SHIFT	4'd4
-`define YAW_K_D_SHIFT	4'd4
+`define YAW_K_P					16'sd20 // d48 no oscillating -> d56 oscillates
+`define YAW_K_I					16'sd0
+`define YAW_K_D					16'sd5
+`define YAW_K_P_SHIFT			4'd4
+`define YAW_K_I_SHIFT			4'd4
+`define YAW_K_D_SHIFT			4'd4
 
 // Multiply and shifts to create ROLL PID constants
-`define ROLL_K_P	16'sd5
-`define ROLL_K_I	16'sd3
-`define ROLL_K_D	16'sd4
-`define ROLL_K_P_SHIFT	4'd4
-`define ROLL_K_I_SHIFT	4'd4
-`define ROLL_K_D_SHIFT	4'd4
+`define ROLL_K_P				16'sd5
+`define ROLL_K_I				16'sd3
+`define ROLL_K_D				16'sd4
+`define ROLL_K_P_SHIFT			4'd4
+`define ROLL_K_I_SHIFT			4'd4
+`define ROLL_K_D_SHIFT			4'd4
 
 // Multiply and shifts to create PITCH PID constants
-`define PITCH_K_P	16'sd5
-`define PITCH_K_I	16'sd3
-`define PITCH_K_D	16'sd4
-`define PITCH_K_P_SHIFT	4'd4
-`define PITCH_K_I_SHIFT	4'd4
-`define PITCH_K_D_SHIFT	4'd4
+`define PITCH_K_P				16'sd5
+`define PITCH_K_I				16'sd3
+`define PITCH_K_D				16'sd4
+`define PITCH_K_P_SHIFT			4'd4
+`define PITCH_K_I_SHIFT			4'd4
+`define PITCH_K_D_SHIFT			4'd4
 
