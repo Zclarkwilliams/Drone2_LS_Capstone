@@ -45,9 +45,6 @@
         <Source name="impl1/source/us_clk.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="impl1/source/angle_controller.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
         <Source name="impl1/source/body_frame_controller.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
@@ -57,7 +54,13 @@
         <Source name="impl1/source/pid_parameters.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
+        <Source name="impl1/source/throttle_controller.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
         <Source name="impl1/source/yaw_angle_accumulator.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/source/angle_controller.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
         <Source name="Drone2.lpf" type="Logic Preference" type_short="LPF">
