@@ -24,17 +24,17 @@
  * Defines for the angle_controller
  */
 
-// Multiplyer Scalar Values
-`define YAW_SCALE_MULT		16'sd10
-`define ROLL_SCALE_MULT		16'sd36
-`define PITCH_SCALE_MULT	16'sd32
-`define THROTTLE_SCALE_MULT	16'sd1
+// Multiplier Scalar Values
+`define YAW_AC_K_P		16'sd10
+`define ROLL_AC_K_P		16'sd36
+`define PITCH_AC_K_P	16'sd32
+`define THROTTLE_AC_K_P	16'sd1
 
 // Divisor Shift Values
-`define YAW_SCALE_SHIFT		4'd4
-`define PITCH_SCALE_SHIFT	4'd4
-`define ROLL_SCALE_SHIFT	4'd4
-`define THROTTLE_SCALE_SHIFT	4'd0
+`define YAW_AC_K_P_SHIFT		4'd4
+`define PITCH_AC_K_P_SHIFT	4'd4
+`define ROLL_AC_K_P_SHIFT	4'd4
+`define THROTTLE_AC_K_P_SHIFT	4'd0
 
 /**
  * Defines for the body_frame_controller

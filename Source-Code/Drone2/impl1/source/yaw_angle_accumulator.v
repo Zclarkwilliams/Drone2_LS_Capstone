@@ -199,9 +199,11 @@ module yaw_angle_accumulator (
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
 					if (yaw_angle_error > ANGLE_90_DEG)
-						yaw_angle_error_out	<= (ANGLE_90_DEG>>>2);
-					else if (yaw_angle_error < (-ANGLE_90_DEG) )
-						yaw_angle_error_out	<= ( (-ANGLE_90_DEG)>>>2);
+						//yaw_angle_error_out	<= (ANGLE_90_DEG>>>2);
+						yaw_angle_error_out	<= ANGLE_90_DEG;
+					else if (yaw_angle_error < -ANGLE_90_DEG )
+						//yaw_angle_error_out	<= ( (-ANGLE_90_DEG)>>>2);
+						yaw_angle_error_out	<= -ANGLE_90_DEG;
 					else
 						yaw_angle_error_out	<= yaw_angle_error;
 				end

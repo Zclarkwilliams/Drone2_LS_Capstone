@@ -56,8 +56,8 @@ module angle_controller (
 	// rate limits (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	localparam signed [`OPS_BIT_WIDTH-1:0]
 		THROTTLE_MAX 	=  250 << `FIXED_POINT_SHIFT,
-		YAW_MAX 		=  100 << `FIXED_POINT_SHIFT,
-		YAW_MIN 		= -100 << `FIXED_POINT_SHIFT,
+		YAW_MAX 		=  200 << `FIXED_POINT_SHIFT,
+		YAW_MIN 		= -200 << `FIXED_POINT_SHIFT,
 		PITCH_MAX 		=  100 << `FIXED_POINT_SHIFT,
 		PITCH_MIN 		= -100 << `FIXED_POINT_SHIFT,
 		ROLL_MAX		=  100 << `FIXED_POINT_SHIFT,
@@ -181,10 +181,10 @@ module angle_controller (
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
 					// Apply scaler: (axis_val * scale_multiplier) / Scale_divisor
-					scaled_yaw				<= scale_val(mapped_yaw, `YAW_SCALE_MULT, `YAW_SCALE_SHIFT);
-					scaled_roll				<= scale_val(mapped_roll, `ROLL_SCALE_MULT, `ROLL_SCALE_SHIFT);
-					scaled_pitch 			<= scale_val(mapped_pitch, `PITCH_SCALE_MULT, `PITCH_SCALE_SHIFT);
-					scaled_throttle			<= scale_val(mapped_throttle, `THROTTLE_SCALE_MULT, `THROTTLE_SCALE_SHIFT);
+					scaled_yaw				<= scale_val(mapped_yaw, `YAW_AC_K_P, `YAW_AC_K_P_SHIFT);
+					scaled_roll				<= scale_val(mapped_roll, `ROLL_AC_K_P, `ROLL_AC_K_P_SHIFT);
+					scaled_pitch 			<= scale_val(mapped_pitch, `PITCH_AC_K_P, `PITCH_AC_K_P_SHIFT);
+					scaled_throttle			<= scale_val(mapped_throttle, `THROTTLE_AC_K_P, `THROTTLE_AC_K_P_SHIFT);
 				end
 				STATE_LIMITING: begin
 					complete_signal 		<= `FALSE;
