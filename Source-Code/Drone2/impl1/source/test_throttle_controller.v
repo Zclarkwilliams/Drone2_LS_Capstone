@@ -8,7 +8,7 @@
 `default_nettype none
 `include "common_defines.v"
 
-module test_throttle_change_limiter;
+module test_throttle_controller;
 
 	// PWM from receiver module
 	reg signed [`REC_VAL_BIT_WIDTH-1:0] throttle_pwm_value_in = 0;
@@ -35,7 +35,7 @@ module test_throttle_change_limiter;
 		.resetn(resetn));
 
 	// line up the parameters here to the ones internal to the receiver module
-	throttle_change_limiter DUT (
+	throttle_controller DUT (
 		.throttle_pwm_value_in(throttle_pwm_value_in),
 		.throttle_pwm_value_out(throttle_pwm_value_out),
 		.complete_signal(complete_signal),
