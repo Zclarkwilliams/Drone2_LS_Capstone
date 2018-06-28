@@ -53,14 +53,16 @@ module i2c_module(
 	reg  ack_flag, next_ack_flag;                   // Used to delay read of EFB ack set/clear by one clock and prevent ack in one state from being considered for following states
 	reg  data_latch;                                // Strobe to data late to retain dataRX value, which in turn generates module data output
 	reg  next_data_latch;                           // The next data_latch value that will be asserted at the following clock edge.
-	reg  [5:0]bytes_read_remain;                    // The nmumber of bytes still to read, counts down from target_read_count to 0
+	reg  [5:0]bytes_read_remain;                    // The number of bytes still to read, counts down from target_read_count to 0
 	reg  clear_read_count;                          // Clear the current bytes_read_remain value, 0 to clear, 1 to maintain
 	reg  next_one_byte_ready;                       // Next value of one_byte_ready at following sys_clk posedge
 	reg  [7:0]wd_event_count;                       // Count of the number of times that the watchdog timer rest the system, only counts to 128 and freezes to prevent wrap around hiding events
 	reg  [7:0]next_wd_event_count;                  // Next value of watchdog timer event count
-	reg  [7:0]efb_registers[9:0][1:0];
+	reg  [7:0]efb_registers[9:0][1:0];              // Array of register byte addresses for I2C EFB#1 and #2
 
-	// Assign register values
+	//  Module body
+	//
+	// Assign I2C EFB registers their respective values
 	task set_efb_reg_addresses;
 		begin
 			efb_registers[`I2C_CR_INDEX]    [`I2C_1_INDEX] = `I2C_1_CR   ;
@@ -86,8 +88,6 @@ module i2c_module(
 		end
 	endtask
 
-	//  Module body
-	//
 	// Connect the I2C module to this top module
 	I2C_EFB_WB i2c_top(
 		.wb_clk_i(sys_clk),					// Positive edge clock, >7.5x I2C rate
@@ -111,6 +111,7 @@ module i2c_module(
 	assign #0.100 cyc = stb; // Strobe and cycle are assigned the same value
 
 	// Generates a multiple of 1us length duration delay trigger
+	//  When the count down counter wraps around the timer is triggered and stops counting
 	always@(posedge sys_clk, negedge clear_waiting_us, negedge rstn) begin
 		if(~rstn)
 			count_us       <= 12'hFFF;
@@ -142,7 +143,7 @@ module i2c_module(
 		end
 	end
 
-	// Advance state at each positive clock edge
+	// Advance state and next values at each positive clock edge
 	always@(posedge sys_clk, negedge rstn) begin
 		if( ~(rstn) ) begin
 			we             <= `FALSE;
@@ -170,6 +171,7 @@ module i2c_module(
 		end
 	end
 
+	// Take single input bit and assign either read or write action
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn) begin // Default to NO action
 				read_action  <= 1'b0;
@@ -187,6 +189,8 @@ module i2c_module(
 		end
 	end
 
+	// Assign module output data if data latch is asserted and still reading bytes
+	// Does nothing for a write action
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn) begin
 			module_data_out        <= 8'b00;
@@ -202,6 +206,8 @@ module i2c_module(
 		end
 	end
 
+	// Decrement bytes_read_remain when data_latch goes positive
+	// or if clear_read_count goes negative set it to starting value
 	always@(posedge data_latch, negedge clear_read_count, negedge rstn) begin
 		if( (rstn == 1'b0) || (clear_read_count == 1'b0) ) begin
 			bytes_read_remain <= target_read_count;
@@ -211,7 +217,7 @@ module i2c_module(
 		end
 	end
 
-	//  Determine next state of FSM and drive EFB inputs
+	//  I2C FSM, Determine next state of FSM and drive EFB inputs
 	always@(*) begin
 		// Default to preserve these values, can be altered in lower steps
 		rstn_local          = `HIGH;

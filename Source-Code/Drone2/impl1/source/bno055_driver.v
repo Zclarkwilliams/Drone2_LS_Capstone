@@ -134,25 +134,25 @@ module bno055_driver #(
 	reg  [5:0]next_led_view_index;                    //  Next value of LED View Index
 	reg  [7:0]data_rx_reg[`DATA_RX_BYTE_REG_CNT-1:0]; //  Store all measurement bytes from i2c read burst
 	reg  rstn_buffer;                                 //  Negedge clears received measurement buffer
-	reg  rx_data_latch_strobe;                        //  Strobe data output register, latch onto current data in rx buffer, asyncronous latch
-	reg  rx_data_latch_tmp; 						  //  Syncronously latched value of the data latch strobe
+	reg  rx_data_latch_strobe;                        //  Strobe data output register, latch onto current data in rx buffer, asynchronous latch
+	reg  rx_data_latch_tmp; 						  //  Synchronously latched value of the data latch strobe
 	reg  next_imu_good;                               //  Next value of module imu_good bit
 	reg  i2c_number;								  //  The i2c module to call, 0 = i2c EFB #1, 1 = i2c EFB #2
-	reg [7:0]calibration_reg[`CAL_DATA_REG_CNT-1:0];
-	reg [7:0]cal_reg_addr;
-	reg [5:0]cal_restore_index;
-	reg clear_cal_restore_index;
-	reg increment_cal_restore_index;
-	reg calibrated_once;
-	reg next_calibrated_once;
-	reg next_valid_strobe_enable;
-	reg valid_strobe_enable;
+	reg [7:0]calibration_reg[`CAL_DATA_REG_CNT-1:0];  //  Stores the IMU calibration data bytes
+	reg [5:0]cal_restore_index;                       //  Current location in calibration_reg that is being read from
+	reg [7:0]cal_reg_addr;                            //  Current IMU register address that this calibration data is destined for
+	reg clear_cal_restore_index;                      //  Reset calibration restore index and register addresses back to starting value
+	reg increment_cal_restore_index;                  //  Increment calibration restore index and register addresses by 1
+	reg calibrated_once;                              //  Flag that specifies whether the calibration has been restored once yet or not, used to run calibration twice
+	reg next_calibrated_once;                         //  The next value of the calibrated once flag
+	reg valid_strobe_enable;                          //  Enables the valid_strobe for one or two clock cycles
+	reg next_valid_strobe_enable;                     //  The next value of the valid strobe enable
 	reg [31:0]master_trigger_count_ms;                //  Counter used to generate a periodic 20ms timer tick.
 
 	//
 	//  Module body
 	//
-	assign led_data_out = (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : data_rx_reg[led_view_index]; //  Inverted output for LEDS, since they are low active
+	assign led_data_out = (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : data_rx_reg[led_view_index]; //  Output for calibration status LEDs OR indicates that the IMU is in reset
 
 	//  Instantiate i2c driver
 	i2c_module i2c(	.scl_1(scl_1),
@@ -175,6 +175,7 @@ module bno055_driver #(
 	);
 
 	//  Generates a multiple of 1ms length duration delay trigger - Defaulted to 650 ms for BNO055 reset and boot time
+	//  When the count down counter wraps around the timer is triggered and stops counting
 	always@(posedge sys_clk, negedge clear_waiting_ms, negedge rstn) begin
 		if(~rstn)
 			count_ms       <= 32'hFFFFFFFF;
@@ -186,8 +187,11 @@ module bno055_driver #(
 			count_ms       <= count_ms;
 	end
 
+	//  During a read cycle decrement the data_rx_reg_index until it reaches 0 if one_byte_ready is asserted
+	//  If a byte has been read assign it to the data_rx_reg byte array at the location specified by data_rx_reg_index
 	always@(posedge sys_clk, negedge rstn_buffer, negedge rstn) begin
 		if(~rstn) begin
+			// Initialize data rx register to all 0s on reset
 			for(data_rx_reg_index = 0; data_rx_reg_index < `DATA_RX_BYTE_REG_CNT; data_rx_reg_index = data_rx_reg_index+1'b1)
 				data_rx_reg[data_rx_reg_index] <= 8'b0;
 			data_rx_reg_index <= 0;
@@ -196,10 +200,13 @@ module bno055_driver #(
 			data_rx_reg_index <= 0;
 		end
 		else if (one_byte_ready) begin
+			// If the index is pointing to the last index in the array, then rest pointer
+			// and write this byte to the start of the array
 			if(data_rx_reg_index == (`DATA_RX_BYTE_REG_CNT - 1'b1)) begin
 				data_rx_reg_index              <= 0;
 				data_rx_reg[data_rx_reg_index] <= data_rx;
 			end
+			//  Otherwise, just write the byte to the data_rx_reg_index index in the byte array
 			else begin
 				data_rx_reg[data_rx_reg_index] <= data_rx;
 				data_rx_reg_index              <= data_rx_reg_index + 1'b1;
@@ -207,26 +214,36 @@ module bno055_driver #(
 		end
 	end
 
-	// generate a 20ms timer that sends valid strobe every timer complete interval
+	//  Generates a 20ms countdown timer that enables module output valid strobe when it reaches 0
+	//  When timer wraps around the enable signal is set for clock tick, or delayed for 1 additional tick
+	//  If rx_data_latch_strobe is not asserted then the enable signal is asserted
+	//  Otherwise it will be asserted the next clock tick
 	always@(posedge sys_clk, negedge rstn) begin
-		if(~rstn) begin
+		if(~rstn) begin  // Reset, set starting values
 			master_trigger_count_ms <= `WAIT_MS_DIVIDER*20;
 			valid_strobe_enable     <= `FALSE;
-		end
+		end 
+		//  Timer wrapped around and rx_data_latch_strobe not asserted, reset timer and assert enable
 		else if( master_trigger_count_ms[31] == `TRUE && ~rx_data_latch_strobe) begin
 			master_trigger_count_ms <= (`WAIT_MS_DIVIDER*20);
 			valid_strobe_enable     <= `TRUE;
-		end
+		end 
+		//  Timer wrapped around and rx_data_latch_strobe is asserted, leave timer and do not assert enable
 		else if( master_trigger_count_ms[31] == `TRUE && rx_data_latch_strobe) begin
 			master_trigger_count_ms <= master_trigger_count_ms;
 			valid_strobe_enable     <= `FALSE;
 		end
+		//  Timer has not wrapped around, just decrement by 1
 		else begin
 			master_trigger_count_ms <= (master_trigger_count_ms - 1'b1);
 			valid_strobe_enable     <= `FALSE;
 		end
 	end
 
+	//  Handle output valid_strobe enable and handshake with following modules
+	//  The modules after this run at a slower clock rate and require handshaking of this signal
+	//  This block will hold valid_strobe high until the next module's active signal goes high
+	//  Which acknowledges that receipt of ths valid_strobe
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn)
 			valid_strobe      <= `LOW;
@@ -247,6 +264,8 @@ module bno055_driver #(
 	end
 
 
+	// Assign calibration  values to the calibration_reg byte array
+	// These values were read from a manually calibrated IMU and are specific to that particular one.
 	task set_calibration_data_values;
 	/*
 		Calibration Values for the BNO055 IMU that we are using:
@@ -288,6 +307,9 @@ module bno055_driver #(
 		end
 	endtask
 
+	//  Take data read byte array and assign the byte values to output data wires
+	//  Most of the data outputs are 16 bit words
+	//  Also calls set_calibration_data_values each clock tick, bexcause they had to be set somewhere
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn) begin
 			accel_rate_x      <= 16'b0;
@@ -404,7 +426,7 @@ module bno055_driver #(
 	end
 
 
-	// Determine next state of FSM and drive i2c module inputs
+	// IMU FSM, Determine next state of FSM and drive i2c module inputs
 	always@(*) begin
 		if( ~(rstn & rstn_imu) ) begin
 			next_imu_good             = `FALSE;
