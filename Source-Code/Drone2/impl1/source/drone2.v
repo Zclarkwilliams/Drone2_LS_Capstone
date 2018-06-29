@@ -85,7 +85,7 @@ module drone2 (
 		pitch_angle_error;
 	wire ac_valid_strobe;
 
-	//---------------- IMU Wires ------------------//
+	//---------------- I2C Altimiter and IMU Wires ------------------//
 	wire [`IMU_VAL_BIT_WIDTH-1:0]
 		x_linear_rate,
 		y_linear_rate,
@@ -152,7 +152,7 @@ module drone2 (
 	 * IMU Management and Control Module
 	 *		file - bno055_driver.v
 	 */
-	bno055_driver imu (
+	i2c_device_driver i2c (
 		// Outputs
 		.imu_good(imu_good),
 		.valid_strobe(imu_data_valid),

@@ -425,7 +425,6 @@ Total: 46 bytes
 `define MAG_RADIUS_MSB_INDEX     21
 
 
-`define BNO055_STATE_BITS      5             //  The number of bits used to represent the current state
 `define DATA_RX_BYTE_REG_CNT   46            //  The number of byte registers used to receive all measurement data
 `define CAL_DATA_REG_CNT       22            //  The number of byte registers used to store calibration data
 
@@ -443,6 +442,8 @@ Total: 46 bytes
 
 `define RUN_MS_TIMER            1'b1         //  Flag that starts multi ms timer
 `define CLEAR_MS_TIMER          1'b0         //  Flag that stops/clears multi ms timer
+
+`define I2C_DEVICE_DRIVER_STATE_BITS         5 //  The number of bits used to represent the current state
 
 // State Definitions
 //
