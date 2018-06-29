@@ -8,7 +8,7 @@
  * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
  */
 
-module bno055_module_tb();
+module i2c_device_driver_module_tb();
 	wire scl_1;
 	wire sda_1;
 	wire scl_2;
@@ -41,7 +41,7 @@ module bno055_module_tb();
        			    .SEDSTDBY());
 
 
-	bno055_driver #(0) bno055(
+	i2c_device_driver #(0) i2c_driver(
 		.scl_1(scl_1),
 		.sda_1(sda_1),
 		.scl_2(scl_2),
@@ -111,7 +111,7 @@ module bno055_module_tb();
 		read_write_in = 0;
 		for(j = 0; j < 2; j = j + 1) begin
 			for(i = 0; i < 10; i = i + 1) begin
-				$display("efb_registers %1d EFB#%1d = %h", i[4:0], (j[4:0]+1), bno055.i2c.efb_registers[i][j]);
+				$display("efb_registers %1d EFB#%1d = %h", i[4:0], (j[4:0]+1), i2c_driver.i2c.efb_registers[i][j]);
 			end
 		end
 		#1_000_00000;
