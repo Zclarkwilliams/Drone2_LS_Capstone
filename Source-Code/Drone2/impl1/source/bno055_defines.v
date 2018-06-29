@@ -447,28 +447,29 @@ Total: 46 bytes
 // State Definitions
 //
 // Initial default state of IMU FSM
-`define BNO055_STATE_RESET               0
-// The rest of the startup states
-`define BNO055_STATE_BOOT                1
-`define BNO055_STATE_BOOT_WAIT           2
+`define BNO055_STATE_RESET                   0
+// The rest of the startup states            
+`define BNO055_STATE_BOOT                    1
+`define BNO055_STATE_BOOT_WAIT               2
 
 // Setup BNO055 and begin reading
-`define BNO055_STATE_READ_CHIP_ID        3
-`define BNO055_STATE_SET_UNITS           4
-`define BNO055_STATE_SET_POWER_MODE      5
-`define BNO055_STATE_CAL_RESTORE_DATA    6
-`define BNO055_STATE_CAL_RESTORE_START   7
-`define BNO055_STATE_CAL_RESTORE_WAIT    8
-`define BNO055_STATE_CAL_RESTORE_STOP    9
-`define BNO055_STATE_CAL_RESTORE_AGAIN   10
-`define BNO055_STATE_SET_EXT_CRYSTAL     11
-`define BNO055_STATE_SET_RUN_MODE        12
-`define BNO055_STATE_WAIT_20MS           13
-`define BNO055_STATE_READ_IMU_DATA_BURST 14
-`define BNO055_STATE_WAIT_IMU_POLL_TIME  15
+`define BNO055_STATE_READ_CHIP_ID            3
+`define BNO055_STATE_SET_UNITS               4
+`define BNO055_STATE_SET_POWER_MODE          5
+`define BNO055_STATE_CAL_RESTORE_DATA        6
+`define BNO055_STATE_CAL_RESTORE_START       7
+`define BNO055_STATE_CAL_RESTORE_WAIT        8
+`define BNO055_STATE_CAL_RESTORE_STOP        9
+`define BNO055_STATE_CAL_RESTORE_AGAIN       10
+`define BNO055_STATE_SET_EXT_CRYSTAL         11
+`define BNO055_STATE_SET_RUN_MODE            12
+`define BNO055_STATE_WAIT_20MS               13
+`define BNO055_STATE_READ_IMU_DATA_BURST     14
+`define ALTIMETER_STATE_READ_DATA_BURST      15
+`define BNO055_STATE_WAIT_IMU_POLL_TIME      16
 
 // Minor FSM states, repeated for every read or write
-`define BNO055_SUB_STATE_START           16
-`define BNO055_SUB_STATE_WAIT_I2C        17
-`define BNO055_SUB_STATE_STOP            18
+`define I2C_DEVICE_DRIVER_SUB_STATE_START    17
+`define I2C_DEVICE_DRIVER_SUB_STATE_WAIT_I2C 18
+`define I2C_DEVICE_DRIVER_SUB_STATE_STOP     19
 
