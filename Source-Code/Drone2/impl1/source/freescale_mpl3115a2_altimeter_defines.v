@@ -60,6 +60,21 @@
 `define MPL3115A2_OFF_H                  8'h2D // Altitude Data User Offset Register
 
 
+// rx_data_reg register indices
+`define MPL3115A2_STATUS_INDEX           46
+`define MPL3115A2_OUT P_MSB_INDEX        47
+`define MPL3115A2_OUT_P_CSB_INDEX        48
+`define MPL3115A2_OUT_P _LSB_INDEX       49
+`define MPL3115A2_OUT_T_MSB_INDEX        50
+`define MPL3115A2_OUT_T _LSB_INDEX       51
+`define MPL3115A2_DR_STATUS_INDEX        52
+`define MPL3115A2_OUT_P_DELTA MSB_INDEX  53
+`define MPL3115A2_OUT_P_DELTA_CSB_INDEX  54
+`define MPL3115A2_OUT_P_DELTA_LSB_INDEX  55
+`define MPL3115A2_OUT_T_DELTA_MSB_INDEX  56
+`define MPL3115A2_OUT_T_DELTA_LSB_INDEX  57
+
+
 // Ready-Only, system device ID value
 `define MPL3115A2_WHO_AM_I_ID            8'hC4 //MPL3115A2 fixed device ID
 
@@ -90,3 +105,7 @@
 
 // I2C slave address of MPL3115A2
 `define MPL3115A2_SLAVE_ADDRESS          8'b1100_0000 //  Slave address is 0x60
+
+
+`define MPL3115A2_DATA_RX_BYTE_REG_CNT  6 //The number of bytes to read the system status, altitude/pressure, and temperature bytes
+`define MPL3115A2_DELTA_RX_BYTE_REG_CNT 6 //The number of bytes to read the system status, altitude/pressure value delta, and temperature delta bytes
