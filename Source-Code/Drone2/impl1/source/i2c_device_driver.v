@@ -191,11 +191,11 @@ module i2c_device_driver #(
 		BNO055_STATE_CAL_RESTORE_AGAIN        = 10,
 		BNO055_STATE_SET_EXT_CRYSTAL          = 11,
 		BNO055_STATE_SET_RUN_MODE             = 12,
-		ALTIMETER_STATE_SET_ACTIVE_ALTITUDE   = 13,
+		MPL3115A2_STATE_SET_ACTIVE_ALTITUDE   = 13,
 		BNO055_STATE_WAIT_20MS                = 14,
 		BNO055_STATE_READ_IMU_DATA_BURST      = 15,
-		ALTIMETER_STATE_READ_DATA_BURST       = 16,
-		ALTIMETER_STATE_READ_DATA_DELTA_BURST = 17,
+		MPL3115A2_STATE_READ_DATA_BURST       = 16,
+		MPL3115A2_STATE_READ_DATA_DELTA_BURST = 17,
 		BNO055_STATE_WAIT_IMU_POLL_TIME       = 18,
 
 		// Minor FSM states, repeated for every read or write
@@ -663,20 +663,21 @@ module i2c_device_driver #(
 					clear_waiting_ms       = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
 					next_go_flag           = `NOT_GO;
 					next_i2c_driver_state  = I2C_DEVICE_DRIVER_SUB_STATE_START;
-					next_return_state      = ALTIMETER_STATE_SET_ACTIVE_ALTITUDE;
+					next_return_state      = MPL3115A2_STATE_SET_ACTIVE_ALTITUDE;
 					next_data_reg          = `BNO055_OPR_MODE_ADDR;
 					next_data_tx           = `BNO055_OPERATION_MODE_NDOF;
 					next_read_write_in     = `I2C_WRITE;
 				end
-				ALTIMETER_STATE_SET_ACTIVE_ALTITUDE: begin
+				MPL3115A2_STATE_SET_ACTIVE_ALTITUDE: begin
 					next_slave_address        = `MPL3115A2_SLAVE_ADDRESS;
 					next_go_flag              = `NOT_GO;
 					next_i2c_driver_state     = I2C_DEVICE_DRIVER_SUB_STATE_START;
-					next_return_state         = BNO055_STATE_WAIT_IMU_POLL_TIME;
-					next_data_reg             = `MPL3115A2_DR_STATUS;
-					next_data_tx              = `BYTE_ALL_ZERO;
-					next_read_write_in        = `I2C_READ;
-					next_target_read_count    = `MPL3115A2_DELTA_RX_BYTE_REG_CNT;
+					next_return_state         = BNO055_STATE_WAIT_20MS;
+					next_data_reg             = `MPL3115A2_CTRL_REG1;
+					next_data_tx              = `MPL3115A2_CTRL_REG1_STYB_ACTIVE|
+												`MPL3115A2_CTRL_REG1_OS_18MS|
+												`MPL3115A2_CTRL_REG1_ALT_ENABLE;
+					next_read_write_in        = `I2C_WRITE;
 				end
 				BNO055_STATE_WAIT_20MS: begin // Wait 20ms to go from config to running mode
 					next_imu_good          = `FALSE;
@@ -699,24 +700,24 @@ module i2c_device_driver #(
 					next_go_flag           = `NOT_GO;
 					next_i2c_driver_state  = I2C_DEVICE_DRIVER_SUB_STATE_START;
 					//next_return_state      = BNO055_STATE_WAIT_IMU_POLL_TIME;
-					next_return_state      = ALTIMETER_STATE_READ_DATA_BURST;
+					next_return_state      = MPL3115A2_STATE_READ_DATA_BURST;
 					next_data_reg          = `BNO055_ACCEL_DATA_X_LSB_ADDR;
 					next_data_tx           = `BYTE_ALL_ZERO;
 					next_read_write_in     = `I2C_READ;
 					next_target_read_count = `BNO055_DATA_RX_BYTE_REG_CNT;
 					next_led_view_index    = (`BNO055_DATA_RX_BYTE_REG_CNT-1); // Calibration status will be in the last byte buffer, index 45
 				end
-				ALTIMETER_STATE_READ_DATA_BURST: begin
+				MPL3115A2_STATE_READ_DATA_BURST: begin
 					next_slave_address        = `MPL3115A2_SLAVE_ADDRESS;
 					next_go_flag              = `NOT_GO;
 					next_i2c_driver_state     = I2C_DEVICE_DRIVER_SUB_STATE_START;
-					next_return_state         = ALTIMETER_STATE_READ_DATA_DELTA_BURST;
+					next_return_state         = MPL3115A2_STATE_READ_DATA_DELTA_BURST;
 					next_data_reg             = `MPL3115A2_STATUS;
 					next_data_tx              = `BYTE_ALL_ZERO;
 					next_read_write_in        = `I2C_READ;
 					next_target_read_count    = `MPL3115A2_DATA_RX_BYTE_REG_CNT;
 				end
-				ALTIMETER_STATE_READ_DATA_DELTA_BURST: begin
+				MPL3115A2_STATE_READ_DATA_DELTA_BURST: begin
 					next_slave_address        = `MPL3115A2_SLAVE_ADDRESS;
 					next_go_flag              = `NOT_GO;
 					next_i2c_driver_state     = I2C_DEVICE_DRIVER_SUB_STATE_START;
