@@ -71,10 +71,46 @@
 `define AUX2_DEFAULT_PULSE_TIME_HIGH_US	 	 16'd1500
 `define SWAB_DEFAULT_PULSE_TIME_HIGH_US	 	 16'd1500
 
-/**
+/************************************************************
+ *
  *	Motor_Mixer Module Defines:
- */
+ *
+ ************************************************************/
 
-// Min and Max boundary values for to send to ESC's
+//	Min and Max boundary values for to send to ESC's
 `define MOTOR_VAL_MIN					16'sh0020
 `define MOTOR_VAL_MAX					16'sh0FA0
+
+/************************************************************ 
+ *
+ *	Flight_Mode Module Defines
+ *
+ ************************************************************/
+
+//	Flight mode module select control line widths
+`define IMU_DATA_SEL_BIT_WIDTH		2'd2
+`define REC_DATA_SEL_BIT_WIDTH		3'd4
+
+// Variance allowed to just jump to throttle output at hover_rate
+`define THROTTLE_VARIANCE  			8'sd10
+
+/************************************************************ 
+ *
+ *	IMU_Data_Buffer and Rec_Data_Buffer (MUX) Module Defines
+ *
+ ************************************************************/
+ 
+ //	Motor rate values for flight modes
+`define HOVER_THROTTLE_VAL			8'd160
+ 
+ // Select-able control modes for outputs 
+ //	Receiver Data Buffer
+ `define REC_SEL_OFF				4'h0
+ `define REC_SEL_AUTO_TAKE_OFF		4'h1
+ `define REC_SEL_HOVER 				4'h2
+ `define REC_SEL_PASS_THROUGH		4'h3
+ `define REC_SEL_AUTO_LAND			4'h4
+
+ // IMU Data Buffer
+ `define IMU_SEL_DISABLE			2'h0
+ `define IMU_SEL_PASS_THROUGH		2'h1
