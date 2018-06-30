@@ -61,7 +61,8 @@
 
 `timescale 1ns / 1ns
 `include "common_defines.v"
-`include "bno055_defines.v"
+`include "bosch_bno055_imu_defines.v"
+`include "freescale_mpl3115a2_altimeter_defines.v"
 
 module i2c_device_driver #(
 	parameter INIT_TIME = 15'd650
