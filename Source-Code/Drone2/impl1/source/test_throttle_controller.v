@@ -13,7 +13,7 @@ module test_throttle_controller;
 	// PWM from receiver module
 	reg signed [`REC_VAL_BIT_WIDTH-1:0] throttle_pwm_value_in = 0;
 
-	wire signed [`RATE_BIT_WIDTH-1:0] throttle_pwm_value_out;
+	wire signed [`REC_VAL_BIT_WIDTH-1:0] throttle_pwm_value_out;
 
 	reg  resetn;
 	wire sys_clk;
@@ -67,7 +67,16 @@ module test_throttle_controller;
 		//$display("%t: %m Set initial values",$time);
 		run_test(.task_throttle_pwm_value_in(0));
 
-		//$display("\n\n\n%t: %m Throttle to 250, MAX",$time);
+		$display("\n\n\n%t: %m Throttle to ranges 0 to 255, MAX",$time);
+		
+		for(i = 0; i < 256*8; i=i+1) begin
+			$display("%t: %m iteration %d",$time, i/8);
+			run_test(.task_throttle_pwm_value_in(i/8));
+		end
+
+		$display("%t: %m Test complete", $time);
+		$stop;
+		$display("\n\n\n%t: %m Throttle to 250, MAX",$time);
 		
 		for(i = 0; i < 64; i=i+1) begin
 			//$display("%t: %m iteration %d",$time, i);

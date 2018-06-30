@@ -35,6 +35,7 @@ module throttle_controller
 	reg [`OPS_BIT_WIDTH-1:0]		average_throttle;
 	reg [`OPS_BIT_WIDTH-1:0]	 	scaled_throttle;
 	reg [`OPS_BIT_WIDTH-`REC_VAL_BIT_WIDTH-1:0]	trash_bits;
+	//reg [15:0]	trash_bits;
 
 	// state names
 	localparam
@@ -48,6 +49,7 @@ module throttle_controller
 
 localparam
 	BUFFER_SHIFT_N = $clog2(BUFFER_MAX);  //Number of bits to count to BUFFER_MAX
+	//BUFFER_SHIFT_N = 3;
 
 	// state variables
 	reg [6:0] state, next_state;
@@ -133,8 +135,14 @@ localparam
 				STATE_WAITING: begin
 					complete_signal 		<= `FALSE;
 					active_signal 			<= `FALSE;
-					if(next_state == STATE_BUFFERING)
-						latched_throttle 	<= throttle_pwm_value_in;
+					if(next_state == STATE_BUFFERING) begin
+						if(throttle_pwm_value_in < 10)
+							latched_throttle 	<= 0;
+						else if(throttle_pwm_value_in > 250)
+							latched_throttle 	<= 8'd250;
+						else
+							latched_throttle 	<= throttle_pwm_value_in;
+					end
 				end
 				STATE_BUFFERING: begin
 					complete_signal 		<= `FALSE;
@@ -175,6 +183,7 @@ localparam
 				STATE_COMPLETE: begin
 					complete_signal 	<= `TRUE;
 					active_signal 		<= `FALSE;
+					$display("Throttle PWM value out=%d", throttle_pwm_value_out);
 				end
 				default: begin
 					throttle_pwm_value_out <= `BYTE_ALL_ZERO;
@@ -205,10 +214,19 @@ endtask
 task add_buffer_contents;
 	reg [7:0]task_latched_throttle;
 	begin
-		summed_throttle = 0;
+		/*summed_throttle = 0;
 		for(i = 0; i < BUFFER_MAX; i=i+1) begin
 			summed_throttle = summed_throttle+latched_throttle_buffer[i];
 		end
+		*/
+		summed_throttle <=	latched_throttle_buffer[0] +
+							latched_throttle_buffer[1] +
+							latched_throttle_buffer[2] +
+							latched_throttle_buffer[3] +
+							latched_throttle_buffer[4] +
+							latched_throttle_buffer[5] +
+							latched_throttle_buffer[6] +
+							latched_throttle_buffer[7];
 	end
 endtask
 
