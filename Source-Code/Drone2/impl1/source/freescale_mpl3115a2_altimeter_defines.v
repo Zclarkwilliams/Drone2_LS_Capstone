@@ -104,7 +104,7 @@
 `define MPL3115A2_CTRL_REG1_ALT_ENABLE   (1'b1<<7)   // Altimeter mode enabled, running as an altimeter and providing altitude in meters
 
 // I2C slave address of MPL3115A2
-`define MPL3115A2_SLAVE_ADDRESS          8'b1100_0000 //  Slave address is 0x60
+`define MPL3115A2_SLAVE_ADDRESS          7'b1100_000 //  Slave address is 0x60 in 7 bits, or 0xC0 in 8 bit hex
 
 
 `define MPL3115A2_DATA_RX_BYTE_REG_CNT  6 //The number of bytes to read the system status, altitude/pressure, and temperature bytes
