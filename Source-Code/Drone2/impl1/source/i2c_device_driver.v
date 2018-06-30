@@ -155,7 +155,27 @@ module i2c_device_driver #(
 	assign led_data_out = (i2c_driver_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : data_rx_reg[led_view_index]; //  Output for calibration status LEDs OR indicates that the IMU is in reset
 
 	//  Instantiate i2c driver
-	i2c_module i2c(	.scl_1(scl_1),
+	i2c_module i2c1(	.scl_1(scl_1),
+					.sda_1(sda_1),
+					.scl_2(scl_2),
+					.sda_2(sda_2),
+					.rstn(rstn),
+					.rstn_imu(rstn_imu),
+					.target_read_count(target_read_count),
+					.slave_address(slave_address),
+					.module_data_out(data_rx),
+					.module_data_in(data_tx),
+					.module_reg_in(data_reg),
+					.read_write_in(read_write_in),
+					.go(go),
+					.busy(busy),
+					.one_byte_ready(one_byte_ready),
+					.i2c_number(i2c_number),
+					.sys_clk(sys_clk)
+	);
+	
+	//  Instantiate i2c driver
+	i2c_module i2c2(	.scl_1(scl_1),
 					.sda_1(sda_1),
 					.scl_2(scl_2),
 					.sda_2(sda_2),
