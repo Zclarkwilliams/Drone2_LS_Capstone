@@ -165,9 +165,6 @@ module drone2 (
 		.linear_accel_x(x_linear_accel),
 		.linear_accel_y(y_linear_accel),
 		.linear_accel_z(z_linear_accel),
-		.x_velocity(x_linear_rate),
-		.y_velocity(y_linear_rate),
-		.z_velocity(z_linear_rate),
 		// DEBUG WIRE
 		.led_data_out(imu_debug_out),
 		// InOuts

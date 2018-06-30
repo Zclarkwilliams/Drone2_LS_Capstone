@@ -13,13 +13,13 @@
  */
  
 `define MPL3115A2_STATUS                 8'h00 // Sensor Status Register, Alias for Data Ready register [Auto increments through data registers from here]
-`define MPL3115A2_OUT P_MSB              8'h01 // Pressure Data Out MSB
+`define MPL3115A2_OUT_P_MSB              8'h01 // Pressure Data Out MSB
 `define MPL3115A2_OUT_P_CSB              8'h02 // Pressure Data Out CSB
-`define MPL3115A2_OUT_P _LSB             8'h03 // Pressure Data Out LSB
+`define MPL3115A2_OUT_P_LSB              8'h03 // Pressure Data Out LSB
 `define MPL3115A2_OUT_T_MSB              8'h04 // Temperature Data Out MSB
-`define MPL3115A2_OUT_T _LSB             8'h05 // Temperature Data Out LSB [Auto increment starts from 0x00 again here]
+`define MPL3115A2_OUT_T_LSB              8'h05 // Temperature Data Out LSB [Auto increment starts from 0x00 again here]
 `define MPL3115A2_DR_STATUS              8'h06 // Sensor Status Register, Data Ready register [Auto increments through data delta registers from here]
-`define MPL3115A2_OUT_P_DELTA MSB        8'h07 // Pressure Data Out Delta MSB
+`define MPL3115A2_OUT_P_DELTA_MSB        8'h07 // Pressure Data Out Delta MSB
 `define MPL3115A2_OUT_P_DELTA_CSB        8'h08 // Pressure Data Out Delta CSB
 `define MPL3115A2_OUT_P_DELTA_LSB        8'h09 // Pressure Data Out Delta LSB
 `define MPL3115A2_OUT_T_DELTA_MSB        8'h0A // Temperature Data Out Delta MSB
@@ -62,13 +62,13 @@
 
 // rx_data_reg register indices
 `define MPL3115A2_STATUS_INDEX           46
-`define MPL3115A2_OUT P_MSB_INDEX        47
+`define MPL3115A2_OUT_P_MSB_INDEX        47
 `define MPL3115A2_OUT_P_CSB_INDEX        48
-`define MPL3115A2_OUT_P _LSB_INDEX       49
+`define MPL3115A2_OUT_P_LSB_INDEX        49
 `define MPL3115A2_OUT_T_MSB_INDEX        50
-`define MPL3115A2_OUT_T _LSB_INDEX       51
+`define MPL3115A2_OUT_T_LSB_INDEX        51
 `define MPL3115A2_DR_STATUS_INDEX        52
-`define MPL3115A2_OUT_P_DELTA MSB_INDEX  53
+`define MPL3115A2_OUT_P_DELTA_MSB_INDEX  53
 `define MPL3115A2_OUT_P_DELTA_CSB_INDEX  54
 `define MPL3115A2_OUT_P_DELTA_LSB_INDEX  55
 `define MPL3115A2_OUT_T_DELTA_MSB_INDEX  56

@@ -109,6 +109,23 @@ module i2c_device_driver #(
 	output reg [11:0]amtimeter_temp_delta
 );
 
+	// Value aliases
+	`define GO                      1'b1         //  Go signal to i2c driver is logic high
+	`define NOT_GO                  1'b0         //  Go signal to i2c driver is logic low
+	`define SUB_STATE_GO            1'b1         //  Go signal to sub FSM is logic high
+	`define SUB_STATE_NOT_GO        1'b0         //  Go signal to sub FSM is logic low
+	`define SUB_STATE_DONE          1'b1         //  Signal that the sub FSM is done
+	`define SUB_STATE_NOT_DONE      1'b0         //  Signal that the sub FSM is done
+	`define I2C_READ                1'b0         //  an I2C Read command
+	`define I2C_WRITE               1'b1         //  An I2C Write command
+
+	`define RUN_MS_TIMER            1'b1         //  Flag that starts multi ms timer
+	`define CLEAR_MS_TIMER          1'b0         //  Flag that stops/clears multi ms timer
+
+	`define I2C_DEVICE_DRIVER_STATE_BITS         5 //  The number of bits used to represent the current state
+
+
+	// Working registers
 	reg  read_write_in, next_read_write_in;           //  Value and next value of signal to i2c module to indicate read or write transaction, 1 = read, 0 = write
 	reg  go;                                          //  Flag to i2c module signaling start of i2c transaction. All inputs must be valid before asserting this bit
 	reg  next_go_flag;                                //  Next value of the i2c module GO flag
@@ -152,54 +169,39 @@ module i2c_device_driver #(
 	reg valid_strobe_enable;                          //  Enables the valid_strobe for one or two clock cycles
 	reg next_valid_strobe_enable;                     //  The next value of the valid strobe enable
 	reg [31:0]master_trigger_count_ms;                //  Counter used to generate a periodic 20ms timer tick.
-	
-	
-	// Value aliases
-	`define GO                      1'b1         //  Go signal to i2c driver is logic high
-	`define NOT_GO                  1'b0         //  Go signal to i2c driver is logic low
-	`define SUB_STATE_GO            1'b1         //  Go signal to sub FSM is logic high
-	`define SUB_STATE_NOT_GO        1'b0         //  Go signal to sub FSM is logic low
-	`define SUB_STATE_DONE          1'b1         //  Signal that the sub FSM is done
-	`define SUB_STATE_NOT_DONE      1'b0         //  Signal that the sub FSM is done
-	`define I2C_READ                1'b0         //  an I2C Read command
-	`define I2C_WRITE               1'b1         //  An I2C Write command
-	
-	`define RUN_MS_TIMER            1'b1         //  Flag that starts multi ms timer
-	`define CLEAR_MS_TIMER          1'b0         //  Flag that stops/clears multi ms timer
-	
-	`define I2C_DEVICE_DRIVER_STATE_BITS         5 //  The number of bits used to represent the current state
+
 
 	// State Definitions
 	//
-	localparam [I2C_DEVICE_DRIVER_STATE_BITS-1:0]
+	localparam [`I2C_DEVICE_DRIVER_STATE_BITS-1:0]
 		// Initial default state of IMU FSM
-		BNO055_STATE_RESET                   = 0,
-		// The rest of the startup states            
-		BNO055_STATE_BOOT                    = 1,
-		BNO055_STATE_BOOT_WAIT               = 2,
-		
+		BNO055_STATE_RESET                    = 0,
+		// The rest of the startup states
+		BNO055_STATE_BOOT                     = 1,
+		BNO055_STATE_BOOT_WAIT                = 2,
+
 		// Setup BNO055 and begin reading
-		BNO055_STATE_READ_CHIP_ID            = 3,
-		BNO055_STATE_SET_UNITS               = 4,
-		BNO055_STATE_SET_POWER_MODE          = 5,
-		BNO055_STATE_CAL_RESTORE_DATA        = 6,
-		BNO055_STATE_CAL_RESTORE_START       = 7,
-		BNO055_STATE_CAL_RESTORE_WAIT        = 8,
-		BNO055_STATE_CAL_RESTORE_STOP        = 9,
-		BNO055_STATE_CAL_RESTORE_AGAIN       = 10,
-		BNO055_STATE_SET_EXT_CRYSTAL         = 11,
-		BNO055_STATE_SET_RUN_MODE            = 12,
-		ALTIMETER_STATE_SET_ACTIVE_ALTITUDE  = 13,
-		BNO055_STATE_WAIT_20MS               = 14,
-		BNO055_STATE_READ_IMU_DATA_BURST     = 15,
-		ALTIMETER_STATE_READ_DATA_BURST      = 16,
-		ALTIMETER_STATE_READ_DELTA_BURST     = 17,
-		BNO055_STATE_WAIT_IMU_POLL_TIME      = 18,
-		
+		BNO055_STATE_READ_CHIP_ID             = 3,
+		BNO055_STATE_SET_UNITS                = 4,
+		BNO055_STATE_SET_POWER_MODE           = 5,
+		BNO055_STATE_CAL_RESTORE_DATA         = 6,
+		BNO055_STATE_CAL_RESTORE_START        = 7,
+		BNO055_STATE_CAL_RESTORE_WAIT         = 8,
+		BNO055_STATE_CAL_RESTORE_STOP         = 9,
+		BNO055_STATE_CAL_RESTORE_AGAIN        = 10,
+		BNO055_STATE_SET_EXT_CRYSTAL          = 11,
+		BNO055_STATE_SET_RUN_MODE             = 12,
+		ALTIMETER_STATE_SET_ACTIVE_ALTITUDE   = 13,
+		BNO055_STATE_WAIT_20MS                = 14,
+		BNO055_STATE_READ_IMU_DATA_BURST      = 15,
+		ALTIMETER_STATE_READ_DATA_BURST       = 16,
+		ALTIMETER_STATE_READ_DATA_DELTA_BURST = 17,
+		BNO055_STATE_WAIT_IMU_POLL_TIME       = 18,
+
 		// Minor FSM states, repeated for every read or write
-		I2C_DEVICE_DRIVER_SUB_STATE_START    = 19,
-		I2C_DEVICE_DRIVER_SUB_STATE_WAIT_I2C = 20,
-		I2C_DEVICE_DRIVER_SUB_STATE_STOP     = 21;
+		I2C_DEVICE_DRIVER_SUB_STATE_START     = 19,
+		I2C_DEVICE_DRIVER_SUB_STATE_WAIT_I2C  = 20,
+		I2C_DEVICE_DRIVER_SUB_STATE_STOP      = 21;
 
 	//
 	//  Module body
@@ -278,12 +280,12 @@ module i2c_device_driver #(
 		if(~rstn) begin  // Reset, set starting values
 			master_trigger_count_ms <= `WAIT_MS_DIVIDER*20;
 			valid_strobe_enable     <= `FALSE;
-		end 
+		end
 		//  Timer wrapped around and rx_data_latch_strobe not asserted, reset timer and assert enable
 		else if( master_trigger_count_ms[31] == `TRUE && ~rx_data_latch_strobe) begin
 			master_trigger_count_ms <= (`WAIT_MS_DIVIDER*20);
 			valid_strobe_enable     <= `TRUE;
-		end 
+		end
 		//  Timer wrapped around and rx_data_latch_strobe is asserted, leave timer and do not assert enable
 		else if( master_trigger_count_ms[31] == `TRUE && rx_data_latch_strobe) begin
 			master_trigger_count_ms <= master_trigger_count_ms;
@@ -423,9 +425,9 @@ module i2c_device_driver #(
 			gravity_accel_z   	 <= {data_rx_reg[`BNO055_GRA_DATA_Z_MSB_INDEX],data_rx_reg[`BNO055_GRA_DATA_Z_LSB_INDEX]};
 			imu_temp       	     <= data_rx_reg[`BNO055_TEMPERATURE_DATA_INDEX];
 			calib_status      	 <= data_rx_reg[`BNO055_CALIBRATION_DATA_INDEX];
-			altitude             <= ({data_rx_reg[`MPL3115A2_OUT P_MSB_INDEX],data_rx_reg[`MPL3115A2_OUT P_CSB_INDEX],data_rx_reg[`MPL3115A2_OUT P_LSB_INDEX]}>>4);
-			amtimeter_temp       <= ({data_rx_reg[`MPL3115A2_OUT T_MSB_INDEX],data_rx_reg[`MPL3115A2_OUT T_LSB_INDEX]}>>4);
-			altitude_delta       <= ({data_rx_reg[`MPL3115A2_OUT_P_DELTA MSB_INDEX],data_rx_reg[`MPL3115A2_OUT_P_DELTA CSB_INDEX],data_rx_reg[`MPL3115A2_OUT_P_DELTA LSB_INDEX]}>>4);
+			altitude             <= ({data_rx_reg[`MPL3115A2_OUT_P_MSB_INDEX],data_rx_reg[`MPL3115A2_OUT_P_CSB_INDEX],data_rx_reg[`MPL3115A2_OUT_P_LSB_INDEX]}>>4);
+			amtimeter_temp       <= ({data_rx_reg[`MPL3115A2_OUT_T_MSB_INDEX],data_rx_reg[`MPL3115A2_OUT_T_LSB_INDEX]}>>4);
+			altitude_delta       <= ({data_rx_reg[`MPL3115A2_OUT_P_DELTA_MSB_INDEX],data_rx_reg[`MPL3115A2_OUT_P_DELTA_CSB_INDEX],data_rx_reg[`MPL3115A2_OUT_P_DELTA_LSB_INDEX]}>>4);
 			amtimeter_temp_delta <= ({data_rx_reg[`MPL3115A2_OUT_T_DELTA_MSB_INDEX],data_rx_reg[`MPL3115A2_OUT_T_DELTA_LSB_INDEX]}>>4);
 			set_calibration_data_values();
 		end
