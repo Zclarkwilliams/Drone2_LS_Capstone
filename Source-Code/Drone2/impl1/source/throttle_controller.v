@@ -138,29 +138,32 @@ module throttle_controller
 				STATE_DEBOUNCE: begin //Debounce idle value, was seeing sporadic 0 or low throttle
 					complete_signal 		<= `FALSE;
 					active_signal 			<= `TRUE;
-					/*if(latched_throttle <= 10) begin//idle throttle, power off
+					if(latched_throttle <= 10) begin//idle throttle, power off
 						//Was < 10 and is now < 10, not a bounce
-						if(prev_latched_throttle <= 10)
-							debounced_throttle <= latched_throttle;
-						//Was < 10 and is now >= 10, debounce this value
-						else
-							debounced_throttle <= prev_latched_throttle;
+						if(prev_latched_throttle <= 10) begin
+							debounced_throttle    <= latched_throttle;
+							prev_latched_throttle <= latched_throttle;
+						end
+						//Was < 10 and is now >= 10, and there is a previous value, debounce this value
+						else if (prev_latched_throttle > 0) begin
+							debounced_throttle    <= prev_latched_throttle;
+							prev_latched_throttle <= latched_throttle;
+						end
+						//No previous value to debounce with
+						else begin
+							debounced_throttle    <= latched_throttle;
+							prev_latched_throttle <= latched_throttle;
+						end
 					end
 					//Latched value is not idle
 					else begin
-						//Was >= 10 and is now >= 10, not a bounce
-						if(prev_latched_throttle > 10)
-							debounced_throttle <= latched_throttle;
-						//Was >= 10 and is now < 10, debounce this value
-						else
-							debounced_throttle <= prev_latched_throttle;
-					end*/
-					debounced_throttle <= latched_throttle;
+						prev_latched_throttle <= latched_throttle;
+						debounced_throttle    <= latched_throttle;
+					end
 				end
 				STATE_LINEAR_SCALE: begin 
 				complete_signal   <= `FALSE; 
 				active_signal    <= `TRUE;
-				prev_latched_throttle <= debounced_throttle;
 				//Low throttle value, gets 2x slope 
 				if(debounced_throttle < THROTTLE_MID_RANGE_LOW_END) 
 					scaled_throttle  <= (2'd2*debounced_throttle); 
@@ -175,49 +178,30 @@ module throttle_controller
 					complete_signal          <= `FALSE;
 					active_signal            <= `TRUE;
 					//Throttle is less than 0, just stop motor
-					if(scaled_throttle < 10) begin
-						$display("Throttle too low, setting to 0");
+					if(scaled_throttle < 10)
 						limited_throttle     <= 16'd0;
-					end
 					//Throttle change is to great in the increasing direction
-					else if($signed({1'b0,scaled_throttle}) - $signed({1'b0,prev_throttle_pwm_value_out}) > THROTTLE_CHANGE_LIMIT) begin
-						$display("scaled-throttle - prev_throttle_pwm_value_out = %d", ($signed({1'b0,scaled_throttle}) - $signed({1'b0,prev_throttle_pwm_value_out})));
-						if(($signed({1'b0,scaled_throttle}) + THROTTLE_CHANGE_LIMIT) > 250) begin
-							$display("Limiting to 250");
+					else if(scaled_throttle > (prev_throttle_pwm_value_out + THROTTLE_CHANGE_LIMIT)) begin
+						if((prev_throttle_pwm_value_out + THROTTLE_CHANGE_LIMIT) > 250)
 							limited_throttle <= 16'd250;
-							end
-						else begin
-							$display("Limiting to scaled_throttle + THROTTLE_CHANGE_LIMIT");
+						else
 							limited_throttle <= prev_throttle_pwm_value_out + THROTTLE_CHANGE_LIMIT;
-						end
 					end
 					//Throttle change is to great in the decreasing direction
-					else if($signed({1'b0,prev_throttle_pwm_value_out}) - $signed({1'b0,scaled_throttle}) > THROTTLE_CHANGE_LIMIT) begin
-						$display("prev_throttle_pwm_value_out - scaled-throttle = %d", ($signed({1'b0,prev_throttle_pwm_value_out}) - $signed({1'b0,scaled_throttle})));
-						if(($signed({1'b0,scaled_throttle}) - THROTTLE_CHANGE_LIMIT) < 10) begin
-							$display("Limiting to 0");
+					else if( prev_throttle_pwm_value_out > (scaled_throttle + THROTTLE_CHANGE_LIMIT)) begin
+						if((prev_throttle_pwm_value_out - THROTTLE_CHANGE_LIMIT) < 10)
 							limited_throttle <= 16'd0;
-						end
-						else begin
-							$display("Limiting to scaled_throttle - THROTTLE_CHANGE_LIMIT");
+						else
 							limited_throttle <= prev_throttle_pwm_value_out - THROTTLE_CHANGE_LIMIT;
-						end
 					end
 					//Throttle change not outside of limit
 					else begin
-						$display("Not limiting range");
-						if(scaled_throttle > 250) begin
-							$display("High cutoff at 250");
+						if(scaled_throttle > 250)
 							limited_throttle <= 16'd250;
-						end
-						if(scaled_throttle < 10) begin
-							$display("Low cutoff at ");
+						if(scaled_throttle < 10)
 							limited_throttle <= 16'd0;
-						end
-						else begin
-							$display("limited_throttle <= scaled_throttle");
+						else
 							limited_throttle <= scaled_throttle;
-						end
 					end
 				end
 				STATE_ASSIGN_OUTPUT: begin
@@ -229,7 +213,6 @@ module throttle_controller
 					complete_signal 	<= `TRUE;
 					active_signal 		<= `FALSE;
 					prev_throttle_pwm_value_out <= throttle_pwm_value_out;
-					$display("Throttle PWM value out=%d", throttle_pwm_value_out);
 				end
 				default: begin
 					throttle_pwm_value_out <= `BYTE_ALL_ZERO;

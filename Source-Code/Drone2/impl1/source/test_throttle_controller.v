@@ -48,13 +48,13 @@ module test_throttle_controller;
 	task run_test;
 		input reg [15:0] task_throttle_pwm_value_in;
 		begin
-			$display("%t: %m Throttle prev_latched_throttle=%d",$time, DUT.prev_latched_throttle);
+			//$display("%t: %m Throttle prev_latched_throttle=%d",$time, DUT.prev_latched_throttle);
 			throttle_pwm_value_in = task_throttle_pwm_value_in;
 			start_signal    = 1;
 			repeat (2) @(posedge us_clk); start_signal    = 0; repeat (8) @(posedge us_clk);
 			$display("%t: %m Throttle latched_throttle=%d",$time, DUT.latched_throttle);
 			$display("%t: %m Throttle debounced_throttle=%d",$time, DUT.debounced_throttle);
-			$display("%t: %m Throttle scaled_throttle=%d",$time, DUT.scaled_throttle);
+			//$display("%t: %m Throttle scaled_throttle=%d",$time, DUT.scaled_throttle);
 			$display("%t: %m Throttle limited_throttle=%d",$time, DUT.limited_throttle);
 			$display("%t: %m Throttle prev_throttle_pwm_value_out=%d",$time, DUT.prev_throttle_pwm_value_out);
 		end
@@ -77,10 +77,39 @@ module test_throttle_controller;
 		end*/
 
 		for(i = 0; i < 26*10; i=i+1) begin
-			$display("\n\n\n%t: %m iteration %d",$time, ((i/10)*10));
+			//$display("\n\n\n%t: %m iteration %d",$time, ((i/10)*10));
 			run_test(.task_throttle_pwm_value_in(((i/10)*10)));
 		end
 		
+		
+		$display("%t: %m Test complete", $time);
+		$display("\n\n\n%t: %m Throttle to ranges 255 to 0, MAX",$time);
+
+		for(i = 25*10; i > 0; i=i-1) begin
+			//$display("\n\n\n%t: %m iteration %d",$time, ((i/10)*10));
+			run_test(.task_throttle_pwm_value_in(((i/10)*10)));
+		end
+		
+		
+		$display("%t: %m Test complete", $time);
+		
+		
+		$display("\n\n\n%t: %m Throttle to 250, MAX",$time);
+
+		for(i = 0; i < 62; i=i+1) begin
+			run_test(.task_throttle_pwm_value_in(250));
+		end
+		
+		$display("%t: %m Test with 1 PWM cycle of 0 input, nothing should happen", $time);
+		run_test(.task_throttle_pwm_value_in(250));
+		run_test(.task_throttle_pwm_value_in(0));
+		run_test(.task_throttle_pwm_value_in(250));
+		
+		$display("%t: %m Test with 2 PWM cycle of 0 input, throttle should cut off after second 0 input PWM", $time);
+		run_test(.task_throttle_pwm_value_in(250));
+		run_test(.task_throttle_pwm_value_in(0));
+		run_test(.task_throttle_pwm_value_in(0));
+		run_test(.task_throttle_pwm_value_in(250));
 		
 		$display("%t: %m Test complete", $time);
 		$stop;
