@@ -48,13 +48,15 @@ module test_throttle_controller;
 	task run_test;
 		input reg [15:0] task_throttle_pwm_value_in;
 		begin
+			$display("%t: %m Throttle prev_latched_throttle=%d",$time, DUT.prev_latched_throttle);
 			throttle_pwm_value_in = task_throttle_pwm_value_in;
 			start_signal    = 1;
 			repeat (2) @(posedge us_clk); start_signal    = 0; repeat (8) @(posedge us_clk);
-			//$display("%t: %m Throttle value in =%d",$time, DUT.latched_throttle);
-			//$display("%t: %m Throttle value sum =%d",$time, DUT.summed_throttle);
-			//$display("%t: %m Throttle value average =%d",$time, DUT.average_throttle);
-			//$display("%t: %m Throttle value out =%d",$time, DUT.throttle_pwm_value_out);
+			$display("%t: %m Throttle latched_throttle=%d",$time, DUT.latched_throttle);
+			$display("%t: %m Throttle debounced_throttle=%d",$time, DUT.debounced_throttle);
+			$display("%t: %m Throttle scaled_throttle=%d",$time, DUT.scaled_throttle);
+			$display("%t: %m Throttle limited_throttle=%d",$time, DUT.limited_throttle);
+			$display("%t: %m Throttle prev_throttle_pwm_value_out=%d",$time, DUT.prev_throttle_pwm_value_out);
 		end
 	endtask
 
@@ -69,11 +71,17 @@ module test_throttle_controller;
 
 		$display("\n\n\n%t: %m Throttle to ranges 0 to 255, MAX",$time);
 		
-		for(i = 0; i < 256*8; i=i+1) begin
-			$display("%t: %m iteration %d",$time, i/8);
-			run_test(.task_throttle_pwm_value_in(i/8));
-		end
+		/*for(i = 0; i < 256*8; i=i+1) begin
+			$display("\n\n\n%t: %m iteration %d",$time, (i/8));
+			run_test(.task_throttle_pwm_value_in((i/8)));
+		end*/
 
+		for(i = 0; i < 26*10; i=i+1) begin
+			$display("\n\n\n%t: %m iteration %d",$time, ((i/10)*10));
+			run_test(.task_throttle_pwm_value_in(((i/10)*10)));
+		end
+		
+		
 		$display("%t: %m Test complete", $time);
 		$stop;
 		$display("\n\n\n%t: %m Throttle to 250, MAX",$time);
