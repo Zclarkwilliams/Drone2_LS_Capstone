@@ -38,7 +38,7 @@ module throttle_controller
 	// state names
 	localparam
 		STATE_WAITING       = 6'b000001,
-		STATE_DEBOUNCE      = 6'b000010,
+		STATE_DEGLITCH      = 6'b000010,
 		STATE_LINEAR_SCALE  = 6'b000100,
 		STATE_CHANGE_LIMIT  = 6'b001000,
 		STATE_ASSIGN_OUTPUT = 6'b010000,
@@ -53,7 +53,7 @@ module throttle_controller
 		THROTTLE_MID_RANGE_LOW_END = 42,   // The point where the throttle linear scale changes from high change rate to low change rate
 		THROTTLE_MID_RANGE_HIGH_END = 209; // The point where the throttle linear scale changes from low change rate back to high change rate
 	localparam signed [`OPS_BIT_WIDTH-1:0]
-		THROTTLE_CHANGE_LIMIT = 4; // Sets the amount that throttle can change each iteration (Throttle acceleration limit)
+		THROTTLE_CHANGE_LIMIT = 20;        // Sets the amount that throttle can change each iteration (Throttle acceleration limit)
 
 	// latch start signal
 	always @(posedge us_clk or negedge resetn) begin
@@ -84,11 +84,11 @@ module throttle_controller
 		case(state)
 			STATE_WAITING: begin
 				if(start_flag)
-					next_state = STATE_DEBOUNCE;
+					next_state = STATE_DEGLITCH;
 				else
 					next_state = STATE_WAITING;
 			end
-			STATE_DEBOUNCE: begin
+			STATE_DEGLITCH: begin
 				next_state = STATE_LINEAR_SCALE;
 			end
 			STATE_LINEAR_SCALE: begin
@@ -126,7 +126,7 @@ module throttle_controller
 				STATE_WAITING: begin
 					complete_signal 		<= `FALSE;
 					active_signal 			<= `FALSE;
-					if(next_state == STATE_DEBOUNCE) begin
+					if(next_state == STATE_DEGLITCH) begin
 						if(throttle_pwm_value_in < 10)
 							latched_throttle 	<= 8'd0;
 						else if(throttle_pwm_value_in > 250)
@@ -135,21 +135,21 @@ module throttle_controller
 							latched_throttle 	<= throttle_pwm_value_in;
 					end
 				end
-				STATE_DEBOUNCE: begin //Debounce idle value, was seeing sporadic 0 or low throttle
+				STATE_DEGLITCH: begin //De-glitch idle value, was seeing sporadic 0 or low throttle while running
 					complete_signal 		<= `FALSE;
 					active_signal 			<= `TRUE;
 					if(latched_throttle <= 10) begin//idle throttle, power off
-						//Was < 10 and is now < 10, not a bounce
+						//Was <= 10 and is now <= 10, does not need de-glitching
 						if(prev_latched_throttle <= 10) begin
 							debounced_throttle    <= latched_throttle;
 							prev_latched_throttle <= latched_throttle;
 						end
-						//Was < 10 and is now >= 10, and there is a previous value, debounce this value
-						else if (prev_latched_throttle > 0) begin
+						//Was > 10 and is now <= 10, and there is a previous value, de-glitch this value
+						else if (prev_latched_throttle > 10) begin
 							debounced_throttle    <= prev_latched_throttle;
 							prev_latched_throttle <= latched_throttle;
 						end
-						//No previous value to debounce with
+						//No previous value to de-glitch with
 						else begin
 							debounced_throttle    <= latched_throttle;
 							prev_latched_throttle <= latched_throttle;
@@ -162,18 +162,18 @@ module throttle_controller
 					end
 				end
 				STATE_LINEAR_SCALE: begin 
-				complete_signal   <= `FALSE; 
-				active_signal    <= `TRUE;
-				//Low throttle value, gets 2x slope 
-				if(debounced_throttle < THROTTLE_MID_RANGE_LOW_END) 
-					scaled_throttle  <= (2'd2*debounced_throttle); 
-				//High throttle value also gets 2x slope, throttle = 2*input-252 
-				else if(debounced_throttle > THROTTLE_MID_RANGE_HIGH_END) 
-					scaled_throttle  <= ((2'd2*debounced_throttle)-8'd252); 
-				//Mid range throttle gets x/2 slope, throttle = input/2+61 
-				else 
-					scaled_throttle  <= ((debounced_throttle>>>1)+6'd61); 
-				end
+					complete_signal      <= `FALSE; 
+					active_signal        <= `TRUE;
+					//Low throttle value, gets 2x slope 
+					if(debounced_throttle < THROTTLE_MID_RANGE_LOW_END) 
+						scaled_throttle  <= (2'd2*debounced_throttle); 
+					//High throttle value also gets 2x slope, throttle = 2*input-252 
+					else if(debounced_throttle > THROTTLE_MID_RANGE_HIGH_END) 
+						scaled_throttle  <= ((2'd2*debounced_throttle)-8'd252); 
+					//Mid range throttle gets x/2 slope, throttle = input/2+61 
+					else 
+						scaled_throttle  <= ((debounced_throttle>>>1)+6'd61); 
+					end
 				STATE_CHANGE_LIMIT: begin
 					complete_signal          <= `FALSE;
 					active_signal            <= `TRUE;
@@ -205,14 +205,14 @@ module throttle_controller
 					end
 				end
 				STATE_ASSIGN_OUTPUT: begin
-					complete_signal 	<= `FALSE;
-					active_signal 		<= `TRUE;
-					{trash_bits, throttle_pwm_value_out}      <= limited_throttle;
+					complete_signal 	                 <= `FALSE;
+					active_signal 		                 <= `TRUE;
+					{trash_bits, throttle_pwm_value_out} <= limited_throttle;
 				end
 				STATE_COMPLETE: begin
-					complete_signal 	<= `TRUE;
-					active_signal 		<= `FALSE;
-					prev_throttle_pwm_value_out <= throttle_pwm_value_out;
+					complete_signal 	                 <= `TRUE;
+					active_signal 		                 <= `FALSE;
+					prev_throttle_pwm_value_out          <= throttle_pwm_value_out;
 				end
 				default: begin
 					throttle_pwm_value_out <= `BYTE_ALL_ZERO;

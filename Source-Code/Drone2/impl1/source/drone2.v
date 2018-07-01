@@ -133,8 +133,8 @@ module drone2 (
 
 	//---------------- Reset Wires ----------------//
 	wire resetn;
-	wire soft_reset_n;
-	assign resetn = (machxo3_switch_reset_n | soft_reset_n);
+	wire soft_reset_n = 1; //Disable this reset for now, connect if soft reset is needed
+	assign resetn = (machxo3_switch_reset_n & soft_reset_n);
 
 	/**
 	 * Generate System Clock

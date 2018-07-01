@@ -16,7 +16,7 @@ module test_angle_controller;
 	reg signed [`REC_VAL_BIT_WIDTH-1:0] roll_target     = 0;
 	reg signed [`REC_VAL_BIT_WIDTH-1:0] pitch_target    = 0;
 
-	// IMU euler angles
+	// IMU Euler angles
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] yaw_actual   = 0;
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] pitch_actual = 0;
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] roll_actual  = 0;
