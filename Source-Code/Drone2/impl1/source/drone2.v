@@ -229,7 +229,7 @@ module drone2 (
 
 	/**
 	 *	Take IMU provided orientation angle and user provided target angle and
-	 *	subract them to get the error angle rate to get to target angle
+	 *	subtract them to get the error angle rate to get to target angle
 	 *	position.
 	 * 		file - angle_controller.v
 	 */
@@ -282,7 +282,7 @@ module drone2 (
 		.us_clk(us_clk));
 
 	/**
-	 * Get axis rates and calculate respective motor rates to acheive correct
+	 * Get axis rates and calculate respective motor rates to achieve correct
 	 * drone movements.
 	 *		file - motor_mixer.v
 	 */
