@@ -100,6 +100,7 @@ module drone2 (
 		throttle_controller_pwm_value_out;
 	wire throttle_controller_complete,
 		throttle_controller_active;
+	reg tc_enable_n = 0; // Enable TC
 		
 	//---------- Angle_Controller Wires -----------//
 	wire [`RATE_BIT_WIDTH-1:0]
@@ -223,6 +224,7 @@ module drone2 (
 		.active_signal(throttle_controller_active),
 		.throttle_pwm_value_in(throttle_val),
 		.start_signal(imu_data_valid),
+		.tc_enable_n(tc_enable_n),
 		.resetn(resetn),
 		.us_clk(us_clk));		
 		

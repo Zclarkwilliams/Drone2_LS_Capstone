@@ -21,6 +21,7 @@ module throttle_controller
 	output reg complete_signal,
 	output reg active_signal,
 	input  wire [`REC_VAL_BIT_WIDTH-1:0] throttle_pwm_value_in,
+	input  wire tc_enable_n,
 	input  wire start_signal,
 	input  wire resetn,
 	input  wire us_clk);
@@ -207,7 +208,10 @@ module throttle_controller
 				STATE_ASSIGN_OUTPUT: begin
 					complete_signal 	                 <= `FALSE;
 					active_signal 		                 <= `TRUE;
-					{trash_bits, throttle_pwm_value_out} <= limited_throttle;
+					if(~tc_enable_n)
+						throttle_pwm_value_out <= latched_throttle;
+					else
+						{trash_bits, throttle_pwm_value_out} <= limited_throttle;
 				end
 				STATE_COMPLETE: begin
 					complete_signal 	                 <= `TRUE;
