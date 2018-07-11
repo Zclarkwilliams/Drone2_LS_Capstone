@@ -57,6 +57,12 @@
         <Source name="impl1/source/i2c_device_driver.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
+        <Source name="impl1/source/i2c_module1_mid.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
+        <Source name="impl1/source/i2c_module2_mid.v" type="Verilog" type_short="Verilog">
+            <Options/>
+        </Source>
         <Source name="Drone2.lpf" type="Logic Preference" type_short="LPF">
             <Options/>
         </Source>
