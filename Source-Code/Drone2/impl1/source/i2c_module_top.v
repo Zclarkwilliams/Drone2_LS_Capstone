@@ -18,7 +18,7 @@ module i2c_module_top(
 	inout  wire scl_1,              			// I2C EFB #1 SCL wires
 	inout  wire sda_1,              			// I2C EFB #1 SDA wires,
 	input  wire rstn,               			// Async negative global reset signal 0 = reset, 1 = not reset
-	output reg  rstn_imu                   		// Low active reset signal to IMU hardware to trigger reset
+	output reg  rstn_imu,                  		// Low active reset signal to IMU hardware to trigger reset
 	input  wire [5:0] target_read_count_efb1,   // The number of bytes to for the continuous read burst - Max value is 31 bytes
 	input  wire [6:0] slave_address_efb1,       // Slave address to access
 	output reg  [7:0] module_data_out_efb1,     // Received data byte for i2c read cycles
@@ -76,20 +76,18 @@ module i2c_module_top(
 );
 
 	//  Instantiate i2c driver
-	i2c_module1 i2c1(.scl_1(scl_1),
-					.sda_1(sda_1),
+	i2c_module1_mid i2c1(
 					.rstn(rstn),
 					.rstn_imu(rstn_imu),
-					.target_read_count(target_read_count),
-					.slave_address(slave_address),
-					.module_data_out(data_rx),
-					.module_data_in(data_tx),
-					.module_reg_in(data_reg),
-					.read_write_in(read_write_in),
-					.go(go),
-					.busy(busy),
-					.one_byte_ready(one_byte_ready),
-					.i2c_number(i2c_number),
+					.target_read_count_efb1(target_read_count_efb1),
+					.slave_address_efb1(slave_address_efb1),
+					.module_data_out_efb1(module_data_out_efb1),
+					.module_data_in_efb1(module_data_in_efb1),
+					.module_reg_in_efb1(module_reg_in_efb1),
+					.read_write_in_efb1(read_write_in_efb1),
+					.go_efb1(go_efb1),
+					.busy_efb1(busy_efb1),
+					.one_byte_ready_efb1(one_byte_ready_efb1),
 					.sys_clk(sys_clk),
 					//To EFB
 					.ack(ack),
@@ -102,20 +100,17 @@ module i2c_module_top(
 	);
 	
 	//  Instantiate i2c driver
-	i2c_module2 i2c2(.scl_2(scl_2),
-					.sda_2(sda_2),
+	i2c_module2_mid i2c2(
 					.rstn(rstn),
-					.rstn_imu(rstn_imu),
-					.target_read_count(target_read_count),
-					.slave_address(slave_address),
-					.module_data_out(data_rx),
-					.module_data_in(data_tx),
-					.module_reg_in(data_reg),
-					.read_write_in(read_write_in),
-					.go(go),
-					.busy(busy),
-					.one_byte_ready(one_byte_ready),
-					.i2c_number(i2c_number),
+					.target_read_count_efb2(target_read_count_efb2),
+					.slave_address_efb2(slave_address_efb2),
+					.module_data_out_efb2(module_data_out_efb2),
+					.module_data_in_efb2(module_data_in_efb2),
+					.module_reg_in_efb2(module_reg_in_efb2),
+					.read_write_in_efb2(read_write_in_efb2),
+					.go_efb2(go_efb2),
+					.busy_efb2(busy_efb2),
+					.one_byte_ready_efb2(one_byte_ready_efb2),
 					.sys_clk(sys_clk),
 					//To EFB
 					.ack(ack),
