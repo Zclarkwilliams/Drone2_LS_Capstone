@@ -18,42 +18,42 @@ module i2c_module_top(
 	inout  wire scl_1,              			// I2C EFB #1 SCL wires
 	inout  wire sda_1,              			// I2C EFB #1 SDA wires,
 	input  wire rstn,               			// Async negative global reset signal 0 = reset, 1 = not reset
-	output reg  rstn_imu,                  		// Low active reset signal to IMU hardware to trigger reset
+	output wire rstn_imu,                 		// Low active reset signal to IMU hardware to trigger reset
 	input  wire [5:0] target_read_count_efb1,   // The number of bytes to for the continuous read burst - Max value is 31 bytes
 	input  wire [6:0] slave_address_efb1,       // Slave address to access
-	output reg  [7:0] module_data_out_efb1,     // Received data byte for i2c read cycles
+	output wire [7:0] module_data_out_efb1,     // Received data byte for i2c read cycles
 	input  wire [7:0] module_data_in_efb1,      // Byte input for i2c writes
 	input  wire [7:0] module_reg_in_efb1,       // Register address to access in i2c write cycles
 	input  wire read_write_in_efb1,             // Input bit that indicates whether transaction is a read or a write, should be set before "go" is asserted
 	input  wire go_efb1,                        // Input signal to i2c module to begin transaction, needs to be asserted until busy output signal is returned
-	output reg  busy_efb1,                      // Busy signal out from module while running an i2c transaction
-	output reg  one_byte_ready_efb1,            // Strobed when a data byte is read, signals that data has been latched
+	output wire busy_efb1,                      // Busy signal out from module while running an i2c transaction
+	output wire one_byte_ready_efb1,            // Strobed when a data byte is read, signals that data has been latched
 	inout  wire scl_2,              			// I2C EFB #2 SCL wires
 	inout  wire sda_2,              			// I2C EFB #2 SDA wires
 	input  wire [5:0] target_read_count_efb2,   // The number of bytes to for the continuous read burst - Max value is 31 bytes
 	input  wire [6:0] slave_address_efb2,       // Slave address to access
-	output reg  [7:0] module_data_out_efb2,     // Received data byte for i2c read cycles
+	output wire [7:0] module_data_out_efb2,     // Received data byte for i2c read cycles
 	input  wire [7:0] module_data_in_efb2,      // Byte input for i2c writes
 	input  wire [7:0] module_reg_in_efb2,       // Register address to access in i2c write cycles
 	input  wire read_write_in_efb2,             // Input bit that indicates whether transaction is a read or a write, should be set before "go" is asserted
 	input  wire go_efb2,                        // Input signal to i2c module to begin transaction, needs to be asserted until busy output signal is returned
-	output reg  busy_efb2,                      // Busy signal out from module while running an i2c transaction
-	output reg  one_byte_ready_efb2,            // Strobed when a data byte is read, signals that data has been latched
+	output wire busy_efb2,                      // Busy signal out from module while running an i2c transaction
+	output wire one_byte_ready_efb2,            // Strobed when a data byte is read, signals that data has been latched
 	input  wire sys_clk                   		// master clock for module, efb, and output to higher level modules
 );
 
-	reg  [7:0] addr;                                // Wishbone address register
-	reg  [7:0] data_tx;                             // Temp storage of data to be written
+	wire [7:0] addr;                                // Wishbone address register
+	wire [7:0] data_tx;                             // Temp storage of data to be written
 	wire [7:0] data_rx;                             // Temp storage of received data
 	wire ack;                                       // Ack from slave
-	reg  rstn_local;                                // Manual EFB I2C reset
-	reg  we, next_we;                               // Write enable, 1 for write, 0 for read
-	reg  stb, next_stb;                             // Strobe from master
+	wire rstn_local;                                // Manual EFB I2C reset
+	wire we, next_we;                               // Write enable, 1 for write, 0 for read
+	wire stb, next_stb;                             // Strobe from master
 	wire cyc;                                       // Cycle start from master
 	wire irq1_out, irq2_out;                        // IRQ output from EFB i2c modules
-	reg  ack_flag, next_ack_flag;                   // Used to delay read of EFB ack set/clear by one clock and prevent ack in one state from being considered for following states
-	reg  data_latch;                                // Strobe to data late to retain dataRX value, which in turn generates module data output
-	reg  next_data_latch;                           // The next data_latch value that will be asserted at the following clock edge.
+	wire ack_flag, next_ack_flag;                   // Used to delay read of EFB ack set/clear by one clock and prevent ack in one state from being considered for following states
+	wire data_latch;                                // Strobe to data late to retain dataRX value, which in turn generates module data output
+	wire next_data_latch;                           // The next data_latch value that will be asserted at the following clock edge.
 
 
 	// Connect the I2C module to this top module
@@ -79,15 +79,15 @@ module i2c_module_top(
 	i2c_module1_mid i2c1(
 					.rstn(rstn),
 					.rstn_imu(rstn_imu),
-					.target_read_count_efb1(target_read_count_efb1),
-					.slave_address_efb1(slave_address_efb1),
-					.module_data_out_efb1(module_data_out_efb1),
-					.module_data_in_efb1(module_data_in_efb1),
-					.module_reg_in_efb1(module_reg_in_efb1),
-					.read_write_in_efb1(read_write_in_efb1),
-					.go_efb1(go_efb1),
-					.busy_efb1(busy_efb1),
-					.one_byte_ready_efb1(one_byte_ready_efb1),
+					.target_read_count(target_read_count_efb1),
+					.slave_address(slave_address_efb1),
+					.module_data_out(module_data_out_efb1),
+					.module_data_in(module_data_in_efb1),
+					.module_reg_in(module_reg_in_efb1),
+					.read_write_in(read_write_in_efb1),
+					.go(go_efb1),
+					.busy(busy_efb1),
+					.one_byte_ready(one_byte_ready_efb1),
 					.sys_clk(sys_clk),
 					//To EFB
 					.ack(ack),
@@ -96,21 +96,22 @@ module i2c_module_top(
 					.wb_we_i(we),						// Read/Write control, 1=Write, 0=Read
 					.wb_adr_i(addr),					// 8-bit address of EFB register
 					.wb_dat_i(data_tx),					// Transmitted data byte TO EFB
-					.wb_dat_o(data_rx)					// Received data byte from EFB
+					.data_rx(data_rx),					// Received data byte from EFB
+					.rstn_local(rstn_local)
 	);
 	
 	//  Instantiate i2c driver
 	i2c_module2_mid i2c2(
 					.rstn(rstn),
-					.target_read_count_efb2(target_read_count_efb2),
-					.slave_address_efb2(slave_address_efb2),
-					.module_data_out_efb2(module_data_out_efb2),
-					.module_data_in_efb2(module_data_in_efb2),
-					.module_reg_in_efb2(module_reg_in_efb2),
-					.read_write_in_efb2(read_write_in_efb2),
-					.go_efb2(go_efb2),
-					.busy_efb2(busy_efb2),
-					.one_byte_ready_efb2(one_byte_ready_efb2),
+					.target_read_count(target_read_count_efb2),
+					.slave_address(slave_address_efb2),
+					.module_data_out(module_data_out_efb2),
+					.module_data_in(module_data_in_efb2),
+					.module_reg_in(module_reg_in_efb2),
+					.read_write_in(read_write_in_efb2),
+					.go(go_efb2),
+					.busy(busy_efb2),
+					.one_byte_ready(one_byte_ready_efb2),
 					.sys_clk(sys_clk),
 					//To EFB
 					.ack(ack),
@@ -119,7 +120,8 @@ module i2c_module_top(
 					.wb_we_i(we),						// Read/Write control, 1=Write, 0=Read
 					.wb_adr_i(addr),					// 8-bit address of EFB register
 					.wb_dat_i(data_tx),					// Transmitted data byte TO EFB
-					.wb_dat_o(data_rx)					// Received data byte from EFB
+					.data_rx(data_rx)					// Received data byte from EFB
+					//.rstn_local(rstn_local)
 	);
 
 

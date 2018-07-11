@@ -107,18 +107,39 @@ module i2c_device_driver #(
 	output reg [15:0]z_velocity
 );
 
-	reg  read_write_in, next_read_write_in;           //  Value and next value of signal to i2c module to indicate read or write transaction, 1 = read, 0 = write
-	reg  go;                                          //  Flag to i2c module signaling start of i2c transaction. All inputs must be valid before asserting this bit
-	reg  next_go_flag;                                //  Next value of the i2c module GO flag
-	wire one_byte_ready;                              //  Flag from i2c module indicating that a byte has been received, data_rx is valid
-	wire busy;                                        //  Flag from i2c module indicating that a transaction is in progress
-	wire [7:0]data_rx;                                //  Receives an RX data byte from i2c module
-	reg  [7:0]data_reg;                               //  Wishbone address register
-	reg  [7:0]data_tx;                                //  Temp storage of data to be written
-	reg  [7:0]next_data_reg;                          //  Command register address
-	reg  [7:0]next_data_tx;                           //  Data written to registers for this command
-	reg  [6:0]slave_address;                          //  Slave address to access
-	reg  [6:0]next_slave_address;                     //  Next value of slave address
+	reg  read_write_in_efb1, next_read_write_in_efb1;           //  Value and next value of signal to i2c module to indicate read or write transaction, 1 = read, 0 = write
+	reg  go_efb1;                                          //  Flag to i2c module signaling start of i2c transaction. All inputs must be valid before asserting this bit
+	reg  next_go_flag_efb1;                                //  Next value of the i2c module GO flag
+	wire one_byte_ready_efb1;                              //  Flag from i2c module indicating that a byte has been received, data_rx is valid
+	wire busy_efb1;                                        //  Flag from i2c module indicating that a transaction is in progress
+	wire [7:0]data_rx_efb1;                                //  Receives an RX data byte from i2c module
+	reg  [7:0]data_reg_efb1;                               //  Wishbone address register
+	reg  [7:0]data_tx_efb1;                                //  Temp storage of data to be written
+	reg  [7:0]next_data_reg_efb1;                          //  Command register address
+	reg  [7:0]next_data_tx_efb1;                           //  Data written to registers for this command
+	reg  [6:0]slave_address_efb1;                          //  Slave address to access
+	reg  [6:0]next_slave_address_efb1;                     //  Next value of slave address
+	reg  [5:0]target_read_count_efb1;                      //  The number of bytes to access for a read command (Writes are always for a single byte)
+	reg  [5:0]next_target_read_count_efb1;                 //  Next value of target_read_count
+	
+
+	reg  read_write_in_efb2, next_read_write_in_efb2;      //  Value and next value of signal to i2c module to indicate read or write transaction, 1 = read, 0 = write
+	reg  go_efb2;                                          //  Flag to i2c module signaling start of i2c transaction. All inputs must be valid before asserting this bit
+	reg  next_go_flag_efb2;                                //  Next value of the i2c module GO flag
+	wire one_byte_ready_efb2;                              //  Flag from i2c module indicating that a byte has been received, data_rx is valid
+	wire busy_efb2;                                        //  Flag from i2c module indicating that a transaction is in progress
+	wire [7:0]data_rx_efb2;                                //  Receives an RX data byte from i2c module
+	reg  [7:0]data_reg_efb2;                               //  Wishbone address register
+	reg  [7:0]data_tx_efb2;                                //  Temp storage of data to be written
+	reg  [7:0]next_data_reg_efb2;                          //  Command register address
+	reg  [7:0]next_data_tx_efb2;                           //  Data written to registers for this command
+	reg  [6:0]slave_address_efb2;                          //  Slave address to access
+	reg  [6:0]next_slave_address_efb2;                     //  Next value of slave address
+	reg  [5:0]target_read_count_efb2;                      //  The number of bytes to access for a read command (Writes are always for a single byte)
+	reg  [5:0]next_target_read_count_efb2;                 //  Next value of target_read_count
+	
+	
+
 	reg  [`I2C_DEVICE_DRIVER_STATE_BITS-1:0]i2c_driver_state;      //  State for bno055 command sequence FSM
 	reg  [`I2C_DEVICE_DRIVER_STATE_BITS-1:0]next_i2c_driver_state; //  Next FSM state
 	reg  [`I2C_DEVICE_DRIVER_STATE_BITS-1:0]return_state;          //  FSM return state from i2c sub state
@@ -127,8 +148,8 @@ module i2c_device_driver #(
 	reg  [15:0]wait_ms;                               //  The number of mS to wait in delay loop
 	reg  [15:0]next_wait_ms;                          //  The next latched value of wait mS
 	reg  clear_waiting_ms;                            //  Reset waiting X ms timer.
-	reg  [5:0]target_read_count;                      //  The number of bytes to access for a read command (Writes are always for a single byte)
-	reg  [5:0]next_target_read_count;                 //  Next value of target_read_count
+	
+	
 	reg  [5:0]data_rx_reg_index;                      //  Index in data_rx_reg for current byte
 	reg  [5:0]led_view_index;                         //  Index in data_rx_reg that is being monitored with status LEDs
 	reg  [5:0]next_led_view_index;                    //  Next value of LED View Index
@@ -154,7 +175,33 @@ module i2c_device_driver #(
 	//
 	assign led_data_out = (i2c_driver_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : data_rx_reg[led_view_index]; //  Output for calibration status LEDs OR indicates that the IMU is in reset
 
-
+ i2c_module_top i2c_top(
+	.scl_1(scl_1),              			// I2C EFB #1 SCL wires
+	.sda_1(sda_1),              			// I2C EFB #1 SDA wires,
+	.rstn(rstn),               			// Async negative global reset signal 0 = reset, 1 = not reset
+	.rstn_imu(rstn_imu),                  	// Low active reset signal to IMU hardware to trigger reset
+	.target_read_count_efb1(target_read_count_efb1),   	// The number of bytes to for the continuous read burst - Max value is 31 bytes
+	.slave_address_efb1(slave_address_efb1),       	// Slave address to access
+	.module_data_out_efb1(data_rx_efb1),     	// Received data byte for i2c read cycles
+	.module_data_in_efb1(data_tx_efb1),      	// Byte input for i2c writes
+	.module_reg_in_efb1(data_reg_efb1),       	// Register address to access in i2c write cycles
+	.read_write_in_efb1(read_write_in_efb1),          // Input bit that indicates whether transaction is a read or a write, should be set before "go" is asserted
+	.go_efb1(go_efb1),                     // Input signal to i2c module to begin transaction, needs to be asserted until busy output signal is returned
+	.busy_efb1(busy_efb1),                   // Busy signal out from module while running an i2c transaction
+	.one_byte_ready_efb1(one_byte_ready_efb1),         // Strobed when a data byte is read, signals that data has been latched
+	.scl_2(scl_2),              			// I2C EFB #2 SCL wires
+	.sda_2(sda_2),              			// I2C EFB #2 SDA wires
+	.target_read_count_efb2(target_read_count_efb2),   	// The number of bytes to for the continuous read burst - Max value is 31 bytes
+	.slave_address_efb2(slave_address_efb2),       	// Slave address to access
+	.module_data_out_efb2(data_rx_efb2),     	// Received data byte for i2c read cycles
+	.module_data_in_efb2(data_tx_efb2),      	// Byte input for i2c writes
+	.module_reg_in_efb2(data_reg_efb2),       	// Register address to access in i2c write cycles
+	.read_write_in_efb2(read_write_in_efb2),          // Input bit that indicates whether transaction is a read or a write, should be set before "go" is asserted
+	.go_efb2(go_efb2),                     // Input signal to i2c module to begin transaction, needs to be asserted until busy output signal is returned
+	.busy_efb2(busy_efb2),                   // Busy signal out from module while running an i2c transaction
+	.one_byte_ready_efb2(one_byte_ready_efb2),         // Strobed when a data byte is read, signals that data has been latched
+	.sys_clk(sys_clk)                   	// master clock for module, efb, and output to higher level modules
+);
 
 	//  Generates a multiple of 1ms length duration delay trigger - Defaulted to 650 ms for BNO055 reset and boot time
 	//  When the count down counter wraps around the timer is triggered and stops counting
@@ -169,7 +216,7 @@ module i2c_device_driver #(
 			count_ms       <= count_ms;
 	end
 
-	//  During a read cycle decrement the data_rx_reg_index until it reaches 0 if one_byte_ready is asserted
+	//  During a read cycle decrement the data_rx_reg_index until it reaches 0 if one_byte_ready_efb1 is asserted
 	//  If a byte has been read assign it to the data_rx_reg byte array at the location specified by data_rx_reg_index
 	always@(posedge sys_clk, negedge rstn_buffer, negedge rstn) begin
 		if(~rstn) begin
@@ -181,16 +228,16 @@ module i2c_device_driver #(
 		else if(~rstn_buffer ) begin
 			data_rx_reg_index <= 0;
 		end
-		else if (one_byte_ready) begin
+		else if (one_byte_ready_efb1) begin
 			// If the index is pointing to the last index in the array, then rest pointer
 			// and write this byte to the start of the array
 			if(data_rx_reg_index == (`DATA_RX_BYTE_REG_CNT - 1'b1)) begin
 				data_rx_reg_index              <= 0;
-				data_rx_reg[data_rx_reg_index] <= data_rx;
+				data_rx_reg[data_rx_reg_index] <= data_rx_efb1;
 			end
 			//  Otherwise, just write the byte to the data_rx_reg_index index in the byte array
 			else begin
-				data_rx_reg[data_rx_reg_index] <= data_rx;
+				data_rx_reg[data_rx_reg_index] <= data_rx_efb1;
 				data_rx_reg_index              <= data_rx_reg_index + 1'b1;
 			end
 		end
@@ -376,31 +423,31 @@ module i2c_device_driver #(
 	// Advance state and registered data at each positive clock edge
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn) begin
-			data_reg            <= `BYTE_ALL_ZERO;
-			data_tx             <= `BYTE_ALL_ZERO;
-			read_write_in       <= `I2C_READ;
-			go                  <= `NOT_GO;
+			data_reg_efb1            <= `BYTE_ALL_ZERO;
+			data_tx_efb1             <= `BYTE_ALL_ZERO;
+			read_write_in_efb1       <= `I2C_READ;
+			go_efb1                  <= `NOT_GO;
 			i2c_driver_state    <= `BNO055_STATE_RESET;
 			return_state        <= `FALSE;
-			target_read_count   <= `FALSE;
+			target_read_count_efb1   <= `FALSE;
 			led_view_index      <= `FALSE;
 			wait_ms             <= INIT_TIME; // Reset to Normal takes 650 ms for BNO055;
-			slave_address       <= next_slave_address;
+			slave_address_efb1       <= next_slave_address_efb1;
 			imu_good            <= `FALSE;
 			calibrated_once     <= `FALSE;
 			rx_data_latch_tmp   <= `LOW;
 		end
 		else begin
-			data_reg            <= next_data_reg;
-			data_tx             <= next_data_tx;
-			read_write_in       <= next_read_write_in;
-			go                  <= next_go_flag;
+			data_reg_efb1            <= next_data_reg_efb1;
+			data_tx_efb1             <= next_data_tx_efb1;
+			read_write_in_efb1       <= next_read_write_in_efb1;
+			go_efb1                  <= next_go_flag_efb1;
 			i2c_driver_state    <= next_i2c_driver_state;
 			return_state        <= next_return_state;
-			target_read_count   <= next_target_read_count;
+			target_read_count_efb1   <= next_target_read_count_efb1;
 			led_view_index      <= next_led_view_index;
 			wait_ms             <= next_wait_ms;
-			slave_address       <= next_slave_address;
+			slave_address_efb1       <= next_slave_address_efb1;
 			imu_good            <= next_imu_good;
 			calibrated_once     <= next_calibrated_once;
 			rx_data_latch_tmp   <= rx_data_latch_strobe;
@@ -411,50 +458,62 @@ module i2c_device_driver #(
 	// I2C device FSM, Determine next state of FSM and drive i2c module inputs
 	always@(*) begin
 		if( ~(rstn & rstn_imu) ) begin
-			next_imu_good             = `FALSE;
-			clear_waiting_ms          = `RUN_MS_TIMER;
-			next_i2c_driver_state     = `BNO055_STATE_RESET;
-			next_return_state         = `BNO055_STATE_RESET;
-			next_go_flag              = `NOT_GO;
-			next_data_reg             = `BYTE_ALL_ZERO;
-			next_data_tx              = `BYTE_ALL_ZERO;
-			next_read_write_in        = `I2C_READ;
-			next_led_view_index       = `FALSE;
-			next_wait_ms              = INIT_TIME; // Reset to Normal takes 650 ms for BNO055
-			rstn_buffer               = `LOW;
-			next_target_read_count    = 1'b1;
-			rx_data_latch_strobe      = `LOW;
-			i2c_number 			      = 1'b0; // Default to i2c EFB #1
-			next_slave_address        = slave_address;
+			next_imu_good               = `FALSE;
+			clear_waiting_ms            = `RUN_MS_TIMER;
+			next_i2c_driver_state       = `BNO055_STATE_RESET;
+			next_return_state           = `BNO055_STATE_RESET;
+			next_go_flag_efb1           = `NOT_GO;
+			next_data_reg_efb1          = `BYTE_ALL_ZERO;
+			next_data_tx_efb1           = `BYTE_ALL_ZERO;
+			next_read_write_in_efb1     = `I2C_READ;
+			next_led_view_index         = `FALSE;
+			next_wait_ms                = INIT_TIME; // Reset to Normal takes 650 ms for BNO055
+			rstn_buffer                 = `LOW;
+			next_target_read_count_efb1 = 1'b1;
+			rx_data_latch_strobe        = `LOW;
+			i2c_number 			        = 1'b0; // Default to i2c EFB #1
+			next_slave_address_efb1     = 7'b0;
 			increment_cal_restore_index = 1'b0;
 			clear_cal_restore_index     = 1'b0;
+			target_read_count_efb2      =`BYTE_ALL_ZERO;
+			slave_address_efb2          = 7'b0;
+			data_tx_efb2                = `BYTE_ALL_ZERO;
+			data_reg_efb2               =`BYTE_ALL_ZERO;
+			read_write_in_efb2          = 1'b1;
+			go_efb2                     = `FALSE;
 		end
 		else begin
 			// Default to preserve these values, can be altered in lower steps
-			next_imu_good             = imu_good;
-			clear_waiting_ms          = `RUN_MS_TIMER;
-			next_go_flag              = `NOT_GO;
-			next_i2c_driver_state     = i2c_driver_state;
-			next_return_state         = return_state;
-			next_data_reg             = data_reg;
-			next_data_tx              = data_tx;
-			next_read_write_in        = read_write_in;
-			next_led_view_index       = led_view_index;
-			next_wait_ms              = wait_ms;
-			rstn_buffer               = `HIGH;
-			next_target_read_count    = target_read_count;
-			rx_data_latch_strobe      = `LOW;
-			i2c_number 			      = 1'b0; // Default to i2c EFB #1
-			next_slave_address        = slave_address;
-			next_calibrated_once      = calibrated_once;
+			next_imu_good               = imu_good;
+			clear_waiting_ms            = `RUN_MS_TIMER;
+			next_go_flag_efb1           = `NOT_GO;
+			next_i2c_driver_state       = i2c_driver_state;
+			next_return_state           = return_state;
+			next_data_reg_efb1          = data_reg_efb1;
+			next_data_tx_efb1           = data_tx_efb1;
+			next_read_write_in_efb1     = read_write_in_efb1;
+			next_led_view_index         = led_view_index;
+			next_wait_ms                = wait_ms;
+			rstn_buffer                 = `HIGH;
+			next_target_read_count_efb1 = target_read_count_efb1;
+			rx_data_latch_strobe        = `LOW;
+			i2c_number 			        = 1'b0; // Default to i2c EFB #1
+			next_slave_address_efb1     = slave_address_efb1;
+			next_calibrated_once        = calibrated_once;
 			increment_cal_restore_index = 1'b0;
 			clear_cal_restore_index     = 1'b1;
+			target_read_count_efb2      = target_read_count_efb1;
+			slave_address_efb2          = slave_address_efb1;
+			data_tx_efb2                = data_tx_efb1;
+			data_reg_efb2               = data_reg_efb1;
+			read_write_in_efb2          = 1'b1;
+			go_efb2                     = `FALSE;
 			case(i2c_driver_state)
 				`BNO055_STATE_RESET: begin
 					next_imu_good           = `FALSE;
 					clear_waiting_ms        = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
 					next_i2c_driver_state   = `BNO055_STATE_BOOT;
-					next_slave_address      = `BNO055_SLAVE_ADDRESS;
+					next_slave_address_efb1 = `BNO055_SLAVE_ADDRESS;
 					clear_cal_restore_index = 1'b0;
 					next_calibrated_once    = 1'b0;
 				end
@@ -462,235 +521,236 @@ module i2c_device_driver #(
 					next_imu_good           = `FALSE;
 					clear_waiting_ms        = `RUN_MS_TIMER;
 					next_i2c_driver_state   = `BNO055_STATE_BOOT_WAIT;
-					next_slave_address      = `BNO055_SLAVE_ADDRESS;
+					next_slave_address_efb1 = `BNO055_SLAVE_ADDRESS;
 				end
 				`BNO055_STATE_BOOT_WAIT: begin
 					next_imu_good           = `FALSE;
 					clear_waiting_ms        = `RUN_MS_TIMER;
 					next_i2c_driver_state   = `BNO055_STATE_BOOT_WAIT;
-					next_slave_address      = `BNO055_SLAVE_ADDRESS;
-					if((~busy) && (count_ms[31] == 1'b1) ) // Wait for i2c to be in not busy state and count_ms wrapped around to 0x3FFFFFF
+					next_slave_address_efb1 = `BNO055_SLAVE_ADDRESS;
+					if((~busy_efb1) && (count_ms[31] == 1'b1) ) // Wait for i2c to be in not busy state and count_ms wrapped around to 0x3FFFFFF
 						next_i2c_driver_state = `BNO055_STATE_READ_CHIP_ID;
 				end
 				`BNO055_STATE_READ_CHIP_ID: begin // Page 0
-					next_imu_good           = `FALSE;
-					next_slave_address      = `BNO055_SLAVE_ADDRESS;
-					next_go_flag            = `NOT_GO;
-					next_i2c_driver_state   = `I2C_DEVICE_DRIVER_SUB_STATE_START;
-					next_return_state       = `BNO055_STATE_SET_UNITS;
-					next_data_reg           = `BNO055_CHIP_ID_ADDR;
-					next_data_tx            = `BYTE_ALL_ZERO;
-					next_read_write_in      = `I2C_READ;
-					next_target_read_count  = 1'b1;
-					next_led_view_index     = 1'b0;
+					next_imu_good               = `FALSE;
+					next_slave_address_efb1     = `BNO055_SLAVE_ADDRESS;
+					next_go_flag_efb1           = `NOT_GO;
+					next_i2c_driver_state       = `I2C_DEVICE_DRIVER_SUB_STATE_START;
+					next_return_state           = `BNO055_STATE_SET_UNITS;
+					next_data_reg_efb1          = `BNO055_CHIP_ID_ADDR;
+					next_data_tx_efb1           = `BYTE_ALL_ZERO;
+					next_read_write_in_efb1     = `I2C_READ;
+					next_target_read_count_efb1 = 1'b1;
+					next_led_view_index         = 1'b0;
 				end
 				`BNO055_STATE_SET_UNITS: begin // Page 0
-					next_imu_good           = `FALSE;
-					next_slave_address      = `BNO055_SLAVE_ADDRESS;
-					next_go_flag            = `NOT_GO;
-					next_i2c_driver_state   = `I2C_DEVICE_DRIVER_SUB_STATE_START;
-					next_return_state       = `BNO055_STATE_SET_POWER_MODE;
-					next_data_reg           = `BNO055_UNIT_SEL_ADDR;
+					next_imu_good               = `FALSE;
+					next_slave_address_efb1     = `BNO055_SLAVE_ADDRESS;
+					next_go_flag_efb1           = `NOT_GO;
+					next_i2c_driver_state       = `I2C_DEVICE_DRIVER_SUB_STATE_START;
+					next_return_state           = `BNO055_STATE_SET_POWER_MODE;
+					next_data_reg_efb1          = `BNO055_UNIT_SEL_ADDR;
 					// This line Modified from Adafruit Bosch BNO055 Arduino driver code, downloaded from: https://github.com/adafruit/Adafruit_BNO055
-					next_data_tx            = ((1 << 7) |  // Orientation = Windows - Range (Windows format) -180° to +180° corresponds with turning clockwise and increases values
-										      ( 0 << 4) |  // Temperature = Celsius
-										      ( 0 << 2) |  // Euler = Degrees
-										      ( 0 << 1) |  // Gyro = Degrees/Sec
-										      ( 0 << 0));  // Accelerometer = m/s^2;
-					next_read_write_in      = `I2C_WRITE;
+					next_data_tx_efb1           = ((1 << 7) |  // Orientation = Windows - Range (Windows format) -180° to +180° corresponds with turning clockwise and increases values
+										          ( 0 << 4) |  // Temperature = Celsius
+										          ( 0 << 2) |  // Euler = Degrees
+										          ( 0 << 1) |  // Gyro = Degrees/Sec
+										          ( 0 << 0));  // Accelerometer = m/s^2;
+					next_read_write_in_efb1     = `I2C_WRITE;
 				end
 				`BNO055_STATE_SET_POWER_MODE: begin // Page 0
-					next_imu_good           = `FALSE;
-					next_slave_address      = `BNO055_SLAVE_ADDRESS;
-					clear_waiting_ms        = `RUN_MS_TIMER;
-					next_go_flag            = `NOT_GO;
-					next_i2c_driver_state   = `I2C_DEVICE_DRIVER_SUB_STATE_START;
-					next_return_state       = `BNO055_STATE_CAL_RESTORE_DATA;
-					next_data_reg           = `BNO055_PWR_MODE_ADDR;
-					next_data_tx            = `BNO055_POWER_MODE_NORMAL;
-					next_read_write_in      = `I2C_WRITE;
+					next_imu_good               = `FALSE;
+					next_slave_address_efb1     = `BNO055_SLAVE_ADDRESS;
+					clear_waiting_ms            = `RUN_MS_TIMER;
+					next_go_flag_efb1           = `NOT_GO;
+					next_i2c_driver_state       = `I2C_DEVICE_DRIVER_SUB_STATE_START;
+					next_return_state           = `BNO055_STATE_CAL_RESTORE_DATA;
+					next_data_reg_efb1          = `BNO055_PWR_MODE_ADDR;
+					next_data_tx_efb1           = `BNO055_POWER_MODE_NORMAL;
+					next_read_write_in_efb1     = `I2C_WRITE;
 				end
 				`BNO055_STATE_CAL_RESTORE_DATA: begin
-					next_imu_good           = `FALSE;
-					next_go_flag            = `NOT_GO;
-					next_slave_address      = `BNO055_SLAVE_ADDRESS;
-					next_data_reg           = cal_reg_addr;
-					next_read_write_in      = `I2C_WRITE;
-					next_data_tx            = calibration_reg[cal_restore_index];
-					next_i2c_driver_state   = `BNO055_STATE_CAL_RESTORE_START;
+					next_imu_good               = `FALSE;
+					next_go_flag_efb1           = `NOT_GO;
+					next_slave_address_efb1     = `BNO055_SLAVE_ADDRESS;
+					next_data_reg_efb1          = cal_reg_addr;
+					next_read_write_in_efb1     = `I2C_WRITE;
+					next_data_tx_efb1           = calibration_reg[cal_restore_index];
+					next_i2c_driver_state       = `BNO055_STATE_CAL_RESTORE_START;
 				end
 				`BNO055_STATE_CAL_RESTORE_START: begin
-					next_imu_good           = `FALSE;
-					next_go_flag            = `GO;
-					next_slave_address      = slave_address;
-					next_data_reg           = data_reg;
-					next_data_tx            = data_tx;
-					next_read_write_in      = read_write_in;
-					if(busy)
-						next_i2c_driver_state = `BNO055_STATE_CAL_RESTORE_WAIT;
+					next_imu_good               = `FALSE;
+					next_go_flag_efb1           = `GO;
+					next_slave_address_efb1     = slave_address_efb1;
+					next_data_reg_efb1          = data_reg_efb1;
+					next_data_tx_efb1           = data_tx_efb1;
+					next_read_write_in_efb1     = read_write_in_efb1;
+					if(busy_efb1)
+						next_i2c_driver_state   = `BNO055_STATE_CAL_RESTORE_WAIT;
 					else
-						next_i2c_driver_state = `BNO055_STATE_CAL_RESTORE_START;
+						next_i2c_driver_state   = `BNO055_STATE_CAL_RESTORE_START;
 				end
 				`BNO055_STATE_CAL_RESTORE_WAIT: begin // Wait until send completes
-					next_imu_good           = `FALSE;
-					next_go_flag            = `NOT_GO;
-					next_slave_address      = slave_address;
-					next_data_reg           = data_reg;
-					next_data_tx            = data_tx;
-					next_read_write_in      = read_write_in;
-					if(~busy) begin
+					next_imu_good               = `FALSE;
+					next_go_flag_efb1           = `NOT_GO;
+					next_slave_address_efb1     = slave_address_efb1;
+					next_data_reg_efb1          = data_reg_efb1;
+					next_data_tx_efb1           = data_tx_efb1;
+					next_read_write_in_efb1     = read_write_in_efb1;
+					if(~busy_efb1) begin
 						increment_cal_restore_index = 1'b1;
-						next_i2c_driver_state = `BNO055_STATE_CAL_RESTORE_STOP;
+						next_i2c_driver_state   = `BNO055_STATE_CAL_RESTORE_STOP;
 					end
 					else
-						next_i2c_driver_state = `BNO055_STATE_CAL_RESTORE_WAIT;
+						next_i2c_driver_state   = `BNO055_STATE_CAL_RESTORE_WAIT;
 				end
 				`BNO055_STATE_CAL_RESTORE_STOP: begin // See if this was the last, loop around if more, otherwise, exit loop
-					next_imu_good           = `FALSE;
-					next_go_flag            = `NOT_GO;
-					next_slave_address      = slave_address;
-					next_data_reg           = data_reg;
-					next_data_tx            = data_tx;
-					next_read_write_in      = read_write_in;
+					next_imu_good               = `FALSE;
+					next_go_flag_efb1           = `NOT_GO;
+					next_slave_address_efb1     = slave_address_efb1;
+					next_data_reg_efb1          = data_reg_efb1;
+					next_data_tx_efb1           = data_tx_efb1;
+					next_read_write_in_efb1     = read_write_in_efb1;
 					if(cal_restore_index >= (`CAL_DATA_REG_CNT)) begin
 						clear_cal_restore_index = 1'b0;
-						next_i2c_driver_state = `BNO055_STATE_CAL_RESTORE_AGAIN;
+						next_i2c_driver_state   = `BNO055_STATE_CAL_RESTORE_AGAIN;
 					end
 					else begin
-						next_i2c_driver_state = `BNO055_STATE_CAL_RESTORE_DATA;
+						next_i2c_driver_state   = `BNO055_STATE_CAL_RESTORE_DATA;
 					end
 				end
 				`BNO055_STATE_CAL_RESTORE_AGAIN: begin // Restore calibration two times, to ensure that one calibration parameter doesn't need to be written before another.
-					next_imu_good           = `FALSE;
-					next_go_flag            = `NOT_GO;
-					next_calibrated_once    = 1'b1;
+					next_imu_good               = `FALSE;
+					next_go_flag_efb1           = `NOT_GO;
+					next_calibrated_once        = 1'b1;
+					next_calibrated_once        = 1'b1;
 					if(calibrated_once == 1'b1)
-						next_i2c_driver_state = `BNO055_STATE_SET_EXT_CRYSTAL;
+						next_i2c_driver_state   = `BNO055_STATE_SET_EXT_CRYSTAL;
 					else
-						next_i2c_driver_state = `BNO055_STATE_CAL_RESTORE_DATA;
+						next_i2c_driver_state   = `BNO055_STATE_CAL_RESTORE_DATA;
 				end
 				`BNO055_STATE_SET_EXT_CRYSTAL: begin // Has to be done after caliubration restore, for some odd reason not documented in IMU docs
-					next_imu_good          = `FALSE;
-					next_slave_address     = `BNO055_SLAVE_ADDRESS;
-					next_go_flag           = `NOT_GO;
-					next_i2c_driver_state  = `I2C_DEVICE_DRIVER_SUB_STATE_START;
-					next_return_state      = `BNO055_STATE_SET_RUN_MODE;
-					next_data_reg          = `BNO055_SYS_TRIGGER_ADDR;
-					next_data_tx           = 8'h80; // Enable external crystal, set bit 7 to 1'b1
-					next_read_write_in     = `I2C_WRITE;
-					next_wait_ms           = 12'd20; // used in change run mode state, but set here
+					next_imu_good               = `FALSE;
+					next_slave_address_efb1     = `BNO055_SLAVE_ADDRESS;
+					next_go_flag_efb1           = `NOT_GO;
+					next_i2c_driver_state       = `I2C_DEVICE_DRIVER_SUB_STATE_START;
+					next_return_state           = `BNO055_STATE_SET_RUN_MODE;
+					next_data_reg_efb1          = `BNO055_SYS_TRIGGER_ADDR;
+					next_data_tx_efb1           = 8'h80; // Enable external crystal, set bit 7 to 1'b1
+					next_read_write_in_efb1     = `I2C_WRITE;
+					next_wait_ms                = 12'd20; // used in change run mode state, but set here
 				end
 				`BNO055_STATE_SET_RUN_MODE: begin // Change to run mode, changing run mode takes 7 to 19 ms depending on modes
-					next_imu_good          = `FALSE;
-					next_slave_address     = `BNO055_SLAVE_ADDRESS;
-					clear_waiting_ms       = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
-					next_go_flag           = `NOT_GO;
-					next_i2c_driver_state  = `I2C_DEVICE_DRIVER_SUB_STATE_START;
-					next_return_state      = `BNO055_STATE_WAIT_20MS;
-					next_data_reg          = `BNO055_OPR_MODE_ADDR;
-					next_data_tx           = `BNO055_OPERATION_MODE_NDOF;
-					next_read_write_in     = `I2C_WRITE;
+					next_imu_good               = `FALSE;
+					next_slave_address_efb1     = `BNO055_SLAVE_ADDRESS;
+					clear_waiting_ms            = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
+					next_go_flag_efb1           = `NOT_GO;
+					next_i2c_driver_state       = `I2C_DEVICE_DRIVER_SUB_STATE_START;
+					next_return_state           = `BNO055_STATE_WAIT_20MS;
+					next_data_reg_efb1          = `BNO055_OPR_MODE_ADDR;
+					next_data_tx_efb1           = `BNO055_OPERATION_MODE_NDOF;
+					next_read_write_in_efb1     = `I2C_WRITE;
 				end
 				`BNO055_STATE_WAIT_20MS: begin // Wait 20ms to go from config to running mode
-					next_imu_good          = `FALSE;
-					next_slave_address     = `BNO055_SLAVE_ADDRESS;
-					clear_waiting_ms       = `RUN_MS_TIMER;
-					next_data_reg          = `BYTE_ALL_ZERO;
-					next_data_tx           = `BYTE_ALL_ZERO;
-					next_go_flag           = `NOT_GO;
-					next_i2c_driver_state  = `BNO055_STATE_WAIT_20MS;
-					rstn_buffer            = `LOW; // Clear RX data buffer index before starting next state's read burst
+					next_imu_good               = `FALSE;
+					next_slave_address_efb1     = `BNO055_SLAVE_ADDRESS;
+					clear_waiting_ms            = `RUN_MS_TIMER;
+					next_data_reg_efb1          = `BYTE_ALL_ZERO;
+					next_data_tx_efb1           = `BYTE_ALL_ZERO;
+					next_go_flag_efb1           = `NOT_GO;
+					next_i2c_driver_state       = `BNO055_STATE_WAIT_20MS;
+					rstn_buffer                 = `LOW; // Clear RX data buffer index before starting next state's read burst
 					if((count_ms[31] == 1'b1) ) begin // Wait for count_ms wrapped around to 0x3FFFFFF
-						next_wait_ms       = 'd20; // Pause for 20 ms between iterations, for next wait state, not used in this one
-						next_i2c_driver_state = `BNO055_STATE_READ_IMU_DATA_BURST;
+						next_wait_ms            = 'd20; // Pause for 20 ms between iterations, for next wait state, not used in this one
+						next_i2c_driver_state   = `BNO055_STATE_READ_IMU_DATA_BURST;
 					end
 				end
 				`BNO055_STATE_READ_IMU_DATA_BURST: begin // Page 0 - Read from Acceleration Data X-Axis LSB to Calibration Status registers - 46 bytes
-					clear_waiting_ms       = `CLEAR_MS_TIMER; //  Clear and set to wait_ms value
-					next_wait_ms           = 'd20; // Pause for 20 ms between iterations, for next wait state, not used here
-					next_slave_address     = `BNO055_SLAVE_ADDRESS;
-					next_go_flag           = `NOT_GO;
-					next_i2c_driver_state  = `I2C_DEVICE_DRIVER_SUB_STATE_START;
-					next_return_state      = `BNO055_STATE_WAIT_IMU_POLL_TIME;
-					//next_return_state      = `ALTIMETER_STATE_READ_DATA_BURST;
-					next_data_reg          = `BNO055_ACCEL_DATA_X_LSB_ADDR;
-					next_data_tx           = `BYTE_ALL_ZERO;
-					next_read_write_in     = `I2C_READ;
-					next_target_read_count = `DATA_RX_BYTE_REG_CNT;
-					next_led_view_index    = (`DATA_RX_BYTE_REG_CNT-1); // Calibration status will be in the last byte buffer, index 45
+					clear_waiting_ms            = `CLEAR_MS_TIMER; //  Clear and set to wait_ms value
+					next_wait_ms                = 'd20; // Pause for 20 ms between iterations, for next wait state, not used here
+					next_slave_address_efb1     = `BNO055_SLAVE_ADDRESS;
+					next_go_flag_efb1           = `NOT_GO;
+					next_i2c_driver_state       = `I2C_DEVICE_DRIVER_SUB_STATE_START;
+					next_return_state           = `BNO055_STATE_WAIT_IMU_POLL_TIME;
+					//next_return_state           = `ALTIMETER_STATE_READ_DATA_BURST;
+					next_data_reg_efb1          = `BNO055_ACCEL_DATA_X_LSB_ADDR;
+					next_data_tx_efb1           = `BYTE_ALL_ZERO;
+					next_read_write_in_efb1     = `I2C_READ;
+					next_target_read_count_efb1 = `DATA_RX_BYTE_REG_CNT;
+					next_led_view_index         = (`DATA_RX_BYTE_REG_CNT-1); // Calibration status will be in the last byte buffer, index 45
 				end
 				/*
 				// Adding altimeter read would be something like this
 				`ALTIMETER_STATE_READ_DATA_BURST: begin
-					next_slave_address        = `ALTIMETER_SLAVE_ADDRESS;
-					next_go_flag              = `NOT_GO;
-					next_i2c_driver_state     = `I2C_DEVICE_DRIVER_SUB_STATE_START;
-					next_return_state         = `BNO055_STATE_WAIT_IMU_POLL_TIME;
-					next_data_reg             = `ATIMETER_ALTITUDE_LSB_ADDR;
-					next_data_tx              = `BYTE_ALL_ZERO;
-					next_read_write_in        = `I2C_READ;
-					next_target_read_count    = `ALTIMETER_DATA_RX_BYTE_REG_CNT;
-					next_led_view_index       = (`ALTIMETER_DATA_RX_BYTE_REG_CNT-1);
+					next_slave_address_efb1        = `ALTIMETER_SLAVE_ADDRESS;
+					next_go_flag_efb1              = `NOT_GO;
+					next_i2c_driver_state          = `I2C_DEVICE_DRIVER_SUB_STATE_START;
+					next_return_state              = `BNO055_STATE_WAIT_IMU_POLL_TIME;
+					next_data_reg_efb1             = `ATIMETER_ALTITUDE_LSB_ADDR;
+					next_data_tx_efb1              = `BYTE_ALL_ZERO;
+					next_read_write_in_efb1        = `I2C_READ;
+					next_target_read_count_efb1    = `ALTIMETER_DATA_RX_BYTE_REG_CNT;
+					next_led_view_index            = (`ALTIMETER_DATA_RX_BYTE_REG_CNT-1);
 				end
 				*/
 				`BNO055_STATE_WAIT_IMU_POLL_TIME: begin 	// Wait 20 ms between polls to maintain 50Hz polling rate
 												// wait time is i2c time + time spent here, for a total of 20ms,
 												// i2c time is variable and dependent on slave
 												// This timer starts at the beginning of the the previous state
-					next_imu_good          = `TRUE;
-					next_slave_address     = `BNO055_SLAVE_ADDRESS;
-					clear_waiting_ms       = `RUN_MS_TIMER;
-					next_data_reg          = `BYTE_ALL_ZERO;
-					next_data_tx           = `BYTE_ALL_ZERO;
-					next_go_flag           = `NOT_GO;
-					next_i2c_driver_state  = `BNO055_STATE_WAIT_IMU_POLL_TIME;
-					rstn_buffer            = `LOW; // Clear the RX data buffer index starting next state's read burst
+					next_imu_good               = `TRUE;
+					next_slave_address_efb1     = `BNO055_SLAVE_ADDRESS;
+					clear_waiting_ms            = `RUN_MS_TIMER;
+					next_data_reg_efb1          = `BYTE_ALL_ZERO;
+					next_data_tx_efb1           = `BYTE_ALL_ZERO;
+					next_go_flag_efb1           = `NOT_GO;
+					next_i2c_driver_state       = `BNO055_STATE_WAIT_IMU_POLL_TIME;
+					rstn_buffer                 = `LOW; // Clear the RX data buffer index starting next state's read burst
 					if((count_ms[31] == 1'b1) ) begin // Wait for count_ms wrapped around to 0x3FFFFFF
-						next_i2c_driver_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
+						next_i2c_driver_state   = `BNO055_STATE_READ_IMU_DATA_BURST;
 					end
 				end
 
 				// FSM Sub States - Repeated for each i2c transaction
 				`I2C_DEVICE_DRIVER_SUB_STATE_START: begin // Begin i2c transaction, wait for busy to be asserted
-					next_go_flag           = `GO;
+					next_go_flag_efb1           = `GO;
 					// Stay here until i2c is busy AND the IMU isn't in reset (Prevent glitch at WD event)
-					if(busy && rstn_imu)
-						next_i2c_driver_state = `I2C_DEVICE_DRIVER_SUB_STATE_WAIT_I2C;
+					if(busy_efb1 && rstn_imu)
+						next_i2c_driver_state   = `I2C_DEVICE_DRIVER_SUB_STATE_WAIT_I2C;
 					else
-						next_i2c_driver_state = `I2C_DEVICE_DRIVER_SUB_STATE_START;
+						next_i2c_driver_state   = `I2C_DEVICE_DRIVER_SUB_STATE_START;
 				end
 				// Wait for end of i2c transaction, wait for busy to be cleared
 				`I2C_DEVICE_DRIVER_SUB_STATE_WAIT_I2C: begin
-					next_go_flag           = `NOT_GO;
+					next_go_flag_efb1           = `NOT_GO;
 					// Stay here until i2c is not busy AND the IMU isn't in reset (Prevent glitch at WD event)
-					if(~busy && rstn_imu)
-						next_i2c_driver_state = `I2C_DEVICE_DRIVER_SUB_STATE_STOP;
+					if(~busy_efb1 && rstn_imu)
+						next_i2c_driver_state   = `I2C_DEVICE_DRIVER_SUB_STATE_STOP;
 					else
-						next_i2c_driver_state = `I2C_DEVICE_DRIVER_SUB_STATE_WAIT_I2C;
+						next_i2c_driver_state   = `I2C_DEVICE_DRIVER_SUB_STATE_WAIT_I2C;
 				end
 				// Set output data latch strobe and return to major FSM state
 				`I2C_DEVICE_DRIVER_SUB_STATE_STOP: begin
-					next_go_flag           = `NOT_GO;
-					next_data_reg          = `BYTE_ALL_ZERO;
-					next_data_tx           = `BYTE_ALL_ZERO;
-					if(read_write_in == `I2C_READ) begin // Only latch data if this was a read
-						rx_data_latch_strobe = `HIGH;
+					next_go_flag_efb1           = `NOT_GO;
+					next_data_reg_efb1          = `BYTE_ALL_ZERO;
+					next_data_tx_efb1           = `BYTE_ALL_ZERO;
+					if(read_write_in_efb1 == `I2C_READ) begin // Only latch data if this was a read
+						rx_data_latch_strobe    = `HIGH;
 					end
-					next_i2c_driver_state  = return_state;
+					next_i2c_driver_state       = return_state;
 				end
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 				// Default case, shouldn't be triggered
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 				default: begin
-					next_imu_good         = `FALSE;
-					next_go_flag          = `NOT_GO;
-					next_i2c_driver_state = `BNO055_STATE_RESET;
-					next_return_state     = `BYTE_ALL_ZERO;
-					next_data_reg         = `BYTE_ALL_ZERO;
-					next_data_tx          = `BYTE_ALL_ZERO;
-					next_read_write_in    = `I2C_READ;
-					rx_data_latch_strobe  = `LOW;
+					next_imu_good               = `FALSE;
+					next_go_flag_efb1           = `NOT_GO;
+					next_i2c_driver_state       = `BNO055_STATE_RESET;
+					next_return_state           = `BYTE_ALL_ZERO;
+					next_data_reg_efb1          = `BYTE_ALL_ZERO;
+					next_data_tx_efb1           = `BYTE_ALL_ZERO;
+					next_read_write_in_efb1     = `I2C_READ;
+					rx_data_latch_strobe        = `LOW;
 				end
 			endcase
 		end
