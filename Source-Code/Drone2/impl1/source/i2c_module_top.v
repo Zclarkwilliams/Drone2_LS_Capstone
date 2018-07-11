@@ -42,29 +42,34 @@ module i2c_module_top(
 	input  wire sys_clk                   		// master clock for module, efb, and output to higher level modules
 );
 
-	wire [7:0] addr;                                // Wishbone address register
-	wire [7:0] data_tx;                             // Temp storage of data to be written
+	wire rstn_local;                                 // Manual EFB I2C reset
+	wire [7:0] addr1;                                // Wishbone address register
+	wire [7:0] data_tx1;                             // Temp storage of data to be written
 	wire [7:0] data_rx;                             // Temp storage of received data
 	wire ack;                                       // Ack from slave
-	wire rstn_local;                                // Manual EFB I2C reset
-	wire we, next_we;                               // Write enable, 1 for write, 0 for read
-	wire stb, next_stb;                             // Strobe from master
-	wire cyc;                                       // Cycle start from master
-	wire irq1_out, irq2_out;                        // IRQ output from EFB i2c modules
-	wire ack_flag, next_ack_flag;                   // Used to delay read of EFB ack set/clear by one clock and prevent ack in one state from being considered for following states
-	wire data_latch;                                // Strobe to data late to retain dataRX value, which in turn generates module data output
-	wire next_data_latch;                           // The next data_latch value that will be asserted at the following clock edge.
+	wire we1;                               // Write enable, 1 for write, 0 for read
+	wire stb1;                             // Strobe from master
+	wire cyc1;                                       // Cycle start from master
+	wire [7:0] addr2;                                // Wishbone address register
+	wire [7:0] data_tx2;                             // Temp storage of data to be written
+	wire we2;                               		 // Write enable, 1 for write, 0 for read
+	wire stb2;                                       // Strobe from master
+	wire cyc2;                                       // Cycle start from master
+	wire irq1_out, irq2_out;                         // IRQ output from EFB i2c modules
+	wire ack_flag, next_ack_flag;                    // Used to delay read of EFB ack set/clear by one clock and prevent ack in one state from being considered for following states
+	wire data_latch;                                 // Strobe to data late to retain dataRX value, which in turn generates module data output
+	wire next_data_latch;                            // The next data_latch value that will be asserted at the following clock edge.
 
 
 	// Connect the I2C module to this top module
 	I2C_EFB_WB i2c_top(
 		.wb_clk_i(sys_clk),					// Positive edge clock, >7.5x I2C rate
 		.wb_rst_i( ~(rstn & rstn_local) ),	// Active-high, synchronous reset signal that will only reset the WISHBONE interface logic.
-		.wb_cyc_i(cyc),						// Active high start of bus cycle
-		.wb_stb_i(stb),						// Active high strobe, WISHBONE slave is the target for current transaction
-		.wb_we_i(we),						// Read/Write control, 1=Write, 0=Read
-		.wb_adr_i(addr),					// 8-bit address of EFB register
-		.wb_dat_i(data_tx),					// Transmitted data byte TO EFB
+		.wb_cyc_i(cyc1|cyc2),						// Active high start of bus cycle
+		.wb_stb_i(stb1|stb2),						// Active high strobe, WISHBONE slave is the target for current transaction
+		.wb_we_i(we1|we2),						// Read/Write control, 1=Write, 0=Read
+		.wb_adr_i(addr1|addr2),					// 8-bit address of EFB register
+		.wb_dat_i(data_tx2|data_tx2),					// Transmitted data byte TO EFB
 		.wb_dat_o(data_rx),					// Received data byte from EFB
 		.wb_ack_o(ack),						// Active-high command ack signal from EFB module, indicates that requested command is ack'd
 		.i2c1_scl(scl_1),					// I2C #2 scl inout
@@ -91,11 +96,11 @@ module i2c_module_top(
 					.sys_clk(sys_clk),
 					//To EFB
 					.ack(ack),
-					.wb_cyc_i(cyc),						// Active high start of bus cycle
-					.wb_stb_i(stb),						// Active high strobe, WISHBONE slave is the target for current transaction
-					.wb_we_i(we),						// Read/Write control, 1=Write, 0=Read
-					.wb_adr_i(addr),					// 8-bit address of EFB register
-					.wb_dat_i(data_tx),					// Transmitted data byte TO EFB
+					.cyc(cyc1),						// Active high start of bus cycle
+					.stb(stb1),						// Active high strobe, WISHBONE slave is the target for current transaction
+					.we(we1),						// Read/Write control, 1=Write, 0=Read
+					.addr(addr1),					// 8-bit address of EFB register
+					.data_tx(data_tx1),					// Transmitted data byte TO EFB
 					.data_rx(data_rx),					// Received data byte from EFB
 					.rstn_local(rstn_local)
 	);
@@ -115,11 +120,11 @@ module i2c_module_top(
 					.sys_clk(sys_clk),
 					//To EFB
 					.ack(ack),
-					.wb_cyc_i(cyc),						// Active high start of bus cycle
-					.wb_stb_i(stb),						// Active high strobe, WISHBONE slave is the target for current transaction
-					.wb_we_i(we),						// Read/Write control, 1=Write, 0=Read
-					.wb_adr_i(addr),					// 8-bit address of EFB register
-					.wb_dat_i(data_tx),					// Transmitted data byte TO EFB
+					.cyc(cyc2),						// Active high start of bus cycle
+					.stb(stb2),						// Active high strobe, WISHBONE slave is the target for current transaction
+					.we(we2),						// Read/Write control, 1=Write, 0=Read
+					.addr(addr2),					// 8-bit address of EFB register
+					.data_tx(data_tx2),					// Transmitted data byte TO EFB
 					.data_rx(data_rx)					// Received data byte from EFB
 					//.rstn_local(rstn_local)
 	);

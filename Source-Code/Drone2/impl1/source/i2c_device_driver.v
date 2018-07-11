@@ -506,7 +506,7 @@ module i2c_device_driver #(
 			slave_address_efb2          = slave_address_efb1;
 			data_tx_efb2                = data_tx_efb1;
 			data_reg_efb2               = data_reg_efb1;
-			read_write_in_efb2          = 1'b1;
+			read_write_in_efb2          = read_write_in_efb1;
 			go_efb2                     = `FALSE;
 			case(i2c_driver_state)
 				`BNO055_STATE_RESET: begin

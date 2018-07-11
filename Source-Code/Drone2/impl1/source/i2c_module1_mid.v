@@ -27,20 +27,17 @@ module i2c_module1_mid(
 	output reg  rstn_imu,                  // Low active reset signal to IMU hardware to trigger reset
 
 	input wire ack,
-	output reg  wb_cyc_i,					// Active high start of bus cycle
-	output reg  wb_stb_i,					// Active high strobe, WISHBONE slave is the target for current transaction
-	output reg  wb_we_i,					// Read/Write control, 1=Write, 0=Read
-	output reg  [7:0] wb_adr_i,				// 8-bit address of EFB register
-	output reg  [7:0] wb_dat_i,				// Transmitted data byte TO EFB
+	output wire cyc,					    // Active high start of bus cycle
+	output reg stb,					        // Active high strobe, WISHBONE slave is the target for current transaction
+	output reg we,						    // Read/Write control, 1=Write, 0=Read
+	output reg [7:0] addr,				    // 8-bit address of EFB register
+	output reg [7:0] data_tx,				// Transmitted data byte TO EFB
 	input wire [7:0] data_rx,				// Received data byte from EFB
 	output reg rstn_local					// Manual EFB I2C reset
 );
 
-	reg  [7:0] addr;                                // Wishbone address register
-	reg  [7:0] data_tx;                             // Temp storage of data to be written
-	reg  we, next_we;                               // Write enable, 1 for write, 0 for read
-	reg  stb, next_stb;                             // Strobe from master
-	wire cyc;                                       // Cycle start from master
+	reg  next_we;                                   // Write enable, 1 for write, 0 for read
+	reg  next_stb;                                  // Strobe from master
 	reg  read_action;                               // Read flag for calling this function, will be used to determine whether to follow read or write sequence.
 	reg  write_action;                              // Write flag for calling this function, will be used to determine whether to follow read or write sequence.
 	reg  [7:0]next_addr;                            // Command register address
