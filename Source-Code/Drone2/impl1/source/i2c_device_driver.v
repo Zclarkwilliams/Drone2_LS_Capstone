@@ -9,18 +9,18 @@
  */
 
 /**
-
+ *
  *  Module inouts:
  *  	 	inout scl_1,          I2C Primary   EFB SDA wire - Module only uses Primary or secondary I2C, but can use either one
  *  		inout scl_2,          I2C Secondary EFB SDA wire
  *  		inout sda_1,          I2C Primary   EFB SDA wire
  *  		inout sda_2,          I2C Secondary EFB SDA wire
-
+ *
  *  Module takes as inputs:
  *  		sys_clk                 master clock
  *  		ac_active               Handshake signal from angle controller acknowledging the data valid strobe
  *  		rstn                    async negative reset signal 0 = reset, 1 = not reset
-
+ *
  * Module provides as output (all values are 16-bit, 2's complement):
  *  		led_data_out,          Module calibration status output for LED indication of IMU operating state
  *  		rstn_imu               Low active reset signal to IMU hardware to trigger reset
@@ -177,31 +177,32 @@ module i2c_device_driver #(
 		// Initial default state of IMU FSM
 		BNO055_STATE_RESET                    = 0,
 		// The rest of the startup states
-		BNO055_STATE_BOOT                     = 1,
-		BNO055_STATE_BOOT_WAIT                = 2,
+		BNO055_STATE_BOOT                    	= 1,
+		BNO055_STATE_BOOT_WAIT              	= 2,
 
 		// Setup BNO055 and begin reading
-		BNO055_STATE_READ_CHIP_ID             = 3,
-		BNO055_STATE_SET_UNITS                = 4,
-		BNO055_STATE_SET_POWER_MODE           = 5,
-		BNO055_STATE_CAL_RESTORE_DATA         = 6,
-		BNO055_STATE_CAL_RESTORE_START        = 7,
-		BNO055_STATE_CAL_RESTORE_WAIT         = 8,
-		BNO055_STATE_CAL_RESTORE_STOP         = 9,
-		BNO055_STATE_CAL_RESTORE_AGAIN        = 10,
-		BNO055_STATE_SET_EXT_CRYSTAL          = 11,
-		BNO055_STATE_SET_RUN_MODE             = 12,
-		MPL3115A2_STATE_SET_ACTIVE_ALTITUDE   = 13,
-		BNO055_STATE_WAIT_20MS                = 14,
-		BNO055_STATE_READ_IMU_DATA_BURST      = 15,
-		MPL3115A2_STATE_READ_DATA_BURST       = 16,
-		MPL3115A2_STATE_READ_DATA_DELTA_BURST = 17,
-		BNO055_STATE_WAIT_IMU_POLL_TIME       = 18,
+		BNO055_STATE_READ_CHIP_ID             	= 3,
+		BNO055_STATE_SET_UNITS                	= 4,
+		BNO055_STATE_SET_POWER_MODE           	= 5,
+		BNO055_STATE_CAL_RESTORE_DATA         	= 6,
+		BNO055_STATE_CAL_RESTORE_START        	= 7,
+		BNO055_STATE_CAL_RESTORE_WAIT         	= 8,
+		BNO055_STATE_CAL_RESTORE_STOP         	= 9,
+		BNO055_STATE_CAL_RESTORE_AGAIN        	= 10,
+		BNO055_STATE_SET_EXT_CRYSTAL          	= 11,
+		BNO055_STATE_SET_RUN_MODE             	= 12,
+		MPL3115A2_STATE_SET_ACTIVE_ALTITUDE   	= 13,
+		BNO055_STATE_WAIT_20MS                	= 14,
+		BNO055_STATE_READ_IMU_DATA_BURST      	= 15,
+		MPL3115A2_STATE_READ_CHIP_ID		  	= 16,
+		MPL3115A2_STATE_READ_DATA_BURST       	= 17,
+		MPL3115A2_STATE_READ_DATA_DELTA_BURST	= 18,
+		BNO055_STATE_WAIT_IMU_POLL_TIME     	= 19,
 
 		// Minor FSM states, repeated for every read or write
-		I2C_DEVICE_DRIVER_SUB_STATE_START     = 19,
-		I2C_DEVICE_DRIVER_SUB_STATE_WAIT_I2C  = 20,
-		I2C_DEVICE_DRIVER_SUB_STATE_STOP      = 21;
+		I2C_DEVICE_DRIVER_SUB_STATE_START     = 20,
+		I2C_DEVICE_DRIVER_SUB_STATE_WAIT_I2C  = 21,
+		I2C_DEVICE_DRIVER_SUB_STATE_STOP      = 22;
 
 	//
 	//  Module body
@@ -250,10 +251,12 @@ module i2c_device_driver #(
 															`MPL3115A2_DATA_RX_BYTE_REG_CNT+
 															`MPL3115A2_DELTA_RX_BYTE_REG_CNT); data_rx_reg_index = data_rx_reg_index+1'b1)
 				data_rx_reg[data_rx_reg_index] <= 8'b0;
-			data_rx_reg_index <= 0;
+			//data_rx_reg_index <= 0;
+			data_rx_reg_index <= `BNO055_DATA_RX_BYTE_REG_CNT;
 		end
 		else if(~rstn_buffer ) begin
-			data_rx_reg_index <= 0;
+			//data_rx_reg_index <= 0;
+			data_rx_reg_index <= `BNO055_DATA_RX_BYTE_REG_CNT;
 		end
 		else if (one_byte_ready) begin
 			// If the index is pointing to the last index in the array, then rest pointer
@@ -261,7 +264,8 @@ module i2c_device_driver #(
 			if(data_rx_reg_index == (	(`BNO055_DATA_RX_BYTE_REG_CNT+
 										`MPL3115A2_DATA_RX_BYTE_REG_CNT+
 										`MPL3115A2_DELTA_RX_BYTE_REG_CNT) - 1'b1)) begin
-				data_rx_reg_index              <= 0;
+				//data_rx_reg_index              <= 0;
+				data_rx_reg_index <= `BNO055_DATA_RX_BYTE_REG_CNT;
 				data_rx_reg[data_rx_reg_index] <= data_rx;
 			end
 			//  Otherwise, just write the byte to the data_rx_reg_index index in the byte array
@@ -698,14 +702,26 @@ module i2c_device_driver #(
 					next_wait_ms           = 'd20; // Pause for 20 ms between iterations, for next wait state, not used here
 					next_slave_address     = `BNO055_SLAVE_ADDRESS;
 					next_go_flag           = `NOT_GO;
-					next_i2c_driver_state  = I2C_DEVICE_DRIVER_SUB_STATE_START;
-					//next_return_state      = BNO055_STATE_WAIT_IMU_POLL_TIME;
+					//next_i2c_driver_state  = I2C_DEVICE_DRIVER_SUB_STATE_START;
+					next_i2c_driver_state  = MPL3115A2_STATE_READ_DATA_BURST;;
 					next_return_state      = MPL3115A2_STATE_READ_DATA_BURST;
 					next_data_reg          = `BNO055_ACCEL_DATA_X_LSB_ADDR;
 					next_data_tx           = `BYTE_ALL_ZERO;
 					next_read_write_in     = `I2C_READ;
 					next_target_read_count = `BNO055_DATA_RX_BYTE_REG_CNT;
 					next_led_view_index    = (`BNO055_DATA_RX_BYTE_REG_CNT-1); // Calibration status will be in the last byte buffer, index 45
+				end
+				MPL3115A2_STATE_READ_CHIP_ID: begin // Page 0
+					next_imu_good           = `FALSE;
+					next_slave_address      = `MPL3115A2_SLAVE_ADDRESS;
+					next_go_flag            = `NOT_GO;
+					next_i2c_driver_state   = I2C_DEVICE_DRIVER_SUB_STATE_START;
+					next_return_state       = MPL3115A2_STATE_READ_DATA_BURST;
+					next_data_reg           = `MPL3115A2_WHO_AM_I_ID;
+					next_data_tx            = `BYTE_ALL_ZERO;
+					next_read_write_in      = `I2C_READ;
+					next_target_read_count  = 1'b1;
+					next_led_view_index     = 1'b0;
 				end
 				MPL3115A2_STATE_READ_DATA_BURST: begin
 					next_slave_address        = `MPL3115A2_SLAVE_ADDRESS;
