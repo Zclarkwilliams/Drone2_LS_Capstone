@@ -25,7 +25,7 @@
  */
 
 // Multiplyer Scalar Values
-`define YAW_SCALE_MULT		16'sd48
+`define YAW_SCALE_MULT		16'sd60
 `define ROLL_SCALE_MULT		16'sd36
 `define PITCH_SCALE_MULT	16'sd32
 `define THROTTLE_SCALE_MULT	16'sd1
@@ -41,7 +41,7 @@
  */
 
 // Multiply and shifts to create YAW PID constants
-`define YAW_K_P		16'sd48 // d48 no oscillating -> d56 oscillates
+`define YAW_K_P		16'sd34 // d48 no oscillating -> d56 oscillates
 `define YAW_K_I		16'sd0
 `define YAW_K_D		16'sd5
 `define YAW_K_P_SHIFT	4'd4

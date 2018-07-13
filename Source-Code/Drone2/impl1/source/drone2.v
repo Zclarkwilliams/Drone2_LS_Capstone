@@ -52,9 +52,9 @@ module drone2 (
 	input wire yaw_pwm,
 	input wire roll_pwm,
 	input wire pitch_pwm,
-	input wire aux1_pwm,
-	input wire aux2_pwm,
-	input wire swa_swb_pwm,
+	input wire aux1_pwm /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
+	input wire aux2_pwm /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
+	input wire swa_swb_pwm /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
 	input wire machxo3_switch_reset_n,
 	// DEBUG IO
 	input wire DEBUG_LED_SWITCH_N,
@@ -75,16 +75,6 @@ module drone2 (
 		aux2_val,
 		swa_swb_val;
 
-	//---------- Angle_Controller Wires -----------//
-	wire [`RATE_BIT_WIDTH-1:0]
-		throttle_target_rate,
-		yaw_target_rate,
-		roll_target_rate,
-		pitch_target_rate,
-		roll_angle_error,
-		pitch_angle_error;
-	wire ac_valid_strobe;
-
 	//---------------- IMU Wires ------------------//
 	wire [`IMU_VAL_BIT_WIDTH-1:0]
 		x_linear_rate,
@@ -104,6 +94,23 @@ module drone2 (
 	wire imu_good;
 	wire imu_data_valid;
 	wire [7:0] imu_debug_out;
+
+	//--------- Throttle Controller Wires ---------//
+	wire [`REC_VAL_BIT_WIDTH-1:0]
+		throttle_controller_pwm_value_out;
+	wire throttle_controller_complete,
+		throttle_controller_active;
+	reg tc_enable_n = 0; // Enable TC
+		
+	//---------- Angle_Controller Wires -----------//
+	wire [`RATE_BIT_WIDTH-1:0]
+		throttle_target_rate,
+		yaw_target_rate,
+		roll_target_rate,
+		pitch_target_rate,
+		roll_angle_error,
+		pitch_angle_error;
+	wire ac_valid_strobe;
 
 	//-------- Body_Frame_Controller Wires --------//
 	wire [`PID_RATE_BIT_WIDTH-1:0]
@@ -127,8 +134,8 @@ module drone2 (
 
 	//---------------- Reset Wires ----------------//
 	wire resetn;
-	wire soft_reset_n;
-	assign resetn = (machxo3_switch_reset_n | soft_reset_n);
+	wire soft_reset_n = 1; //Disable this reset for now, connect if soft reset is needed
+	assign resetn = (machxo3_switch_reset_n & soft_reset_n);
 
 	/**
 	 * Generate System Clock
@@ -147,39 +154,6 @@ module drone2 (
 		.us_clk(us_clk),
 		.sys_clk(sys_clk),
 		.resetn(resetn));
-
-	/**
-	 * IMU Management and Control Module
-	 *		file - bno055_driver.v
-	 */
-	bno055_driver imu (
-		// Outputs
-		.imu_good(imu_good),
-		.valid_strobe(imu_data_valid),
-		.gyro_rate_x(x_rotation_rate),
-		.gyro_rate_y(y_rotation_rate),
-		.gyro_rate_z(z_rotation_rate),
-		.euler_angle_x(x_rotation),
-		.euler_angle_y(y_rotation),
-		.euler_angle_z(z_rotation),
-		.linear_accel_x(x_linear_accel),
-		.linear_accel_y(y_linear_accel),
-		.linear_accel_z(z_linear_accel),
-		.x_velocity(x_linear_rate),
-		.y_velocity(y_linear_rate),
-		.z_velocity(z_linear_rate),
-		// DEBUG WIRE
-		.led_data_out(imu_debug_out),
-		// InOuts
-		.scl_1(scl_1),
-		.sda_1(sda_1),
-		.scl_2(scl_2),
-		.sda_2(sda_2),
-		// Inputs
-		.rstn(resetn),
-		.sys_clk(sys_clk),
-		.rstn_imu(rstn_imu),
-		.ac_active(ac_active));
 
 	/**
 	 * Gets inputs from the physical receiver and converts them to 0-255.
@@ -206,12 +180,62 @@ module drone2 (
 		.resetn(resetn));
 
 	/**
+	 * IMU Management and Control Module
+	 *		file - bno055_driver.v
+	 */
+	bno055_driver IMU(
+		// Outputs
+		.imu_good(imu_good),
+		.valid_strobe(imu_data_valid),
+		.gyro_rate_x(x_rotation_rate),
+		.gyro_rate_y(y_rotation_rate),
+		.gyro_rate_z(z_rotation_rate),
+		.euler_angle_x(x_rotation),
+		.euler_angle_y(y_rotation),
+		.euler_angle_z(z_rotation),
+		.linear_accel_x(x_linear_accel),
+		.linear_accel_y(y_linear_accel),
+		.linear_accel_z(z_linear_accel),
+		.x_velocity(x_linear_rate),
+		.y_velocity(y_linear_rate),
+		.z_velocity(z_linear_rate),
+		// DEBUG WIRE
+		.led_data_out(imu_debug_out),
+		// InOuts
+		.scl_1(scl_1),
+		.sda_1(sda_1),
+		.scl_2(scl_2),
+		.sda_2(sda_2),
+		// Inputs
+		.rstn(resetn),
+		.sys_clk(sys_clk),
+		.rstn_imu(rstn_imu),
+		.ac_active(throttle_controller_active));
+		
+	/**
+	 *  Controls the throttle by averaging the PWM input value of 8 calculation cycles
+	 *  then applying a piecewise function linear throttle scale with decreased sensitivity
+	 *	around the neutral hover throttle value and increased sensitivity around the throttle extremes
+	 * 		file - throttle_controller.v
+	 */
+	throttle_controller TC(
+		.throttle_pwm_value_out(throttle_controller_pwm_value_out),
+		.complete_signal(throttle_controller_complete),
+		.active_signal(throttle_controller_active),
+		.throttle_pwm_value_in(throttle_val),
+		.start_signal(imu_data_valid),
+		.tc_enable_n(tc_enable_n),
+		.resetn(resetn),
+		.us_clk(us_clk));		
+		
+
+	/**
 	 *	Take IMU provided orientation angle and user provided target angle and
-	 *	subract them to get the error angle rate to get to target angle
+	 *	subtract them to get the error angle rate to get to target angle
 	 *	position.
 	 * 		file - angle_controller.v
 	 */
-	angle_controller ac (
+	angle_controller AC(
 		// Outputs
 		.throttle_rate_out(throttle_target_rate),
 		.yaw_rate_out(yaw_target_rate),
@@ -222,14 +246,14 @@ module drone2 (
 		.complete_signal(ac_valid_strobe),
 		.active_signal(ac_active),
 		// Inputs
-		.throttle_target(throttle_val),
+		.throttle_target(throttle_controller_pwm_value_out),
 		.yaw_target(yaw_val),
 		.roll_target(roll_val),
 		.pitch_target(pitch_val),
 		.yaw_actual(z_rotation),
 		.roll_actual(y_rotation),
 		.pitch_actual(x_rotation),
-		.start_signal(imu_data_valid),
+		.start_signal(throttle_controller_complete),
 		.resetn(resetn),
 		.us_clk(us_clk));
 
@@ -238,7 +262,7 @@ module drone2 (
 	 * angle rates and feed them into a PID to get corrective control.
 	 *		file - body_frame_controller.v
 	 */
-	body_frame_controller bfc (
+	body_frame_controller BFC(
 		// Outputs
 		.yaw_rate_out(yaw_rate),
 		.roll_rate_out(roll_rate),
@@ -260,7 +284,7 @@ module drone2 (
 		.us_clk(us_clk));
 
 	/**
-	 * Get axis rates and calculate respective motor rates to acheive correct
+	 * Get axis rates and calculate respective motor rates to achieve correct
 	 * drone movements.
 	 *		file - motor_mixer.v
 	 */

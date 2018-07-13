@@ -118,9 +118,10 @@ module body_frame_controller (
 			latched_roll_angle_error	<= roll_angle_error;
 			latched_pitch_angle_error	<= pitch_angle_error;
 			// Angle rates from the imu
-			latched_yaw_rotation		<= ~yaw_rotation + `ONE;
+			latched_yaw_rotation		<= -yaw_rotation;
+			//latched_yaw_rotation		<= `ALL_ZERO_2BYTE;
 			latched_roll_rotation		<= roll_rotation;
-			latched_pitch_rotation		<= ~pitch_rotation + `ONE;
+			latched_pitch_rotation		<= -pitch_rotation;
 
 		end
 		else if(!start_signal && start_flag) begin
