@@ -274,9 +274,7 @@ MIT license, all text above must be included in any redistribution
 	1'b1 = Enabled
 	1'b0 = Disabled
 */
-
-
-`define BNO055_CAL_RESTORE_ENABLE           1'b0
+`define BNO055_CAL_RESTORE_ENABLE           1'b1
 
 
 // Indices of measurement data in rx_data_reg
