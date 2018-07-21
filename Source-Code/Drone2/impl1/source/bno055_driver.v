@@ -523,7 +523,10 @@ module bno055_driver #(
 					clear_waiting_ms   = `RUN_MS_TIMER;
 					next_go_flag       = `NOT_GO;
 					next_bno055_state  = `BNO055_SUB_STATE_START;
-					next_return_state  = `BNO055_STATE_CAL_RESTORE_DATA;
+					if(`BNO055_CAL_RESTORE_ENABLE == 1'b1)
+						next_return_state  = `BNO055_STATE_CAL_RESTORE_DATA;
+					else
+						next_return_state  = `BNO055_STATE_SET_EXT_CRYSTAL;
 					next_data_reg      = `BNO055_PWR_MODE_ADDR;
 					next_data_tx       = `BNO055_POWER_MODE_NORMAL;
 					next_read_write_in = `I2C_WRITE;
