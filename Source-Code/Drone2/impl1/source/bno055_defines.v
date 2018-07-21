@@ -266,6 +266,19 @@ MIT license, all text above must be included in any redistribution
 `define BNO055_REMAP_SIGN_P7                 8'h05
 
 
+/*
+	Enable or Disable IMU calibration restore
+	Enabling uses calibration values hard coded in the BNO055 driver
+	Disabling requires manual calibration
+	
+	1'b1 = Enabled
+	1'b0 = Disabled
+*/
+
+
+`define BNO055_CAL_RESTORE_ENABLE           1'b0
+
+
 // Indices of measurement data in rx_data_reg
 `define ACC_DATA_X_LSB_INDEX                 0
 `define ACC_DATA_X_MSB_INDEX                 1
