@@ -62,6 +62,9 @@
 
 `define DEBUG_WIRE_BIT_WIDTH	9'd16	// DEBUG LED wire bit width to all modules
 
+`define ALTIMETER_20BIT_WIDTH	9'd20	// Sized to hold 20-bit altimeter output from MPL Altimeter 
+`define ALTIMETER_12BIT_WIDTH	8'd12	// Sized to hold 12-bit temp output from MPL Altimeter 
+
 // Default values (on reset or error) for pwm pulse high values in microseconds
 `define THROTTLE_DEFAULT_PULSE_TIME_HIGH_US  16'd1000
 `define YAW_DEFAULT_PULSE_TIME_HIGH_US		 16'd1500

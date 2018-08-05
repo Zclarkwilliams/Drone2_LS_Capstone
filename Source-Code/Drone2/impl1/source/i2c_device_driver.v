@@ -104,9 +104,9 @@ module i2c_device_driver #(
 	output reg [7:0]imu_temp,
 	output reg [7:0]calib_status,
 	output reg [19:0]altitude,
-	output reg [11:0]amtimeter_temp,
+	output reg [11:0]altimeter_temp,
 	output reg [19:0]altitude_delta,
-	output reg [11:0]amtimeter_temp_delta
+	output reg [11:0]altimeter_temp_delta
 );
 
 	// Value aliases
@@ -399,9 +399,9 @@ module i2c_device_driver #(
 			imu_temp             <= 8'b0;
 			calib_status         <= 8'b0;
 			altitude             <= 20'b0;
-			amtimeter_temp       <= 12'b0;
+			altimeter_temp       <= 12'b0;
 			altitude_delta       <= 20'b0;
-			amtimeter_temp_delta <= 12'b0;
+			altimeter_temp_delta <= 12'b0;
 			set_calibration_data_values();
 		end
 		else if(rx_data_latch_strobe) begin
@@ -430,9 +430,9 @@ module i2c_device_driver #(
 			imu_temp       	     <= data_rx_reg[`BNO055_TEMPERATURE_DATA_INDEX];
 			calib_status      	 <= data_rx_reg[`BNO055_CALIBRATION_DATA_INDEX];
 			altitude             <= ({data_rx_reg[`MPL3115A2_OUT_P_MSB_INDEX],data_rx_reg[`MPL3115A2_OUT_P_CSB_INDEX],data_rx_reg[`MPL3115A2_OUT_P_LSB_INDEX]}>>4);
-			amtimeter_temp       <= ({data_rx_reg[`MPL3115A2_OUT_T_MSB_INDEX],data_rx_reg[`MPL3115A2_OUT_T_LSB_INDEX]}>>4);
+			altimeter_temp       <= ({data_rx_reg[`MPL3115A2_OUT_T_MSB_INDEX],data_rx_reg[`MPL3115A2_OUT_T_LSB_INDEX]}>>4);
 			altitude_delta       <= ({data_rx_reg[`MPL3115A2_OUT_P_DELTA_MSB_INDEX],data_rx_reg[`MPL3115A2_OUT_P_DELTA_CSB_INDEX],data_rx_reg[`MPL3115A2_OUT_P_DELTA_LSB_INDEX]}>>4);
-			amtimeter_temp_delta <= ({data_rx_reg[`MPL3115A2_OUT_T_DELTA_MSB_INDEX],data_rx_reg[`MPL3115A2_OUT_T_DELTA_LSB_INDEX]}>>4);
+			altimeter_temp_delta <= ({data_rx_reg[`MPL3115A2_OUT_T_DELTA_MSB_INDEX],data_rx_reg[`MPL3115A2_OUT_T_DELTA_LSB_INDEX]}>>4);
 			set_calibration_data_values();
 		end
 	end

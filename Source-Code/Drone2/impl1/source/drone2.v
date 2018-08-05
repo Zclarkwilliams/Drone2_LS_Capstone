@@ -99,11 +99,24 @@ module drone2 (
 		x_linear_accel,
 		y_linear_accel,
 		z_linear_accel;
+	wire [`ALTIMETER_20BIT_WIDTH-1:0]
+		altitude,
+		altitude_delta;
+	wire [`ALTIMETER_12BIT_WIDTH-1:0]
+		altimeter_temp,
+		altimeter_temp_delta;
 	wire ac_active;
 	wire imu_data_valid_monitor;
 	wire imu_good;
 	wire imu_data_valid;
 	wire [7:0] imu_debug_out;
+	
+	//-------- Linear_Controller Wires ------------//
+	wire [`PID_RATE_BIT_WIDTH-1:0]
+		linear_error_x_axis,
+		linear_error_y_axis,
+		linear_error_z_axis;
+	wire [`DEBUG_WIRE_BIT_WIDTH-1:0] lc_debug_wire;
 
 	//-------- Body_Frame_Controller Wires --------//
 	wire [`PID_RATE_BIT_WIDTH-1:0]
@@ -165,6 +178,10 @@ module drone2 (
 		.linear_accel_x(x_linear_accel),
 		.linear_accel_y(y_linear_accel),
 		.linear_accel_z(z_linear_accel),
+		.altitude(altitude),
+		.altimeter_temp(altimeter_temp),
+		.altitude_delta(altitude_delta),
+		.altimeter_temp_delta(altimeter_temp_delta),
 		// DEBUG WIRE
 		.led_data_out(imu_debug_out),
 		// InOuts
@@ -201,6 +218,21 @@ module drone2 (
 		.swa_swb_pwm(swa_swb_pwm),
 		.us_clk(us_clk),
 		.resetn(resetn));
+
+	/**
+	*	Take altimeter provided altitude, and x, y acceleration to 
+	*	control linear velocity changes, mitigating drift and other velocity 
+	*	error causing events.
+	*		file linear_controller.v
+	*/
+	linear_controller lc (
+		// Outputs
+		.linear_error_z_axis(linear_error_z_axis),
+		// Debug LED's
+		.DEBUG_WIRE(lc_debug_wire),
+		// Inputs
+		.altitude(altitude),
+		.altitude_delta(altitude_delta));
 
 	/**
 	 *	Take IMU provided orientation angle and user provided target angle and
@@ -310,7 +342,7 @@ module drone2 (
 			DEBUG_LEDs	 <= throttle_target_rate;
 			end
 		else begin
-			led_data_out <= ~imu_debug_out;
+			led_data_out <= ~altitude[7:0];
 			DEBUG_LEDs	 <= y_rotation;
 			end
 	end
