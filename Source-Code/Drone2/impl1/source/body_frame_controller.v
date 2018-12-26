@@ -43,13 +43,13 @@ module body_frame_controller (
 	output wire signed [`PID_RATE_BIT_WIDTH-1:0] roll_rate_out,
 	output wire signed [`PID_RATE_BIT_WIDTH-1:0] pitch_rate_out,
 	output reg complete_signal,
-	output wire [`DEBUG_WIRE_BIT_WIDTH-1:0] DEBUG_WIRE, /*DEBUG LEDs*/
 	input wire signed [`RATE_BIT_WIDTH-1:0] 	yaw_target,
 	input wire signed [`RATE_BIT_WIDTH-1:0] 	roll_target,
 	input wire signed [`RATE_BIT_WIDTH-1:0] 	pitch_target,
 	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] 	roll_rotation,
 	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] 	pitch_rotation,
 	input wire signed [`IMU_VAL_BIT_WIDTH-1:0] 	yaw_rotation,
+	input wire signed [`RATE_BIT_WIDTH-1:0]		yaw_angle_error,
 	input wire signed [`RATE_BIT_WIDTH-1:0]		roll_angle_error,
 	input wire signed [`RATE_BIT_WIDTH-1:0] 	pitch_angle_error,
 	input wire start_signal,
@@ -68,6 +68,7 @@ module body_frame_controller (
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] latched_yaw_rotation;
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] latched_roll_rotation;
 	reg signed [`IMU_VAL_BIT_WIDTH-1:0] latched_pitch_rotation;
+	reg signed [`RATE_BIT_WIDTH-1:0]	latched_yaw_angle_error;
 	reg signed [`RATE_BIT_WIDTH-1:0]	latched_roll_angle_error;
 	reg signed [`RATE_BIT_WIDTH-1:0]	latched_pitch_angle_error;
 
@@ -91,10 +92,6 @@ module body_frame_controller (
 	// state variables
 	reg [STATE_BIT_WIDTH-1:0] state, next_state;
 
-	// debug wires
-	wire [`DEBUG_WIRE_BIT_WIDTH-1:0] DEBUG_WIRE_YAW, DEBUG_WIRE_ROLL, DEBUG_WIRE_PITCH;
-	assign DEBUG_WIRE = (!resetn) ? 16'hAAAA : DEBUG_WIRE_YAW;
-
 	// latch start signal and target/actual rotational angles
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
@@ -103,6 +100,7 @@ module body_frame_controller (
 			latched_yaw_target			<= `ALL_ZERO_2BYTE;
 			latched_roll_target			<= `ALL_ZERO_2BYTE;
 			latched_pitch_target		<= `ALL_ZERO_2BYTE;
+			latched_yaw_angle_error		<= `ALL_ZERO_2BYTE;
 			latched_roll_angle_error	<= `ALL_ZERO_2BYTE;
 			latched_pitch_angle_error	<= `ALL_ZERO_2BYTE;
 			// Angle rates from the imu
@@ -115,11 +113,12 @@ module body_frame_controller (
 			latched_yaw_target			<= yaw_target;
 			latched_roll_target			<= roll_target;
 			latched_pitch_target		<= pitch_target;
+			latched_yaw_angle_error		<= yaw_angle_error;
 			latched_roll_angle_error	<= roll_angle_error;
 			latched_pitch_angle_error	<= pitch_angle_error;
 			// Angle rates from the imu
+			//latched_yaw_rotation		<= 'sd0;
 			latched_yaw_rotation		<= -yaw_rotation;
-			//latched_yaw_rotation		<= `ALL_ZERO_2BYTE;
 			latched_roll_rotation		<= roll_rotation;
 			latched_pitch_rotation		<= -pitch_rotation;
 
@@ -132,6 +131,7 @@ module body_frame_controller (
 			latched_yaw_rotation		<= latched_yaw_rotation;
 			latched_roll_rotation		<= latched_roll_rotation;
 			latched_pitch_rotation		<= latched_pitch_rotation;
+			latched_yaw_angle_error		<= latched_yaw_angle_error;
 			latched_roll_angle_error	<= latched_roll_angle_error;
 			latched_pitch_angle_error	<= latched_pitch_angle_error;
 		end
@@ -143,6 +143,7 @@ module body_frame_controller (
 			latched_yaw_rotation		<= latched_yaw_rotation;
 			latched_roll_rotation		<= latched_roll_rotation;
 			latched_pitch_rotation		<= latched_pitch_rotation;
+			latched_yaw_angle_error		<= latched_yaw_angle_error;
 			latched_roll_angle_error	<= latched_roll_angle_error;
 			latched_pitch_angle_error	<= latched_pitch_angle_error;
 		end
@@ -231,12 +232,10 @@ module body_frame_controller (
 		.rate_out(yaw_rate_out),
 		.pid_complete(yaw_complete),
 		.pid_active(yaw_active),
-		// DEBUG LEDs
-		.DEBUG_WIRE(DEBUG_WIRE_YAW),
 		// Input
 		.target_rotation(latched_yaw_target),
 		.actual_rotation(latched_yaw_rotation),
-		.angle_error(`ALL_ZERO_2BYTE),
+		.angle_error(latched_yaw_angle_error),
 		.start_flag(start_flag),
 		.wait_flag(wait_flag),
 		.resetn(resetn),
@@ -256,8 +255,6 @@ module body_frame_controller (
 		.rate_out(pitch_rate_out),
 		.pid_complete(pitch_complete),
 		.pid_active(pitch_active),
-		// DEBUG LEDs
-		.DEBUG_WIRE(DEBUG_WIRE_PITCH),
 		// Input
 		.target_rotation(latched_pitch_target),
 		.actual_rotation(latched_pitch_rotation),
@@ -281,8 +278,6 @@ module body_frame_controller (
 		.rate_out(roll_rate_out),
 		.pid_complete(roll_complete),
 		.pid_active(roll_active),
-		// DEBUG LEDs
-		.DEBUG_WIRE(DEBUG_WIRE_ROLL),
 		// Input
 		.target_rotation(latched_roll_target),
 		.actual_rotation(latched_roll_rotation),

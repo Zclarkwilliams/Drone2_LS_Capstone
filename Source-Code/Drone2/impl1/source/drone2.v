@@ -36,7 +36,7 @@
  */
 
 `timescale 1ns / 1ns
-`default_nettype none
+//`default_nettype none
 `include "common_defines.v"
 
 module drone2 (
@@ -52,18 +52,22 @@ module drone2 (
 	input wire yaw_pwm,
 	input wire roll_pwm,
 	input wire pitch_pwm,
-	input wire aux1_pwm /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
-	input wire aux2_pwm /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
-	input wire swa_swb_pwm /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
+	input wire aux1_pwm,
+	input wire aux2_pwm,
+	input wire swa_swb_pwm,
 	input wire machxo3_switch_reset_n,
-	// DEBUG IO
-	input wire DEBUG_LED_SWITCH_N,
-	output reg [`DEBUG_WIRE_BIT_WIDTH-1:0] DEBUG_LEDs,
 	// Serial IO
 	inout wire sda_1,
 	inout wire sda_2,
 	inout wire scl_1,
-	inout wire scl_2);
+	inout wire scl_2,
+	
+	//UART IO
+	input wire sin,
+	output wire rxrdy_n,
+	output wire sout,
+	output wire txrdy_n
+	);
 
 	//--------------- Receiver Wires --------------//
 	wire [`REC_VAL_BIT_WIDTH-1:0]
@@ -74,6 +78,16 @@ module drone2 (
 		aux1_val,
 		aux2_val,
 		swa_swb_val;
+		
+	//-------- Yaw Angle Accumulator Wires --------//
+	wire [`RATE_BIT_WIDTH-1:0]
+		yaac_yaw_angle_error,
+		yaac_debug,
+		yaac_yaw_angle_target;
+	wire yaac_active,
+		yaw_stick_out_of_neutral_window,
+		yaac_complete,
+		yaac_enable_n;
 
 	//---------------- IMU Wires ------------------//
 	wire [`IMU_VAL_BIT_WIDTH-1:0]
@@ -93,14 +107,14 @@ module drone2 (
 	wire imu_data_valid_monitor;
 	wire imu_good;
 	wire imu_data_valid;
-	wire [7:0] imu_debug_out;
+	wire [7:0] imu_debug;
 
 	//--------- Throttle Controller Wires ---------//
 	wire [`REC_VAL_BIT_WIDTH-1:0]
-		throttle_controller_pwm_value_out;
+		tc_throttle_value;
 	wire throttle_controller_complete,
-		throttle_controller_active;
-	reg tc_enable_n = 0; // Enable TC
+		throttle_controller_active,
+		tc_enable_n;
 		
 	//---------- Angle_Controller Wires -----------//
 	wire [`RATE_BIT_WIDTH-1:0]
@@ -108,6 +122,7 @@ module drone2 (
 		yaw_target_rate,
 		roll_target_rate,
 		pitch_target_rate,
+		yaw_angle_error,
 		roll_angle_error,
 		pitch_angle_error;
 	wire ac_valid_strobe;
@@ -119,7 +134,6 @@ module drone2 (
 		pitch_rate;
 	wire bf_active;
 	wire bf_valid_strobe;
-	wire [`DEBUG_WIRE_BIT_WIDTH-1:0] bfc_debug_wire;
 
 	//------------- Motor_Mixer Wires -------------//
 	wire [`MOTOR_RATE_BIT_WIDTH-1:0]
@@ -134,8 +148,10 @@ module drone2 (
 
 	//---------------- Reset Wires ----------------//
 	wire resetn;
-	wire soft_reset_n = 1; //Disable this reset for now, connect if soft reset is needed
-	assign resetn = (machxo3_switch_reset_n & soft_reset_n);
+	//wire soft_reset_n;
+	//assign resetn = (machxo3_switch_reset_n & soft_reset_n);
+	assign resetn = (machxo3_switch_reset_n);
+
 
 	/**
 	 * Generate System Clock
@@ -200,7 +216,7 @@ module drone2 (
 		.y_velocity(y_linear_rate),
 		.z_velocity(z_linear_rate),
 		// DEBUG WIRE
-		.led_data_out(imu_debug_out),
+		.led_data_out(imu_debug),
 		// InOuts
 		.scl_1(scl_1),
 		.sda_1(sda_1),
@@ -210,16 +226,10 @@ module drone2 (
 		.rstn(resetn),
 		.sys_clk(sys_clk),
 		.rstn_imu(rstn_imu),
-		.ac_active(throttle_controller_active));
-		
-	/**
-	 *  Controls the throttle by averaging the PWM input value of 8 calculation cycles
-	 *  then applying a piecewise function linear throttle scale with decreased sensitivity
-	 *	around the neutral hover throttle value and increased sensitivity around the throttle extremes
-	 * 		file - throttle_controller.v
-	 */
-	throttle_controller TC(
-		.throttle_pwm_value_out(throttle_controller_pwm_value_out),
+		.next_mod_active(throttle_controller_active));
+
+ 	throttle_controller TC(
+		.throttle_pwm_value_out(tc_throttle_value),
 		.complete_signal(throttle_controller_complete),
 		.active_signal(throttle_controller_active),
 		.throttle_pwm_value_in(throttle_val),
@@ -228,6 +238,27 @@ module drone2 (
 		.resetn(resetn),
 		.us_clk(us_clk));		
 		
+	/**
+	 *	Takes accumulated yaw PWM value to calculate the current desired
+	 *   yaw rotation. Uses the IMU provided yaw Euler angle to calculate an angle
+	 *   error from this desired body angle
+	 * 		file - yaw_angle_accumulator.v
+	 */
+	yaw_angle_accumulator  YAAc(
+		.yaw_stick_out_of_neutral_window(yaw_stick_out_of_neutral_window),
+		.body_yaw_angle_target(yaac_yaw_angle_target),
+		.yaw_angle_error_out(yaac_yaw_angle_error),
+		.active_signal(yaac_active),
+		.complete_signal(yaac_complete),
+		.throttle_pwm_value_input(tc_throttle_value),
+		.yaw_pwm_value_input(yaw_val),
+		.yaw_angle_imu(z_rotation),
+		.yaac_enable_n(yaac_enable_n),
+		.debug_out(yaac_debug),
+		.start_signal(throttle_controller_complete),
+		.resetn(resetn),
+		.us_clk(us_clk)
+		);
 
 	/**
 	 *	Take IMU provided orientation angle and user provided target angle and
@@ -241,19 +272,21 @@ module drone2 (
 		.yaw_rate_out(yaw_target_rate),
 		.roll_rate_out(roll_target_rate),
 		.pitch_rate_out(pitch_target_rate),
+		.yaw_angle_error(yaw_angle_error),
 		.pitch_angle_error(pitch_angle_error),
 		.roll_angle_error(roll_angle_error),
 		.complete_signal(ac_valid_strobe),
 		.active_signal(ac_active),
 		// Inputs
-		.throttle_target(throttle_controller_pwm_value_out),
-		.yaw_target(yaw_val),
+		.throttle_target(tc_throttle_value),
+		.yaac_enable_n(yaac_enable_n),
+		.yaw_angle_target(yaac_yaw_angle_target),
+		.yaw_angle_error_in(yaac_yaw_angle_error),
 		.roll_target(roll_val),
 		.pitch_target(pitch_val),
-		.yaw_actual(z_rotation),
 		.roll_actual(y_rotation),
 		.pitch_actual(x_rotation),
-		.start_signal(throttle_controller_complete),
+		.start_signal(yaac_complete),
 		.resetn(resetn),
 		.us_clk(us_clk));
 
@@ -268,15 +301,16 @@ module drone2 (
 		.roll_rate_out(roll_rate),
 		.pitch_rate_out(pitch_rate),
 		.complete_signal(bf_valid_strobe),
-		// Debug LED wire
-		.DEBUG_WIRE(bfc_debug_wire),
 		// Inputs
 		.yaw_target(yaw_target_rate),
 		.roll_target(roll_target_rate),
 		.pitch_target(pitch_target_rate),
 		.roll_rotation(x_rotation_rate),
 		.pitch_rotation(y_rotation_rate),
-		.yaw_rotation(z_rotation_rate),
+		//Bypass yaw rotation rate while troubleshooting YAAc
+		//.yaw_rotation(z_rotation_rate),
+		.yaw_rotation(16'h0000),
+		.yaw_angle_error(yaw_angle_error),
 		.roll_angle_error(roll_angle_error),
 		.pitch_angle_error(pitch_angle_error),
 		.start_signal(ac_valid_strobe),
@@ -320,26 +354,56 @@ module drone2 (
 		.motor_4_rate(motor_4_rate),
 		.us_clk(us_clk),
 		.resetn(resetn));
+		
+		
+	uart_top uart
+	(
+		.resetn(resetn),
+		.clk(sys_clk),
+		.start(yaac_active),
+		.sin(sin),
+		.rxrdy_n(rxrdy_n),
+		.sout(sout),
+		.txrdy_n(txrdy_n),
 
+		.imu_x_rotation_angle(x_rotation),
+		.imu_y_rotation_angle(y_rotation),
+		.imu_z_rotation_angle(z_rotation),
+		.imu_x_rotation_rate(x_rotation_rate),
+		.imu_y_rotation_rate(y_rotation_rate),
+		.imu_z_rotation_rate(z_rotation_rate),
+		.imu_calibration_status(imu_debug),
+		.rec_throttle_val(throttle_val),
+		.rec_yaw_val(yaw_val),
+		.rec_roll_val(roll_val),
+		.rec_pitch_val(pitch_val),
+		.rec_aux1_val(aux1_val),
+		.rec_aux2_val(aux2_val),
+		.rec_swa_swb_val(swa_swb_val),
+		.yaac_yaw_angle_error(yaac_yaw_angle_error),
+		.yaac_debug(yaac_debug),
+		.yaac_yaw_angle_target(yaac_yaw_angle_target),
+		.yaw_stick_out_of_neutral_window(yaw_stick_out_of_neutral_window)
+
+	);
+	// Enable bits
+	assign yaac_enable_n = `LOW_ACTIVE_ENABLE;  // Enable YAAC
+	assign tc_enable_n   = `LOW_ACTIVE_ENABLE;  // Enable TC
+	//assign tc_enable_n   = `LOW_ACTIVE_DISABLE; // Disable TC
+	//assign soft_reset_n  = `LOW_ACTIVE_DISABLE; // Disable this reset for now, connect if soft reset is needed and remove this line
+		
 	/**
-	 * The secotion below is for use with Debug LEDs and other
-	 * debuging output pins and LEDs.
+	 * The section below is for use with Debug LEDs
 	 */
 
 	// Update on board LEDs, all inputs are active low
 	always @(posedge sys_clk) begin
 		if (!resetn) begin
 			led_data_out <= 8'hAA;
-			DEBUG_LEDs	 <= 16'hAAAA;
-			end
-		else if (!DEBUG_LED_SWITCH_N) begin
-			led_data_out <= ~throttle_val;
-			DEBUG_LEDs	 <= throttle_target_rate;
-			end
+		end
 		else begin
-			led_data_out <= ~imu_debug_out;
-			DEBUG_LEDs	 <= y_rotation;
-			end
+			led_data_out <= ~imu_debug;
+		end
 	end
 endmodule
 
