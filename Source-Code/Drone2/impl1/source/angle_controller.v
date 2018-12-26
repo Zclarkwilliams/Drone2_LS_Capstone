@@ -56,12 +56,12 @@ module angle_controller (
 	// rate limits (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	localparam signed [`OPS_BIT_WIDTH-1:0]
 		THROTTLE_MAX 	=  250 << `FIXED_POINT_SHIFT,
-		YAW_MAX 		=  100 << `FIXED_POINT_SHIFT,
-		YAW_MIN 		= -100 << `FIXED_POINT_SHIFT,
-		PITCH_MAX 		=  100 << `FIXED_POINT_SHIFT,
-		PITCH_MIN 		= -100 << `FIXED_POINT_SHIFT,
-		ROLL_MAX		=  100 << `FIXED_POINT_SHIFT,
-		ROLL_MIN		= -100 << `FIXED_POINT_SHIFT;
+		YAW_MAX 		=  200 << `FIXED_POINT_SHIFT,
+		YAW_MIN 		= -200 << `FIXED_POINT_SHIFT,
+		PITCH_MAX 		=  200 << `FIXED_POINT_SHIFT,
+		PITCH_MIN 		= -200 << `FIXED_POINT_SHIFT,
+		ROLL_MAX		=  200 << `FIXED_POINT_SHIFT,
+		ROLL_MIN		= -200 << `FIXED_POINT_SHIFT;
 
 
 	// Mapping input range to other
