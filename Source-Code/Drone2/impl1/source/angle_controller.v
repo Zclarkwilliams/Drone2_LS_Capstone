@@ -174,8 +174,8 @@ module angle_controller (
 					mapped_throttle 		<= {THROTTLE_F_PAD, latched_throttle, THROTTLE_R_PAD};
 					// input values mapped from 0 - 250 to -31.25 - 31.25
 					mapped_yaw 				<= $signed({FRONT_PAD, latched_yaw,   END_PAD}) - MAPPING_SUBS;
-					mapped_roll 			<= $signed({FRONT_PAD, latched_roll,  END_PAD}) - MAPPING_SUBS + roll_actual; // roll value from IMU is flipped, add instead of subtract
-					mapped_pitch 			<= $signed({FRONT_PAD, latched_pitch, END_PAD}) - MAPPING_SUBS - pitch_actual;
+					mapped_roll 			<= ($signed({FRONT_PAD, latched_roll,  END_PAD}) - MAPPING_SUBS)*16'sd2 + roll_actual; // roll value from IMU is flipped, add instead of subtract
+					mapped_pitch 			<= ($signed({FRONT_PAD, latched_pitch, END_PAD}) - MAPPING_SUBS)*16'sd2 - pitch_actual;
 				end
 				STATE_SCALING: begin
 					complete_signal 		<= `FALSE;
