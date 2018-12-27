@@ -82,147 +82,152 @@ disp_type = {
 
 
 def main():
+    #conn_type  ="serial"
+    conn_type  ="SSH"
+    #conn_type  ="telnet"
+    while True:
+        result, console = connect_console(conn_type)
+        if not result:
+            continue
+        if not parse_output(console, conn_type):
+            return
+
+def connect_console(conn_type):
+    if conn_type == "serial": #Handle serial connection
+        return connect_local()
+    else: #Handle SSH/Telnet connection
+        return connect_remote(conn_type)
+
+
+def connect_local():
+    print("Connecting to console via serial port")
+    try:
+        serial_port = serial.Serial()
+        #print("Default serial configration: {0}".format(serial_port))
+        serial_port.baudrate = 115200
+        serial_port.port="/dev/ttyUSB0"
+        serial_port.bytesize=8
+        serial_port.parity='N'
+        serial_port.stopbits=1
+        serial_port.timeout=None
+        serial_port.xonxoff=False
+        serial_port.rtscts=False
+        serial_port.dsrdtr=False
+    except:
+        sys.exit ("Error creating serial port object")
+    if not serial_port.is_open:
+        try:
+            serial_port.open()
+            print("Serial port opened")
+        except:
+            sys.exit ("Error opening serial port")
+    else:
+        sys.exit ("Error: serial port already open")
+    print("Serial port configuration : ")
+    for item in repr(serial_port).split(','):
+        print(item)
+    return True, serial_port
+
+
+
+def connect_remote(conn_type):
     ip         = "192.168.10.1"
     sshport    = "4001"
     telnetport = "2167"
     username   = "admin"
     password   = "admin"
-    #conn_type  ="serial"
-    #conn_type  ="SSH"
-    conn_type  ="telnet"
     timeout    = 20
     port       = 0
-
-    if conn_type == "telnet":
-        port = telnetport
-    elif conn_type == "SSH":
-        port = sshport
-    while 1:
-        if not parse_output(ip, port, username, password, timeout, conn_type):
-            return
-
-
-def connect_to_device(device, port, username, password, timeout, conn_type):
     tried_password = False
-    while 1:
-        #device.logfile = sys.stdout
+    connect_cmd = None
+    if conn_type == "SSH":
+        print("Connecting to console via SSH")
+        timeout = 20
+        connect_cmd = SSH + ' ' + SSH_OPTIONS + ' ' + username + '@' + ip + ' -p ' + sshport
+    else:
+        print("Connecting to console via Telnet")
+        timeout = 2
+        connect_cmd = TELNET + ' ' + ip + ' ' + telnetport
+    try:
+        console = pexpect.spawn(connect_cmd)
+    except KeyboardInterrupt:
+        sys.exit ("\nExiting Pexpect spawn by keyboard interrupt")
+    except Exception as e:
+        sys.exit ("Error: {0}".format(e))
+    while True:
+        #console.logfile = sys.stdout
         try:
-            result = device.expect(['continue connecting',
+            result = console.expect(['continue connecting',
                                     'Password|password',
                                     'Username|username|User|user',
                                     'Connection refused',
                                     'Connection to .* closed', 
                                     'denied',
                                     '\n\r',
-                                    'Connected',
+                                    'Connected.*\'\^\]\'\.',
                                     pexpect.EOF],
                                     timeout = timeout)
             if timeout > 2:
                 timeout = 2
             if result == 0: #Confirm host key
                 print("Accepting host key")
-                device.sendline('yes')
+                console.sendline('yes')
             elif result == 1: #Enter password
                 print("Entering password")
                 if not tried_password: #Only enter password once
-                    if device.logfile: #Hide password in debugs
-                        device.logfile = None
-                        device.sendline(password)
-                        device.logfile = sys.stdout
+                    if console.logfile: #Hide password in debugs
+                        console.logfile = None
+                        console.sendline(password)
+                        console.logfile = sys.stdout
                     else:
-                        device.sendline(password)
+                        console.sendline(password)
                     tried_password = True
                 else: #Password error, already tried this password
                     print("Error: Invalid username/password combo")
-                    return False
+                    return False, console
             elif result == 2: #Enter user name
                 print("Entering username: \'{0}\'".format(username))
-                device.sendline(username)
+                console.sendline(username)
             elif result == 4: #Connection refused
                 print("Connection refused")
-                print("Error: {0}".format(device.before))
-                return False
+                print("Error: {0}".format(console.before))
+                return False, console
             elif result == 4: #Session closed
                 print("Session closed")
-                print("Error: {0}".format(device.before))
-                return False
+                print("Error: {0}".format(console.before))
+                return False, console
             elif result == 5: #Password rejected
                 print("Error: Password rejected, invalid username/password combo?")
-                return False
+                return False, console
             elif result == 6: # Receiving valid data
-                return True
+                return True, console
             elif result == 7: # Telnet connected
                 print("Connected via Telnet")
-                return True
+                return True, console
             elif result == 8: # EOF, return error
                 print("EOF Returned")
-                return False
+                return False, console
             else:
-                print("Error: {0}".format(device.before))
-                return False
+                print("Error: {0}".format(console.before))
+                return False, console
         except KeyboardInterrupt:
             sys.exit ("\nExiting remote console connect by keyboard interrupt")
         except pexpect.TIMEOUT:
             if tried_password or conn_type != "telnet":
                 print("Prompt wait timeout. Probably connected with no data stream output, check drone power?")
-                return True
+                return True, console
             else:
                 sys.exit ("Failed to connect to remote console, timed out")
         except Exception as e:
-            print("tried_password={0}".format(tried_password))
             print(e)
             sys.exit ("Exiting remote connect due to unknown cause")
 
-def parse_output(ip, port, username, password, timeout, conn_type= "ssh"):
+
+def parse_output(console, conn_type= "ssh"):
     prompt = '\n\r'
-    device = None
-    nethost = None
     output = ''
     longer_timeout = True
-    ser = serial.Serial()
-    if conn_type == "SSH" or conn_type == "telnet": #Handle SSH/Telnet connection
-        if conn_type == "SSH":
-            print("Connecting to console via SSH")
-            timeout = 20
-            nethost = SSH + ' ' + SSH_OPTIONS + ' ' + username + '@' + ip + ' -p ' + port
-        else:
-            print("Connecting to console via Telnet")
-            timeout = 2
-            nethost = TELNET + ' ' + ip + ' ' + port
-        try:
-            device = pexpect.spawn(nethost)
-        except KeyboardInterrupt:
-            sys.exit ("Exiting pexpect spawn by keyboard interrupt")
-        except:
-            return False
-        if not connect_to_device(device, ip, username, password, timeout, conn_type):
-            return False
-        #device.logfile = sys.stdout
-        trash = device.before #Flush buffer
-    else: #Handle serial connection
-        print("Connecting to console via serial port")
-        #print("Default serial configration: {0}".format(ser))
-        ser.baudrate = 115200
-        ser.port="/dev/ttyUSB0"
-        ser.bytesize=8
-        ser.parity='N'
-        ser.stopbits=1
-        ser.timeout=None
-        ser.xonxoff=False
-        ser.rtscts=False
-        ser.dsrdtr=False
-        if not ser.is_open:
-            print("Serial port is closed, opening")
-            try:
-                ser.open()
-                print("Serial port opened")
-            except:
-                sys.exit ("Error opening serial port")
-        print("Serial port config : ")
-        for item in repr(ser).split(','):
-            print(item)
-
-    while 1:
+    while True:
         index = 0
         value = 0
         value_string = ''
@@ -235,79 +240,59 @@ def parse_output(ip, port, username, password, timeout, conn_type= "ssh"):
         try:
             line = ''
             if conn_type == "serial":
-                line = ser.readline()
+                line = console.readline()
             else:
-                device.expect([prompt, pexpect.EOF], timeout=timeout)
-                line = device.before
-            #sys.exit("Done with serial, exiting")
-            try:
-                longer_timeout = False
-                line = line.lstrip().rstrip()# remove any control or whitespace characters (' ', '\n', '\r', and so on)
-                if line.startswith("\x00"):
-                    line = line.lstrip("\x00")
-                index = int(line[0:2], 16)
-                value = int(line[3:], 16)
-                try:
-                    #print("Index {0} value {1} raw line \"'{2}\"".format(index, value, repr(line)))
-                    if disp_type[index] == 'signed8':
-                        bit_array = BitArray(hex=line[-2:])
-                        value_string = bit_array.int
-                    if disp_type[index] == 'signed16':
-                        bit_array = BitArray(hex=line[-4:])
-                        value_string = bit_array.int
-                    elif disp_type[index] == 'signed32':
-                        bit_array = BitArray(hex=line[-8:])
-                        value_string = bit_array.int
-                    elif disp_type[index] == 'unsigned8':
-                        bit_array = BitArray(hex=line[-2:])
-                        value_string = bit_array.uint
-                    elif disp_type[index] == 'unsigned16':
-                        bit_array = BitArray(hex=line[-4:])
-                        value_string = bit_array.uint
-                    elif disp_type[index] == 'unsigned32':
-                        bit_array = BitArray(hex=line[-8:])
-                        value_string = bit_array.uint
-                    elif disp_type[index] == 'binary8':
-                        bit_array = BitArray(hex=line[-2:])
-                        value_string = "0b" + bit_array.bin
-                    elif disp_type[index] == 'binary16':
-                        bit_array = BitArray(hex=line[-4:])
-                        value_string = "0b" + bit_array.bin
-                    elif disp_type[index] == 'binary32':
-                        bit_array = "0b" + BitArray(hex=line[-8:])
-                        value_string = bit_array.bin
-                    #print("value_string={0}".format(value_string))
-                except KeyboardInterrupt:
-                    sys.exit ("\nExiting ByteString parser by keyboard interrupt")
-                except pexpect.TIMEOUT:
-                    print("Receive data timeout!, Reconnecting")
-                    longer_timeout = True
-                    return True
-                except Exception as e:
-                    print(e)
-                    pass
-            except KeyboardInterrupt:
-                sys.exit ("\nExiting line parser by keyboard interrupt")
-            except pexpect.TIMEOUT:
-                print("Receive data timeout!, Reconnecting")
-                longer_timeout = True
-                return True
-            except Exception as e:
-                print(e)
-                pass
+                console.expect([prompt, pexpect.EOF], timeout=timeout)
+                line = console.before
+            longer_timeout = False
+            line = line.lstrip().rstrip()# remove any control or whitespace characters (' ', '\n', '\r', and so on)
+            if line.startswith("\x00"):
+                line = line.lstrip("\x00")
+            #print("This line = {0}".format(repr(line)))
+            if len(line) != 6: #skip partial lines, read started in the middle of a hex string
+                continue
+            index = int(line[0:2], 16)
+            value = int(line[3:], 16)
+            if disp_type[index] == 'signed8':
+                bit_array = BitArray(hex=line[-2:])
+                value_string = bit_array.int
+            if disp_type[index] == 'signed16':
+                bit_array = BitArray(hex=line[-4:])
+                value_string = bit_array.int
+            elif disp_type[index] == 'signed32':
+                bit_array = BitArray(hex=line[-8:])
+                value_string = bit_array.int
+            elif disp_type[index] == 'unsigned8':
+                bit_array = BitArray(hex=line[-2:])
+                value_string = bit_array.uint
+            elif disp_type[index] == 'unsigned16':
+                bit_array = BitArray(hex=line[-4:])
+                value_string = bit_array.uint
+            elif disp_type[index] == 'unsigned32':
+                bit_array = BitArray(hex=line[-8:])
+                value_string = bit_array.uint
+            elif disp_type[index] == 'binary8':
+                bit_array = BitArray(hex=line[-2:])
+                value_string = "0b" + bit_array.bin
+            elif disp_type[index] == 'binary16':
+                bit_array = BitArray(hex=line[-4:])
+                value_string = "0b" + bit_array.bin
+            elif disp_type[index] == 'binary32':
+                bit_array = "0b" + BitArray(hex=line[-8:])
+                value_string = bit_array.bin
             stime = datetime.datetime.now().strftime('%H:%M:%S.%f')
             output = output + "{0} : {1} : {2}\n".format(stime, name_indices[index], value_string)
-            if index == 17:
+            if index == YAAC_STK_NEU_INDEX:
                 print(output)
                 output = ''
         except KeyboardInterrupt:
-            sys.exit ("\nExiting wait for new line by keyboard interrupt")
+            sys.exit ("\nExiting while waiting for new line by keyboard interrupt")
         except pexpect.TIMEOUT:
             print("Receive data timeout!, Reconnecting")
             longer_timeout = True
             return True
         except Exception as e:
-            sys.exit("Exiting wait for new line due to error: {0}".format(e))
+            sys.exit("Exiting waiting for new line due to error: {0}".format(e))
     return False
 if __name__=="__main__":
     main()
