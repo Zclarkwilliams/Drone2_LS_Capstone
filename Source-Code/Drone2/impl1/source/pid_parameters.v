@@ -26,7 +26,7 @@
  
 //Adjust yaw rate from stick input,
 //increasing value increases yaw stick rate, minimum value is 1
-`define YAW_ACCUMULATOR_INPUT_MULTIPLIER    16'sd1 
+`define YAW_ACCUMULATOR_INPUT_MULTIPLIER    16'sd2 
 
 /**
  * Defines for the angle_controller
