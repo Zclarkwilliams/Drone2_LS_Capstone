@@ -27,6 +27,11 @@
 `include "common_defines.v"
 `include "pid_parameters.v"
 
+
+`define USE_ERROR_RATE_LIMIT  //Limit the maximum amount of change that can occur on the yaw angle error during each iteration
+`define USE_ERROR_VALUE_LIMIT //Limit the maximum absolute value of the yaw angle error
+
+`undef USE_ERROR_RATE_LIMIT   //Disable error rate limiting for now
 module yaw_angle_accumulator (
 	output reg  signed [`RATE_BIT_WIDTH-1:0]body_yaw_angle_target,
 	output reg  signed [`RATE_BIT_WIDTH-1:0] yaw_angle_error_out,
@@ -345,23 +350,23 @@ module yaw_angle_accumulator (
 					next_complete_signal = `FALSE;
 					next_active_signal   = `TRUE;
 					trigger_yaw_angle_error  = `TRUE;
-					///*
 					//Prevent wrap from +90˚ to -90˚, retain at +90˚
 					if ((old_yaw_angle_error >= ANGLE_90_DEG) && (yaw_angle_error <= -ANGLE_90_DEG))
 						next_yaw_angle_error = ANGLE_90_DEG;
 					//Prevent wrap from -90˚ to +90˚, retain at -90˚
 					else if ((old_yaw_angle_error <= -ANGLE_90_DEG) && (yaw_angle_error >= ANGLE_90_DEG))
 						next_yaw_angle_error = -ANGLE_90_DEG;
+`ifdef USE_ERROR_RATE_LIMIT
 					//Out of range yaw angle error change, exceeds negative change limit per iteration
 					else if (yaw_angle_error < (old_yaw_angle_error - YAW_ERROR_MAX_CHANGE))
 						next_yaw_angle_error = old_yaw_angle_error - YAW_ERROR_MAX_CHANGE;
 					//Out of range yaw angle error change, exceeds positive change limit per iteration
 					else if (yaw_angle_error > (old_yaw_angle_error + YAW_ERROR_MAX_CHANGE))
 						next_yaw_angle_error = old_yaw_angle_error + YAW_ERROR_MAX_CHANGE;
+`endif
 					// In range yaw angle error change this iteration
 					else
 						next_yaw_angle_error = yaw_angle_error;
-					//*/
 				end
 				// Limit actual angle error to +/- 90˚ from target angle to prevent excessive output
 				STATE_LIMIT_ERROR: begin
@@ -373,10 +378,12 @@ module yaw_angle_accumulator (
 						next_body_yaw_angle_target = latched_yaw_pwm_value;
 						next_yaw_angle_error_out = 0;
 					end
+`ifdef USE_ERROR_VALUE_LIMIT
 					else if (yaw_angle_error >  ANGLE_90_DEG)
 						next_yaw_angle_error_out =  ANGLE_90_DEG;
 					else if (yaw_angle_error < -ANGLE_90_DEG)
 						next_yaw_angle_error_out = -ANGLE_90_DEG;
+`endif
 					else
 						next_yaw_angle_error_out = yaw_angle_error;
 				end
@@ -444,7 +451,7 @@ module yaw_angle_accumulator (
 				body_yaw_angle_target_tracking <= next_body_yaw_angle_target_tracking;
 		end
 	end
-	
+
 	// Register latched_yaw_stick_normalized
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
@@ -453,6 +460,17 @@ module yaw_angle_accumulator (
 		else begin
 			if(trigger_yaw_stick_normalized == `TRUE)
 				latched_yaw_stick_normalized <= (latched_yaw_pwm_value - yaw_stick_neutral_value);
+		end
+	end
+	
+	// Register yaw_stick_neutral_value
+	always @(posedge us_clk or negedge resetn) begin
+		if(!resetn) begin
+			yaw_stick_neutral_value     <= `ALL_ZERO_2BYTE;
+		end
+		else begin
+			if(trigger_yaw_stick_neutral_value == `TRUE)
+				yaw_stick_neutral_value <= latched_yaw_pwm_value;
 		end
 	end
 		
@@ -532,7 +550,10 @@ module yaw_angle_accumulator (
 			if(trigger_latch_new_values == `TRUE) begin
 				latched_throttle_pwm_value <= {8'd0, throttle_pwm_value_input};
 				latched_yaw_pwm_value      <= {8'd0, yaw_pwm_value_input};
-				latched_yaw_angle_imu      <= yaw_angle_imu;
+				if ( (yaw_angle_imu > ANGLE_360_DEG) || (yaw_angle_imu < ANGLE_0_DEG) ) //Ignore any glitches from IMU with garbage data
+					latched_yaw_angle_imu      <= old_yaw_angle_imu;
+				else
+					latched_yaw_angle_imu      <= yaw_angle_imu;
 			end
 		end
 	end
