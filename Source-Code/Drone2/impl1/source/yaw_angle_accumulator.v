@@ -28,7 +28,6 @@
 `include "pid_parameters.v"
 
 module yaw_angle_accumulator (
-	//output reg  signed [`RATE_BIT_WIDTH-1:0] body_yaw_angle_target,
 	output reg  signed [`RATE_BIT_WIDTH-1:0]body_yaw_angle_target,
 	output reg  signed [`RATE_BIT_WIDTH-1:0] yaw_angle_error_out,
 	output wire [`RATE_BIT_WIDTH-1:0] debug_out,
@@ -59,26 +58,24 @@ module yaw_angle_accumulator (
 	reg old_yaw_stick_out_of_neutral_window;
 	
 	//Next values of above registers
-	reg signed [`RATE_BIT_WIDTH-1:0]    next_body_yaw_angle_target_tracking_temp;
 	reg signed [`RATE_BIT_WIDTH-1:0]    next_body_yaw_angle_target_tracking;
 	reg signed [`RATE_BIT_WIDTH-1:0]    next_body_yaw_angle_target;
-	reg signed [`RATE_BIT_WIDTH-1:0]    next_latched_throttle_pwm_value;
-	reg signed [`RATE_BIT_WIDTH-1:0]    next_latched_yaw_pwm_value;
-	reg signed [`RATE_BIT_WIDTH-1:0]    next_yaw_stick_neutral_value;
-	reg signed [`RATE_BIT_WIDTH-1:0]    next_latched_yaw_stick_normalized;
-	reg signed [`RATE_BIT_WIDTH-1:0]    next_latched_yaw_angle_imu;
-	reg signed [`RATE_BIT_WIDTH-1:0]    next_yaw_angle_error_temp;
 	reg signed [`RATE_BIT_WIDTH-1:0]    next_yaw_angle_error;
 	reg signed [`RATE_BIT_WIDTH-1:0]    next_yaw_angle_error_out;
 
 	reg next_yaw_stick_out_of_neutral_window;
 	reg next_complete_signal;
 	reg next_active_signal;
-	reg next_old_yaw_stick_out_of_neutral_window;
 	reg trigger_body_yaw_angle_target_tracking;
-	reg trigger_register_old_values;
 	reg trigger_yaw_stick_normalized;
 	reg trigger_body_yaw_angle_target;
+	reg trigger_yaw_angle_error;
+	reg trigger_yaw_angle_error_out;
+	reg trigger_yaw_stick_neutral_value;
+	reg trigger_latch_new_values;
+	reg trigger_body_yaw_angle_target_tracking_temp;
+	reg trigger_yaw_angle_error_temp;
+	reg trigger_yaw_stick_out_of_neutral_window;
 	reg start_flag = `FALSE;
 
 	// number of total FSM states, determines the number of required bits for states
@@ -138,29 +135,11 @@ module yaw_angle_accumulator (
 			state                               <= STATE_INIT;
 			complete_signal                     <= `FALSE;
 			active_signal                       <= `FALSE;
-			body_yaw_angle_target_tracking_temp <= `ALL_ZERO_2BYTE;
-			yaw_angle_error_temp                <= `ALL_ZERO_2BYTE;
-			yaw_angle_error                     <= `ALL_ZERO_2BYTE;
-			yaw_angle_error_out                 <= `ALL_ZERO_2BYTE;
-			yaw_stick_neutral_value             <= `ALL_ZERO_2BYTE;
-			latched_yaw_pwm_value               <= `ALL_ZERO_2BYTE;
-			latched_throttle_pwm_value          <= `ALL_ZERO_2BYTE;
-			latched_yaw_angle_imu               <= `ALL_ZERO_2BYTE;
-			yaw_stick_out_of_neutral_window     <= `FALSE;
 		end
 		else begin
 			state                               <= next_state;
 			complete_signal                     <= next_complete_signal;
 			active_signal                       <= next_active_signal;
-			body_yaw_angle_target_tracking_temp <= next_body_yaw_angle_target_tracking_temp;
-			yaw_angle_error_temp                <= next_yaw_angle_error_temp;
-			yaw_angle_error                     <= next_yaw_angle_error;
-			yaw_angle_error_out                 <= next_yaw_angle_error_out;
-			yaw_stick_neutral_value             <= next_yaw_stick_neutral_value;
-			latched_yaw_pwm_value               <= next_latched_yaw_pwm_value;
-			latched_throttle_pwm_value          <= next_latched_throttle_pwm_value;
-			latched_yaw_angle_imu               <= next_latched_yaw_angle_imu;
-			yaw_stick_out_of_neutral_window     <= next_yaw_stick_out_of_neutral_window;
 		end
 	end
 
@@ -220,63 +199,47 @@ module yaw_angle_accumulator (
 
 	// output and FSM logic
 	always @(*) begin
+		next_yaw_stick_out_of_neutral_window        = `FALSE;
+		trigger_body_yaw_angle_target_tracking      = `FALSE;
+		trigger_body_yaw_angle_target_tracking_temp = `FALSE;
+		trigger_yaw_stick_normalized                = `FALSE;
+		trigger_body_yaw_angle_target               = `FALSE;
+		trigger_yaw_angle_error                     = `FALSE;
+		trigger_yaw_angle_error_out                 = `FALSE;
+		trigger_yaw_stick_neutral_value             = `FALSE;
+		trigger_latch_new_values                    = `FALSE;
+		trigger_yaw_angle_error_temp                = `FALSE;
+		trigger_yaw_stick_out_of_neutral_window     = `FALSE;
 		if(!resetn) begin
 			// reset values
 			next_complete_signal                     = `FALSE;
 			next_active_signal                       = `FALSE;
 			next_body_yaw_angle_target               = `ALL_ZERO_2BYTE;
-			next_body_yaw_angle_target_tracking_temp = `ALL_ZERO_2BYTE;
 			next_body_yaw_angle_target_tracking      = `ALL_ZERO_2BYTE;
-			next_latched_yaw_stick_normalized        = `ALL_ZERO_2BYTE;
 			next_yaw_angle_error                     = `ALL_ZERO_2BYTE;
 			next_yaw_angle_error_out                 = `ALL_ZERO_2BYTE;
-			next_yaw_stick_neutral_value             = `ALL_ZERO_2BYTE;
-			next_latched_yaw_pwm_value               = `ALL_ZERO_2BYTE;
-			next_latched_throttle_pwm_value          = `ALL_ZERO_2BYTE;
-			next_latched_yaw_angle_imu               = `ALL_ZERO_2BYTE;
-			next_yaw_stick_out_of_neutral_window     = `FALSE;
-			trigger_body_yaw_angle_target_tracking   = `FALSE;
-			trigger_register_old_values              = `FALSE;
-			trigger_yaw_stick_normalized             = `FALSE;
-			trigger_body_yaw_angle_target            = `FALSE;
 		end
 		else begin
-			// Retain previous value unless otherwise modified in FSM case statement.
-			next_body_yaw_angle_target_tracking      = body_yaw_angle_target_tracking;
-			next_body_yaw_angle_target_tracking_temp = body_yaw_angle_target_tracking_temp;
-			next_yaw_angle_error_temp                = yaw_angle_error_temp;
-			next_yaw_angle_error                     = yaw_angle_error;
-			next_yaw_angle_error_out                 = yaw_angle_error_out;
-			next_yaw_stick_neutral_value             = yaw_stick_neutral_value;
-			next_latched_yaw_pwm_value               = latched_yaw_pwm_value;
-			next_latched_throttle_pwm_value          = latched_throttle_pwm_value;
-			next_latched_yaw_angle_imu               = latched_yaw_angle_imu;
-			next_yaw_stick_out_of_neutral_window     = yaw_stick_out_of_neutral_window;
-			trigger_body_yaw_angle_target_tracking   = `FALSE;
-			trigger_register_old_values              = `FALSE;
-			trigger_yaw_stick_normalized             = `FALSE;
-			trigger_body_yaw_angle_target            = `FALSE;
 			case(state)
                 STATE_INIT: begin
 					// Good startup values
-					next_complete_signal                     = `FALSE;
-					next_active_signal                       = `FALSE;
-					next_body_yaw_angle_target               = `ALL_ZERO_2BYTE;
-					next_body_yaw_angle_target_tracking_temp = `ALL_ZERO_2BYTE;
-					next_body_yaw_angle_target_tracking      = `ALL_ZERO_2BYTE;
-					next_latched_yaw_stick_normalized        = `ALL_ZERO_2BYTE;
-					next_yaw_angle_error_temp                = `ALL_ZERO_2BYTE;
-					next_yaw_angle_error                     = `ALL_ZERO_2BYTE;
-					next_yaw_angle_error_out                 = `ALL_ZERO_2BYTE;
-					next_yaw_stick_neutral_value             = `ALL_ZERO_2BYTE;
-					next_latched_yaw_pwm_value               = `ALL_ZERO_2BYTE;
-					next_latched_throttle_pwm_value          = `ALL_ZERO_2BYTE;
-					next_latched_yaw_angle_imu               = `ALL_ZERO_2BYTE;
-					next_yaw_stick_out_of_neutral_window     = `FALSE;
-					trigger_register_old_values              = `TRUE;
-					trigger_body_yaw_angle_target_tracking   = `TRUE;
-					trigger_yaw_stick_normalized             = `TRUE;
-					trigger_body_yaw_angle_target            = `TRUE;
+					next_complete_signal                        = `FALSE;
+					next_active_signal                          = `FALSE;
+					next_body_yaw_angle_target                  = `ALL_ZERO_2BYTE;
+					next_body_yaw_angle_target_tracking         = `ALL_ZERO_2BYTE;
+					next_yaw_angle_error                        = `ALL_ZERO_2BYTE;
+					next_yaw_angle_error_out                    = `ALL_ZERO_2BYTE;
+					next_yaw_stick_out_of_neutral_window        = `FALSE;
+					trigger_body_yaw_angle_target_tracking      = `TRUE;
+					trigger_body_yaw_angle_target_tracking_temp = `TRUE;
+					trigger_yaw_stick_normalized                = `TRUE;
+					trigger_body_yaw_angle_target               = `TRUE;
+					trigger_yaw_angle_error                     = `TRUE;
+					trigger_yaw_angle_error_out                 = `TRUE;
+					trigger_yaw_stick_neutral_value             = `TRUE;
+					trigger_latch_new_values                    = `TRUE;
+					trigger_yaw_angle_error_temp                = `TRUE;
+					trigger_yaw_stick_out_of_neutral_window     = `TRUE;
                 end
 				STATE_WAITING: begin
 					next_complete_signal = `FALSE;
@@ -285,31 +248,24 @@ module yaw_angle_accumulator (
 				STATE_LATCH_VALUES: begin
 					next_complete_signal = `FALSE;
 					next_active_signal   = `TRUE;
-					next_latched_throttle_pwm_value = {8'd0, throttle_pwm_value_input};
-					next_latched_yaw_pwm_value      = {8'd0, yaw_pwm_value_input};
-					next_latched_yaw_angle_imu      = yaw_angle_imu;
+					trigger_latch_new_values = `TRUE;
 				end
 				STATE_GET_NEUTRAL_YAW: begin
 					next_complete_signal = `FALSE;
 					next_active_signal   = `TRUE;
-					
 					if (latched_throttle_pwm_value < 10)
-						next_yaw_stick_neutral_value = latched_yaw_pwm_value;
+						trigger_yaw_stick_neutral_value = `TRUE;
 					//Otherwise retain the neutral value
-					else
-						next_yaw_stick_neutral_value = yaw_stick_neutral_value;
 				end
 				STATE_NORMALIZE_STICK: begin
 					next_complete_signal = `FALSE;
 					next_active_signal   = `TRUE;
 					trigger_yaw_stick_normalized = `TRUE;
-					next_latched_yaw_stick_normalized = (latched_yaw_pwm_value - yaw_stick_neutral_value);
-					//next_latched_yaw_stick_normalized = (latched_yaw_pwm_value - yaw_stick_neutral_value)*`YAW_ACCUMULATOR_INPUT_MULTIPLIER;
 				end
 				STATE_TRACK_STICK: begin
 					next_complete_signal = `FALSE;
 					next_active_signal   = `TRUE;
-					
+					trigger_yaw_stick_out_of_neutral_window   = `TRUE;
 					// Throttle is OFF, use current IMU angle as the tracked angle
 					if (latched_throttle_pwm_value < 10)
 						next_yaw_stick_out_of_neutral_window = `FALSE;
@@ -317,14 +273,14 @@ module yaw_angle_accumulator (
 					// Yaw is neutral stick +/-10 PWM units
 					else if ((latched_yaw_stick_normalized  < 4 ) && (latched_yaw_stick_normalized > -4 ))
 						next_yaw_stick_out_of_neutral_window = `FALSE;
-					// Throttle on and yaw stick not neutral or crossing over
+					// Throttle on and yaw stick not neutral
 					else
 						next_yaw_stick_out_of_neutral_window = `TRUE;
 				end
 				STATE_CALC_TRACK_ANGLE_TEMP: begin
 					next_complete_signal = `FALSE;
 					next_active_signal   = `TRUE;
-					next_body_yaw_angle_target_tracking_temp = (body_yaw_angle_target_tracking + latched_yaw_stick_normalized);
+					trigger_body_yaw_angle_target_tracking_temp = `TRUE;
 				end
 				STATE_CALC_TRACK_ANGLE: begin
 					next_complete_signal = `FALSE;
@@ -364,11 +320,12 @@ module yaw_angle_accumulator (
 				STATE_CALC_ANGLE_ERROR_TEMP: begin
 					next_complete_signal = `FALSE;
 					next_active_signal   = `TRUE;
-					next_yaw_angle_error_temp = (body_yaw_angle_target - latched_yaw_angle_imu);
+					trigger_yaw_angle_error_temp = `TRUE;
 				end
 				STATE_CALC_ANGLE_ERROR: begin
 					next_complete_signal = `FALSE;
 					next_active_signal   = `TRUE;
+					trigger_yaw_angle_error  = `TRUE;
 					//Throttle is off, there can't be angle error
 					if (latched_throttle_pwm_value < 10) begin
 						next_yaw_angle_error = 0;
@@ -387,6 +344,7 @@ module yaw_angle_accumulator (
 				STATE_LIMIT_ERROR_CHANGE: begin
 					next_complete_signal = `FALSE;
 					next_active_signal   = `TRUE;
+					trigger_yaw_angle_error  = `TRUE;
 					///*
 					//Prevent wrap from +90˚ to -90˚, retain at +90˚
 					if ((old_yaw_angle_error >= ANGLE_90_DEG) && (yaw_angle_error <= -ANGLE_90_DEG))
@@ -409,6 +367,7 @@ module yaw_angle_accumulator (
 				STATE_LIMIT_ERROR: begin
 					next_complete_signal = `FALSE;
 					next_active_signal   = `TRUE;
+					trigger_yaw_angle_error_out = `TRUE;
 					//If YAAc functionality not enabled, set outputs to bypass this module
 					if(yaac_enable_n) begin
 						next_body_yaw_angle_target = latched_yaw_pwm_value;
@@ -424,23 +383,26 @@ module yaw_angle_accumulator (
 				STATE_COMPLETE: begin
 					next_complete_signal = `TRUE;
 					next_active_signal   = `FALSE;	
-					trigger_register_old_values = `TRUE;
 
 				end
 				default: begin
 					next_complete_signal = `FALSE;
 					next_active_signal   = `FALSE;
-					next_body_yaw_angle_target               = `ALL_ZERO_2BYTE;
-					next_body_yaw_angle_target_tracking_temp = `ALL_ZERO_2BYTE;
-					next_body_yaw_angle_target_tracking      = `ALL_ZERO_2BYTE;
-					next_latched_yaw_stick_normalized        = `ALL_ZERO_2BYTE;
-					next_yaw_angle_error                     = `ALL_ZERO_2BYTE;
-					next_yaw_angle_error_out                 = `ALL_ZERO_2BYTE;
-					next_yaw_stick_neutral_value             = `ALL_ZERO_2BYTE;
-					next_latched_yaw_pwm_value               = `ALL_ZERO_1BYTE;
-					next_latched_throttle_pwm_value          = `ALL_ZERO_1BYTE;
-					next_latched_yaw_angle_imu               = `ALL_ZERO_2BYTE;
-					next_yaw_stick_out_of_neutral_window     = `FALSE;
+					next_body_yaw_angle_target                  = `ALL_ZERO_2BYTE;
+					next_body_yaw_angle_target_tracking         = `ALL_ZERO_2BYTE;
+					next_yaw_angle_error                        = `ALL_ZERO_2BYTE;
+					next_yaw_angle_error_out                    = `ALL_ZERO_2BYTE;
+					next_yaw_stick_out_of_neutral_window        = `FALSE;
+					trigger_body_yaw_angle_target_tracking      = `TRUE;
+					trigger_body_yaw_angle_target_tracking_temp = `TRUE;
+					trigger_yaw_stick_normalized                = `TRUE;
+					trigger_body_yaw_angle_target               = `TRUE;
+					trigger_yaw_angle_error                     = `TRUE;
+					trigger_yaw_angle_error_out                 = `TRUE;
+					trigger_yaw_stick_neutral_value             = `TRUE;
+					trigger_latch_new_values                    = `TRUE;
+					trigger_yaw_angle_error_temp                = `TRUE;
+					trigger_yaw_stick_out_of_neutral_window     = `TRUE;
 				end
 			endcase
 		end
@@ -461,6 +423,17 @@ module yaw_angle_accumulator (
 			start_flag 		<= start_flag;
 	end
 
+	// Register body_yaw_angle_target_tracking_temp
+	always @(posedge us_clk or negedge resetn) begin
+		if(!resetn) begin
+			body_yaw_angle_target_tracking_temp <= `ALL_ZERO_2BYTE;
+		end
+		else begin
+			if(trigger_body_yaw_angle_target_tracking_temp == `TRUE)
+				body_yaw_angle_target_tracking_temp <= (body_yaw_angle_target_tracking + latched_yaw_stick_normalized);
+		end
+	end
+
 	// Register body_yaw_angle_target_tracking
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
@@ -479,7 +452,7 @@ module yaw_angle_accumulator (
 		end
 		else begin
 			if(trigger_yaw_stick_normalized == `TRUE)
-				latched_yaw_stick_normalized <= next_latched_yaw_stick_normalized;
+				latched_yaw_stick_normalized <= (latched_yaw_pwm_value - yaw_stick_neutral_value);
 		end
 	end
 		
@@ -493,21 +466,74 @@ module yaw_angle_accumulator (
 				body_yaw_angle_target <= next_body_yaw_angle_target;
 		end
 	end
+
+	// Register yaw_angle_error_temp
+	always @(posedge us_clk or negedge resetn) begin
+		if(!resetn) begin
+			yaw_angle_error_temp     <= `ALL_ZERO_2BYTE;
+		end
+		else begin
+			if(trigger_yaw_angle_error_temp == `TRUE)
+				yaw_angle_error_temp <= (body_yaw_angle_target - latched_yaw_angle_imu);
+		end
+	end
 	
-	// Register old values for next iteration
+	// Register yaw_angle_error
+	always @(posedge us_clk or negedge resetn) begin
+		if(!resetn) begin
+			yaw_angle_error     <= `ALL_ZERO_2BYTE;
+		end
+		else begin
+			if(trigger_yaw_angle_error == `TRUE)
+				yaw_angle_error <= next_yaw_angle_error;
+		end
+	end
+
+
+	// Register yaw_stick_out_of_neutral_window
+	always @(posedge us_clk or negedge resetn) begin
+		if(!resetn) begin
+			yaw_stick_out_of_neutral_window     <= `ALL_ZERO_2BYTE;
+		end
+		else begin
+			if(trigger_yaw_stick_out_of_neutral_window == `TRUE)
+				yaw_stick_out_of_neutral_window    = next_yaw_stick_out_of_neutral_window;
+		end
+	end
+	
+	// Register old values for next iteration and set module output
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
 			old_yaw_angle_imu                   <= `ALL_ZERO_2BYTE;
 			old_yaw_angle_error                 <= `ALL_ZERO_2BYTE;
 			old_yaw_stick_normalized            <= `ALL_ZERO_2BYTE;
+			yaw_angle_error_out                 <= `ALL_ZERO_2BYTE;
 			old_yaw_stick_out_of_neutral_window <= `FALSE;
 		end
 		else begin
-			if(trigger_register_old_values == `TRUE)
-			old_yaw_angle_imu                   <= latched_yaw_angle_imu;
-			old_yaw_angle_error                 <= yaw_angle_error;
-			old_yaw_stick_normalized            <= latched_yaw_stick_normalized;
-			old_yaw_stick_out_of_neutral_window <= yaw_stick_out_of_neutral_window;
+			if(trigger_yaw_angle_error_out == `TRUE) begin
+				yaw_angle_error_out                 <= next_yaw_angle_error_out;
+				old_yaw_angle_imu                   <= latched_yaw_angle_imu;
+				old_yaw_angle_error                 <= yaw_angle_error;
+				old_yaw_stick_normalized            <= latched_yaw_stick_normalized;
+				old_yaw_stick_out_of_neutral_window <= yaw_stick_out_of_neutral_window;
+			end
+		end
+	end
+
+	// Register new values for this iteration
+	always @(posedge us_clk or negedge resetn) begin
+		if(!resetn) begin
+			latched_throttle_pwm_value <= `ALL_ZERO_2BYTE;
+			latched_yaw_pwm_value      <= `ALL_ZERO_2BYTE;
+			latched_yaw_angle_imu      <= `ALL_ZERO_2BYTE;
+		end
+		else begin
+			if(trigger_latch_new_values == `TRUE) begin
+				latched_throttle_pwm_value <= {8'd0, throttle_pwm_value_input};
+				latched_yaw_pwm_value      <= {8'd0, yaw_pwm_value_input};
+				latched_yaw_angle_imu      <= yaw_angle_imu;
+			end
 		end
 	end
 
