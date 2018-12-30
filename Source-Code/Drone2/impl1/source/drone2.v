@@ -256,6 +256,7 @@ module drone2 (
 		.yaw_angle_imu(z_rotation),
 		.yaac_enable_n(yaac_enable_n),
 		.debug_out(yaac_debug),
+		.imu_ready(imu_good),
 		.start_signal(throttle_controller_complete),
 		.resetn(resetn),
 		.us_clk(us_clk)
@@ -309,8 +310,8 @@ module drone2 (
 		.roll_rotation(x_rotation_rate),
 		.pitch_rotation(y_rotation_rate),
 		//Bypass yaw rotation rate while troubleshooting YAAc
-		//.yaw_rotation(z_rotation_rate),
-		.yaw_rotation(16'h0000),
+		.yaw_rotation(z_rotation_rate),
+		//.yaw_rotation(16'h0000),
 		.yaw_angle_error(yaw_angle_error),
 		.roll_angle_error(roll_angle_error),
 		.pitch_angle_error(pitch_angle_error),
@@ -361,7 +362,7 @@ module drone2 (
 	(
 		.resetn(resetn),
 		.clk(sys_clk),
-		.start(yaac_active),
+		.start(imu_data_valid),
 		.sin(sin),
 		.rxrdy_n(rxrdy_n),
 		.sout(sout),
@@ -374,7 +375,7 @@ module drone2 (
 		.imu_y_rotation_rate(y_rotation_rate),
 		.imu_z_rotation_rate(z_rotation_rate),
 		.imu_calibration_status(imu_debug),
-		.rec_throttle_val(throttle_val),
+		.rec_throttle_val(tc_throttle_value),
 		.rec_yaw_val(yaw_val),
 		.rec_roll_val(roll_val),
 		.rec_pitch_val(pitch_val),

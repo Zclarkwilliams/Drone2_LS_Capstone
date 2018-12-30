@@ -34,7 +34,7 @@
 
 // Multiplier Scalar Values
 `define YAW_OLD_AC_K_P           16'sd60	//Yaw Kp parameter for AC without Yaw Accumulator module
-`define YAW_YAAC_AC_K_P          16'sd4 	//Yaw Kp parameter for AC WITH Yaw Accumulator module, must be smaller than 11 to prevent overflow
+`define YAW_YAAC_AC_K_P          16'sd8 	//Yaw Kp parameter for AC WITH Yaw Accumulator module, must be smaller than 11 to prevent overflow
 `define ROLL_AC_K_P              16'sd36
 `define PITCH_AC_K_P             16'sd32
 `define THROTTLE_AC_K_P          16'sd1

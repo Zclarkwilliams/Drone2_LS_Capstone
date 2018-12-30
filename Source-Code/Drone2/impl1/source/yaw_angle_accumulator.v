@@ -44,6 +44,7 @@ module yaw_angle_accumulator (
 	input  wire signed [`RATE_BIT_WIDTH-1:0] yaw_angle_imu,
 	input  wire yaac_enable_n,
 	input  wire start_signal,
+	input  wire imu_ready,
 	input  wire resetn,
 	input  wire us_clk
 	);
@@ -149,10 +150,13 @@ module yaw_angle_accumulator (
 	end
 
 	// next state logic
-	always @(state or start_flag) begin
+	always @(state or start_flag or imu_ready) begin
 		case(state)
 			STATE_INIT: begin
-				next_state = STATE_WAITING;
+				if (imu_ready == `FALSE)
+					next_state = STATE_INIT;
+				else
+					next_state = STATE_WAITING;
 			end
 			STATE_WAITING: begin
 				if(start_flag)
