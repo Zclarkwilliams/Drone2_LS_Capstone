@@ -383,8 +383,9 @@ module drone2 (
 		.rec_aux2_val(aux2_val),
 		.rec_swa_swb_val(swa_swb_val),
 		.yaac_yaw_angle_error(yaac_yaw_angle_error),
-		.yaac_debug(yaac_debug),
 		.yaac_yaw_angle_target(yaac_yaw_angle_target),
+		//.yaac_debug(yaac_debug),
+		.yaac_debug(yaw_rate),
 		.yaw_stick_out_of_neutral_window(yaw_stick_out_of_neutral_window)
 
 	);

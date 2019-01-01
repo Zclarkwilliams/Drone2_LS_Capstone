@@ -106,7 +106,7 @@ module yaw_angle_accumulator (
 		STATE_COMPLETE                = `NUM_STATES'b1<<13;
 		
 	localparam SCALE_BITS = 2; //Accumulated angle maxes at 2^SCALE_BITS before wrapping around
-	localparam signed [`RATE_BIT_WIDTH-1:0] YAW_ERROR_MAX_CHANGE = 50; //Maximum amount that yaw angle error is allowed to change per module iteration. 100 counts = 6˚
+	localparam signed [`RATE_BIT_WIDTH-1:0] YAW_ERROR_MAX_CHANGE = 200; //Maximum amount that yaw angle error is allowed to change per module iteration. 100 counts = 6˚
 	                                                   //This value dampens the rate that IMU *and* user inputs can change the drone orientation
 
 	// angle value aliases
@@ -463,7 +463,8 @@ module yaw_angle_accumulator (
 		end
 		else begin
 			if(trigger_yaw_stick_normalized == `TRUE)
-				latched_yaw_stick_normalized <= (latched_yaw_pwm_value - yaw_stick_neutral_value);
+				//latched_yaw_stick_normalized <= (latched_yaw_pwm_value - yaw_stick_neutral_value);
+				latched_yaw_stick_normalized <= (latched_yaw_pwm_value - yaw_stick_neutral_value)*`YAW_ACCUMULATOR_INPUT_MULTIPLIER;
 		end
 	end
 	
