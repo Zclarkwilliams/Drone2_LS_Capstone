@@ -81,7 +81,7 @@
         <Source name="impl1/source/yaw_angle_accumulator.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="impl1/source/flight_mode.v" type="Verilog" type_short="Verilog" excluded="TRUE">
+        <Source name="impl1/source/flight_mode.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
         <Source name="Drone2.lpf" type="Logic Preference" type_short="LPF">
