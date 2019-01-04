@@ -55,8 +55,9 @@ name_indices = {
     13: "Recv SWA/SWB value     ",
     14: "YAAc Yaw angle error   ",
     15: "YAAc Yaw angle target  ",
-    16: "YAAc debug output      ",
-    17: "YAAc stick not neutral ",
+    #16: "YAAc debug output      ",
+    16: "Yaw rate to mixer      ",
+    17: "Generic debug index 17 ",
 }
 
 disp_type = {
@@ -82,8 +83,8 @@ disp_type = {
 
 
 def main():
-    #conn_type  ="serial"
-    conn_type  ="SSH"
+    conn_type  ="serial"
+    #conn_type  ="SSH"
     #conn_type  ="telnet"
     while True:
         result, console = connect_console(conn_type)

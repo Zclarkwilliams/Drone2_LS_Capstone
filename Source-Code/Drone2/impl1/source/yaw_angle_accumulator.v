@@ -43,8 +43,8 @@ module yaw_angle_accumulator (
 	input  wire [`REC_VAL_BIT_WIDTH-1:0] yaw_pwm_value_input,
 	input  wire signed [`RATE_BIT_WIDTH-1:0] yaw_angle_imu,
 	input  wire yaac_enable_n,
-	//input  wire [2:0] switch_a,
-	input  wire switch_a,
+	input  wire [2:0] switch_a,
+	//input  wire switch_a,
 	input  wire start_signal,
 	input  wire imu_ready,
 	input  wire resetn,
@@ -240,7 +240,7 @@ module yaw_angle_accumulator (
 			case(state)
                 STATE_INIT: begin
 					// Good startup values
-					next_complete_signal                        = `TRUE;//Signal next module to start but set output to 0
+					next_complete_signal                        = `TRUE; // Signal next module to start but set this module output to 0
 					next_active_signal                          = `FALSE;
 					next_body_yaw_angle_target                  = `ALL_ZERO_2BYTE;
 					next_body_yaw_angle_target_tracking         = `ALL_ZERO_2BYTE;
@@ -583,8 +583,8 @@ module yaw_angle_accumulator (
 					latched_yaw_angle_imu <= old_yaw_angle_imu;
 				else
 					latched_yaw_angle_imu <= yaw_angle_imu;
-				//if (switch_a == 3'b001)
-				if (switch_a)
+				if (switch_a == 3'b001)
+				//if (switch_a)
 					multiplier            <= `YAW_ACCUMULATOR_INPUT_MULTIPLIER;
 				else
 					multiplier            <= 16'sd1;

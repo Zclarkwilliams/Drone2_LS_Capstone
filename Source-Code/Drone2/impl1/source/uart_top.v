@@ -44,9 +44,9 @@ module uart_top
 		rec_swa_swb_val,
 	input wire [`RATE_BIT_WIDTH-1:0]
 		yaac_yaw_angle_error,
-		yaac_debug,
 		yaac_yaw_angle_target,
-		yaw_stick_out_of_neutral_window
+		debug_16_in_16_bits,
+		debug_17_in_16_bits
 );
 
 	localparam CLK_IN_MHZ = 38;
@@ -320,8 +320,8 @@ module uart_top
 						8'd13: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_swa_swb_val});
 						8'd14: transmit_word(tx_word_index, tx_byte_index, yaac_yaw_angle_error);
 						8'd15: transmit_word(tx_word_index, tx_byte_index, yaac_yaw_angle_target);
-						8'd16: transmit_word(tx_word_index, tx_byte_index, yaac_debug);
-						8'd17: transmit_word(tx_word_index, tx_byte_index, yaw_stick_out_of_neutral_window);
+						8'd16: transmit_word(tx_word_index, tx_byte_index, debug_16_in_16_bits);
+						8'd17: transmit_word(tx_word_index, tx_byte_index, debug_17_in_16_bits);
 						default:  next_dat_i = 16'd0;
 					endcase
 				end

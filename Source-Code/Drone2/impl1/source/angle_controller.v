@@ -51,8 +51,8 @@ module angle_controller (
 	input  wire signed [`RATE_BIT_WIDTH-1:0] yaw_angle_error_in,
 	input  wire signed [`RATE_BIT_WIDTH-1:0] pitch_actual,
 	input  wire signed [`RATE_BIT_WIDTH-1:0] roll_actual,
-	//input  wire [2:0] switch_a,
-	input  wire switch_a,
+	input  wire [2:0] switch_a,
+	//input  wire switch_a,
 	input  wire start_signal,
 	input  wire resetn,
 	input  wire us_clk);
@@ -175,8 +175,8 @@ module angle_controller (
 				STATE_WAITING: begin
 					complete_signal 		<= `FALSE;
 					active_signal 			<= `FALSE;
-					//if (switch_a == 3'b001)
-					if (switch_a)
+					if (switch_a == 3'b001)
+					//if (switch_a)
 						multiplier <= 16'sd2;
 					else
 						multiplier <= 16'sd1;

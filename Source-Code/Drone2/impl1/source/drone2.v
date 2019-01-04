@@ -154,10 +154,10 @@ module drone2 (
 	
 
 	//---------------- Mode Selector Wires ----------------//
-	//wire [2:0] switch_a;
-	wire switch_a;
-	//wire [1:0] switch_b;
-	assign switch_a = swa_swb_val[6];
+	wire [2:0] switch_a;
+	wire [1:0] switch_b;
+	//wire switch_a;
+	//assign switch_a = swa_swb_val[6];
 
 
 	/**
@@ -202,15 +202,15 @@ module drone2 (
 		.us_clk(us_clk),
 		.resetn(resetn));
 		
-/*		
+		
 	flight_mode MODE(
 		.swa_swb_val(swa_swb_val),
 		.switch_a(switch_a),
 		.switch_b(switch_b),
 		.resetn(resetn),
 		.us_clk(us_clk)
-//	);
-*/
+	);
+
 
 	/**
 	 * IMU Management and Control Module
@@ -401,11 +401,8 @@ module drone2 (
 		.rec_swa_swb_val(swa_swb_val),
 		.yaac_yaw_angle_error(yaac_yaw_angle_error),
 		.yaac_yaw_angle_target(yaac_yaw_angle_target),
-		//.yaac_debug(yaac_debug),
-		.yaac_debug(yaw_rate),
-		//.yaw_stick_out_of_neutral_window({15'd0, yaw_stick_out_of_neutral_window})
-		//.yaw_stick_out_of_neutral_window({13'd0, switch_a})
-		.yaw_stick_out_of_neutral_window({15'd0, switch_a})
+		.debug_16_in_16_bits(yaw_rate),
+		.debug_17_in_16_bits({11'd0, switch_b, switch_a})
 
 	);
 	// Enable bits
