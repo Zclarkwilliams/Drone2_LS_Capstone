@@ -46,7 +46,7 @@ module uart_top
 		yaac_yaw_angle_error,
 		yaac_debug,
 		yaac_yaw_angle_target,
-	input wire yaw_stick_out_of_neutral_window
+		yaw_stick_out_of_neutral_window
 );
 
 	localparam CLK_IN_MHZ = 38;
@@ -321,7 +321,7 @@ module uart_top
 						8'd14: transmit_word(tx_word_index, tx_byte_index, yaac_yaw_angle_error);
 						8'd15: transmit_word(tx_word_index, tx_byte_index, yaac_yaw_angle_target);
 						8'd16: transmit_word(tx_word_index, tx_byte_index, yaac_debug);
-						8'd17: transmit_word(tx_word_index, tx_byte_index, {15'd0, yaw_stick_out_of_neutral_window});
+						8'd17: transmit_word(tx_word_index, tx_byte_index, yaw_stick_out_of_neutral_window);
 						default:  next_dat_i = 16'd0;
 					endcase
 				end

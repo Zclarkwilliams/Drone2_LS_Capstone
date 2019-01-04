@@ -151,6 +151,13 @@ module drone2 (
 	//wire soft_reset_n;
 	//assign resetn = (machxo3_switch_reset_n & soft_reset_n);
 	assign resetn = (machxo3_switch_reset_n);
+	
+
+	//---------------- Mode Selector Wires ----------------//
+	//wire [2:0] switch_a;
+	wire switch_a;
+	//wire [1:0] switch_b;
+	assign switch_a = swa_swb_val[6];
 
 
 	/**
@@ -194,6 +201,16 @@ module drone2 (
 		.swa_swb_pwm(swa_swb_pwm),
 		.us_clk(us_clk),
 		.resetn(resetn));
+		
+/*		
+	flight_mode MODE(
+		.swa_swb_val(swa_swb_val),
+		.switch_a(switch_a),
+		.switch_b(switch_b),
+		.resetn(resetn),
+		.us_clk(us_clk)
+//	);
+*/
 
 	/**
 	 * IMU Management and Control Module
@@ -255,6 +272,7 @@ module drone2 (
 		.yaw_pwm_value_input(yaw_val),
 		.yaw_angle_imu(z_rotation),
 		.yaac_enable_n(yaac_enable_n),
+		.switch_a(switch_a),
 		.debug_out(yaac_debug),
 		.imu_ready(imu_good),
 		.start_signal(throttle_controller_complete),
@@ -288,6 +306,7 @@ module drone2 (
 		.pitch_target(pitch_val),
 		.roll_actual(y_rotation),
 		.pitch_actual(x_rotation),
+		.switch_a(switch_a),
 		.start_signal(yaac_complete),
 		.resetn(resetn),
 		.us_clk(us_clk));
@@ -309,9 +328,7 @@ module drone2 (
 		.pitch_target(pitch_target_rate),
 		.roll_rotation(x_rotation_rate),
 		.pitch_rotation(y_rotation_rate),
-		//Bypass yaw rotation rate while troubleshooting YAAc
 		.yaw_rotation(z_rotation_rate),
-		//.yaw_rotation(16'h0000),
 		.yaw_angle_error(yaw_angle_error),
 		.roll_angle_error(roll_angle_error),
 		.pitch_angle_error(pitch_angle_error),
@@ -386,7 +403,9 @@ module drone2 (
 		.yaac_yaw_angle_target(yaac_yaw_angle_target),
 		//.yaac_debug(yaac_debug),
 		.yaac_debug(yaw_rate),
-		.yaw_stick_out_of_neutral_window(yaw_stick_out_of_neutral_window)
+		//.yaw_stick_out_of_neutral_window({15'd0, yaw_stick_out_of_neutral_window})
+		//.yaw_stick_out_of_neutral_window({13'd0, switch_a})
+		.yaw_stick_out_of_neutral_window({15'd0, switch_a})
 
 	);
 	// Enable bits

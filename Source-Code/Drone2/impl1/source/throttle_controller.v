@@ -136,7 +136,7 @@ module throttle_controller
 		else begin
 			case(state)
 				STATE_INIT: begin
-					complete_signal 		<= `FALSE;
+					complete_signal 		<= `TRUE; //Signal next module to start but set output to 0
 					active_signal 			<= `FALSE;
 					throttle_pwm_value_out  <=  0;
 				end

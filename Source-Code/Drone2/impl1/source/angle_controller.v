@@ -51,6 +51,8 @@ module angle_controller (
 	input  wire signed [`RATE_BIT_WIDTH-1:0] yaw_angle_error_in,
 	input  wire signed [`RATE_BIT_WIDTH-1:0] pitch_actual,
 	input  wire signed [`RATE_BIT_WIDTH-1:0] roll_actual,
+	//input  wire [2:0] switch_a,
+	input  wire switch_a,
 	input  wire start_signal,
 	input  wire resetn,
 	input  wire us_clk);
@@ -83,6 +85,7 @@ module angle_controller (
 	reg signed [`REC_VAL_BIT_WIDTH-1:0]	latched_throttle, latched_pitch, latched_roll;
 	reg signed [`RATE_BIT_WIDTH-1:0]	latched_yaw_angle_target;
 	reg signed [`RATE_BIT_WIDTH-1:0]	latched_yaw_angle_error;
+	reg [`OPS_BIT_WIDTH-1:0]            multiplier;
 
 	// state names
 	localparam
@@ -164,6 +167,7 @@ module angle_controller (
 			yaw_rate_out 	 <= `ALL_ZERO_2BYTE;
 			roll_rate_out 	 <= `ALL_ZERO_2BYTE;
 			pitch_rate_out	 <= `ALL_ZERO_2BYTE;
+			multiplier       <= 0;
 
 		end
 		else begin
@@ -171,6 +175,11 @@ module angle_controller (
 				STATE_WAITING: begin
 					complete_signal 		<= `FALSE;
 					active_signal 			<= `FALSE;
+					//if (switch_a == 3'b001)
+					if (switch_a)
+						multiplier <= 16'sd2;
+					else
+						multiplier <= 16'sd1;
 				end
 				STATE_MAPPING: begin
 					complete_signal 		<= `FALSE;
@@ -184,8 +193,9 @@ module angle_controller (
 						mapped_yaw	 		<= latched_yaw_angle_error;
 					mapped_throttle 		<= $signed({THROTTLE_F_PAD, latched_throttle, THROTTLE_R_PAD});
 					// input values mapped from 0 - 250 to -31.25 - 31.25
-					mapped_roll 			<= ($signed({FRONT_PAD, latched_roll,  END_PAD}) - MAPPING_SUBS)*16'sd2 + roll_actual; // roll value from IMU is flipped, add instead of subtract
-					mapped_pitch 			<= ($signed({FRONT_PAD, latched_pitch, END_PAD}) - MAPPING_SUBS)*16'sd2 - pitch_actual;
+					mapped_roll 			<= ($signed({FRONT_PAD, latched_roll,  END_PAD}) - MAPPING_SUBS)*multiplier + roll_actual; // roll value from IMU is flipped, add instead of subtract
+					mapped_pitch 			<= ($signed({FRONT_PAD, latched_pitch, END_PAD}) - MAPPING_SUBS)*multiplier - pitch_actual;
+					
 				end
 				STATE_SCALING: begin
 					complete_signal 		<= `FALSE;
