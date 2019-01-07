@@ -39,12 +39,12 @@ module flight_mode (
 		end
 		else begin
 			case(`TRUE)
-				in_range(swa_swb_val, 8'd0,   8'd49 ): begin switch_a <= 3'b100; switch_b <= 2'b01; end
-				in_range(swa_swb_val, 8'd50,  8'd99 ): begin switch_a <= 3'b100; switch_b <= 2'b10; end
-				in_range(swa_swb_val, 8'd100, 8'd149): begin switch_a <= 3'b001; switch_b <= 2'b11; end //When SWA is in mode 0, SWB position doesn't make a difference
-				in_range(swa_swb_val, 8'd150, 8'd199): begin switch_a <= 3'b010; switch_b <= 2'b10; end
-				in_range(swa_swb_val, 8'd200, 8'd250): begin switch_a <= 3'b010; switch_b <= 2'b01; end
-				default :                              begin switch_a <= 3'b000; switch_b <= 2'b00; end
+				in_range(swa_swb_val, 8'd0,   8'd49 ): begin switch_a <= 3'b100; switch_b <= 2'b01; end // SWA mode 2, SWB mode 0
+				in_range(swa_swb_val, 8'd50,  8'd99 ): begin switch_a <= 3'b100; switch_b <= 2'b10; end // SWA mode 2, SWB mode 1
+				in_range(swa_swb_val, 8'd100, 8'd149): begin switch_a <= 3'b001; switch_b <= 2'b11; end // When SWA is in mode 0, SWB position doesn't make a difference
+				in_range(swa_swb_val, 8'd150, 8'd199): begin switch_a <= 3'b010; switch_b <= 2'b10; end // SWA mode 1, SWB mode 1
+				in_range(swa_swb_val, 8'd200, 8'd250): begin switch_a <= 3'b010; switch_b <= 2'b01; end // SWA mode 1, SWB mode 0
+				default :                              begin switch_a <= 3'b000; switch_b <= 2'b00; end // Default, undefined inputs
 			endcase
 		end
 	end

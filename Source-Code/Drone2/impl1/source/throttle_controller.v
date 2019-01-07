@@ -22,6 +22,7 @@ module throttle_controller
 	output reg active_signal,
 	input  wire [`REC_VAL_BIT_WIDTH-1:0] throttle_pwm_value_in,
 	input  wire tc_enable_n,
+	input  wire [2:0] switch_a,
 	input  wire imu_ready,
 	input  wire start_signal,
 	input  wire resetn,
@@ -181,15 +182,25 @@ module throttle_controller
 				STATE_LINEAR_SCALE: begin 
 					complete_signal      <= `FALSE; 
 					active_signal        <= `TRUE;
-					//Low throttle value, gets 2x slope 
-					if(debounced_throttle < THROTTLE_MID_RANGE_LOW_END) 
-						scaled_throttle  <= (2'd2*debounced_throttle); 
-					//High throttle value also gets 2x slope, throttle = 2*input-252 
-					else if(debounced_throttle > THROTTLE_MID_RANGE_HIGH_END) 
-						scaled_throttle  <= ((2'd2*debounced_throttle)-8'd252); 
-					//Mid range throttle gets x/2 slope, throttle = input/2+61 
-					else 
-						scaled_throttle  <= ((debounced_throttle>>>1)+6'd61); 
+					if (switch_a == 3'b001) begin //Easy mode throttle
+						//Low throttle value, gets 4x slope 
+						if(debounced_throttle < 8'd35)
+							scaled_throttle  <= (8'd4*debounced_throttle); 
+						else
+						//Mid range throttle gets x/4 slope, throttle = input/4+98 
+							scaled_throttle  <= ((debounced_throttle>>2)+8'd128); 
+					end
+					else begin //Normal/Acro mode throttle
+						//Low throttle value, gets 2x slope 
+						if(debounced_throttle < THROTTLE_MID_RANGE_LOW_END) 
+							scaled_throttle  <= (8'd2*debounced_throttle); 
+						//High throttle value also gets 2x slope, throttle = 2*input-252 
+						else if(debounced_throttle > THROTTLE_MID_RANGE_HIGH_END) 
+							scaled_throttle  <= ((8'd2*debounced_throttle)-8'd252); 
+						//Mid range throttle gets x/2 slope, throttle = input/2+61 
+						else 
+							scaled_throttle  <= ((debounced_throttle>>>1)+8'd61); 
+						end
 					end
 				STATE_CHANGE_LIMIT: begin
 					complete_signal          <= `FALSE;

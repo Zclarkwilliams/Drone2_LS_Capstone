@@ -252,6 +252,7 @@ module drone2 (
 		.throttle_pwm_value_in(throttle_val),
 		.start_signal(imu_data_valid),
 		.tc_enable_n(tc_enable_n),
+		.switch_a(switch_a),
 		.imu_ready(imu_good),
 		.resetn(resetn),
 		.us_clk(us_clk));		

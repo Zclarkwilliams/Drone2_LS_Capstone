@@ -584,7 +584,6 @@ module yaw_angle_accumulator (
 				else
 					latched_yaw_angle_imu <= yaw_angle_imu;
 				if (switch_a == 3'b001)
-				//if (switch_a)
 					multiplier            <= `YAW_ACCUMULATOR_INPUT_MULTIPLIER;
 				else
 					multiplier            <= 16'sd1;
