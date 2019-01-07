@@ -6,6 +6,7 @@
 !/impl*/source
 /impl*/source/*
 !/impl*/source/*.v
+!/impl*/source/*.py
 !/impl*/source/*I2C_EFB_WB*
 !Drone2.lpf
 !Drone2.ldf

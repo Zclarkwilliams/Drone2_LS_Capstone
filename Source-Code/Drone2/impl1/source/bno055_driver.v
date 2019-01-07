@@ -18,7 +18,7 @@
 
  *  Module takes as inputs:
  *  		sys_clk                 master clock
- *  		ac_active               Handshake signal from angle controller acknowledging the data valid strobe
+ *  		next_mod_active         Handshake signal from next module acknowledging the data valid strobe
  *  		rstn                    async negative reset signal 0 = reset, 1 = not reset
 
  * Module provides as output (all values are 16-bit, 2's complement):
@@ -64,7 +64,8 @@
 `include "bno055_defines.v"
 
 module bno055_driver #(
-	parameter INIT_TIME = 15'd650
+	//parameter INIT_TIME = 15'd650
+	parameter INIT_TIME = 15'd10010
 )
 (
  	inout wire scl_1,
@@ -74,7 +75,7 @@ module bno055_driver #(
 	input wire rstn,
 	output wire [7:0]led_data_out,
 	input  wire sys_clk,
-	input wire ac_active,
+	input wire next_mod_active,
 	output wire rstn_imu,
 	output reg  imu_good,
 	output reg  valid_strobe,
@@ -138,8 +139,7 @@ module bno055_driver #(
 	reg  rx_data_latch_tmp; 						  //  Synchronously latched value of the data latch strobe
 	reg  next_imu_good;                               //  Next value of module imu_good bit
 	reg  i2c_number;								  //  The i2c module to call, 0 = i2c EFB #1, 1 = i2c EFB #2
-	reg [7:0]calibration_reg[`CAL_DATA_REG_CNT-1:0];  //  Stores the IMU calibration data bytes
-	reg [5:0]cal_restore_index;                       //  Current location in calibration_reg that is being read from
+	reg [5:0]cal_restore_index;                       //  Current calibration value that is being written
 	reg [7:0]cal_reg_addr;                            //  Current IMU register address that this calibration data is destined for
 	reg clear_cal_restore_index;                      //  Reset calibration restore index and register addresses back to starting value
 	reg increment_cal_restore_index;                  //  Increment calibration restore index and register addresses by 1
@@ -243,73 +243,28 @@ module bno055_driver #(
 	//  Handle output valid_strobe enable and handshake with following modules
 	//  The modules after this run at a slower clock rate and require handshaking of this signal
 	//  This block will hold valid_strobe high until the next module's active signal goes high
-	//  Which acknowledges that receipt of ths valid_strobe
+	//  Which acknowledges that receipt of this valid_strobe
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn)
 			valid_strobe      <= `LOW;
 		else if (valid_strobe_enable == `TRUE) begin
 			if(~valid_strobe)                             // Valid not yet asserted
 				valid_strobe      <= `HIGH;
-			else if( valid_strobe && (~ac_active))        // Hold strobe until AC active
+			else if( valid_strobe && (~next_mod_active))  // Hold strobe until the next module active
 				valid_strobe      <= `HIGH;
 			else                                          // De-assert valid strobe
 				valid_strobe      <= `LOW;
 		end
 		else begin
-			if( valid_strobe && (~ac_active))             // Hold strobe until AC active
+			if( valid_strobe && (~next_mod_active))       // Hold strobe until the next module is active
 				valid_strobe      <= `HIGH;
 			else
 				valid_strobe <= `LOW;
 		end
 	end
 
-
-	// Assign calibration  values to the calibration_reg byte array
-	// These values were read from a manually calibrated IMU and are specific to that particular one.
-	task set_calibration_data_values;
-	/*
-		Calibration Values for the BNO055 IMU that we are using:
-
-		Accelerometer: -27 -46 38
-		Mag: 284 30 -93
-		Gyro: -2 -3 0
-		Accel Radius: 1000
-		Mag Radius: 851
-		Accel X MSB:255, X LSB:229, Y MSB:255, Y LSB:210, Z MSB0,    Z LSB:38
-		Mag   X MSB:1,   X LSB:28,  Y MSB:0,   Y LSB:30,  Z MSB:255, Z LSB:163
-		Gyro  X MSB:255, X LSB:254, Y MSB:255, Y LSB:253, Z MSB:0,   Z LSB:0
-		Accel radius MSB:3, LSB:232
-		Mag radius   MSB:3, LSB:83
-	*/
-		begin
-			calibration_reg[`ACCEL_OFFSET_X_LSB_INDEX] <= 8'd229;
-			calibration_reg[`ACCEL_OFFSET_X_MSB_INDEX] <= 8'd255;
-			calibration_reg[`ACCEL_OFFSET_Y_LSB_INDEX] <= 8'd210;
-			calibration_reg[`ACCEL_OFFSET_Y_MSB_INDEX] <= 8'd255;
-			calibration_reg[`ACCEL_OFFSET_Z_LSB_INDEX] <= 8'd38;
-			calibration_reg[`ACCEL_OFFSET_Z_MSB_INDEX] <= 8'd0;
-			calibration_reg[`MAG_OFFSET_X_LSB_INDEX  ] <= 8'd28;
-			calibration_reg[`MAG_OFFSET_X_MSB_INDEX  ] <= 8'd1;
-			calibration_reg[`MAG_OFFSET_Y_LSB_INDEX  ] <= 8'd30;
-			calibration_reg[`MAG_OFFSET_Y_MSB_INDEX  ] <= 8'd0;
-			calibration_reg[`MAG_OFFSET_Z_LSB_INDEX  ] <= 8'd163;
-			calibration_reg[`MAG_OFFSET_Z_MSB_INDEX  ] <= 8'd255;
-			calibration_reg[`GYRO_OFFSET_X_LSB_INDEX ] <= 8'd254;
-			calibration_reg[`GYRO_OFFSET_X_MSB_INDEX ] <= 8'd255;
-			calibration_reg[`GYRO_OFFSET_Y_LSB_INDEX ] <= 8'd253;
-			calibration_reg[`GYRO_OFFSET_Y_MSB_INDEX ] <= 8'd255;
-			calibration_reg[`GYRO_OFFSET_Z_LSB_INDEX ] <= 8'd0;
-			calibration_reg[`GYRO_OFFSET_Z_MSB_INDEX ] <= 8'd0;
-			calibration_reg[`ACCEL_RADIUS_LSB_INDEX  ] <= 8'd3;
-			calibration_reg[`ACCEL_RADIUS_MSB_INDEX  ] <= 8'd232;
-			calibration_reg[`MAG_RADIUS_LSB_INDEX    ] <= 8'd3;
-			calibration_reg[`MAG_RADIUS_MSB_INDEX    ] <= 8'd83;
-		end
-	endtask
-
 	//  Take data read byte array and assign the byte values to output data wires
 	//  Most of the data outputs are 16 bit words
-	//  Also calls set_calibration_data_values each clock tick, bexcause they had to be set somewhere
 	always@(posedge sys_clk, negedge rstn) begin
 		if(~rstn) begin
 			accel_rate_x      <= 16'b0;
@@ -339,7 +294,6 @@ module bno055_driver #(
 			x_velocity        <= 8'b0;
 			y_velocity        <= 8'b0;
 			z_velocity        <= 8'b0;
-			set_calibration_data_values();
 		end
 		else if(rx_data_latch_strobe) begin
 			accel_rate_x      <= {data_rx_reg[`ACC_DATA_X_MSB_INDEX],data_rx_reg[`ACC_DATA_X_LSB_INDEX]};
@@ -370,7 +324,6 @@ module bno055_driver #(
 			x_velocity        <= 8'b0;
 			y_velocity        <= 8'b0;
 			z_velocity        <= 8'b0;
-			set_calibration_data_values();
 		end
 	end
 
@@ -537,13 +490,51 @@ module bno055_driver #(
 					next_slave_address = `BNO055_SLAVE_ADDRESS;
 					next_data_reg      = cal_reg_addr;
 					next_read_write_in = `I2C_WRITE;
-					next_data_tx       = calibration_reg[cal_restore_index];
+					/*
+						Calibration values from a good calibration of the particular BNO055 IMU that we are using:
+				
+						Accelerometer: -27 -46 38
+						Mag: 284 30 -93
+						Gyro: -2 -3 0
+						Accel Radius: 1000
+						Mag Radius: 851
+						Accel X MSB:255, X LSB:229, Y MSB:255, Y LSB:210, Z MSB0,    Z LSB:38
+						Mag   X MSB:1,   X LSB:28,  Y MSB:0,   Y LSB:30,  Z MSB:255, Z LSB:163
+						Gyro  X MSB:255, X LSB:254, Y MSB:255, Y LSB:253, Z MSB:0,   Z LSB:0
+						Accel radius MSB:3, LSB:232
+						Mag radius   MSB:3, LSB:83
+					*/
+					case(cal_restore_index)
+						`ACCEL_OFFSET_X_LSB_INDEX: next_data_tx = 8'd229;
+						`ACCEL_OFFSET_X_MSB_INDEX: next_data_tx = 8'd255;
+						`ACCEL_OFFSET_Y_LSB_INDEX: next_data_tx = 8'd210;
+						`ACCEL_OFFSET_Y_MSB_INDEX: next_data_tx = 8'd255;
+						`ACCEL_OFFSET_Z_LSB_INDEX: next_data_tx = 8'd38;
+						`ACCEL_OFFSET_Z_MSB_INDEX: next_data_tx = 8'd0;
+						`MAG_OFFSET_X_LSB_INDEX  : next_data_tx = 8'd28;
+						`MAG_OFFSET_X_MSB_INDEX  : next_data_tx = 8'd1;
+						`MAG_OFFSET_Y_LSB_INDEX  : next_data_tx = 8'd30;
+						`MAG_OFFSET_Y_MSB_INDEX  : next_data_tx = 8'd0;
+						`MAG_OFFSET_Z_LSB_INDEX  : next_data_tx = 8'd163;
+						`MAG_OFFSET_Z_MSB_INDEX  : next_data_tx = 8'd255;
+						`GYRO_OFFSET_X_LSB_INDEX : next_data_tx = 8'd254;
+						`GYRO_OFFSET_X_MSB_INDEX : next_data_tx = 8'd255;
+						`GYRO_OFFSET_Y_LSB_INDEX : next_data_tx = 8'd253;
+						`GYRO_OFFSET_Y_MSB_INDEX : next_data_tx = 8'd255;
+						`GYRO_OFFSET_Z_LSB_INDEX : next_data_tx = 8'd0;
+						`GYRO_OFFSET_Z_MSB_INDEX : next_data_tx = 8'd0;
+						`ACCEL_RADIUS_LSB_INDEX  : next_data_tx = 8'd3;
+						`ACCEL_RADIUS_MSB_INDEX  : next_data_tx = 8'd232;
+						`MAG_RADIUS_LSB_INDEX    : next_data_tx = 8'd3;
+						`MAG_RADIUS_MSB_INDEX    : next_data_tx = 8'd83;
+						default                  : next_data_tx = 8'd0;
+					endcase
 					next_bno055_state  = `BNO055_STATE_CAL_RESTORE_START;
 				end
 				`BNO055_STATE_CAL_RESTORE_START: begin
 					next_imu_good      = `FALSE;
 					next_go_flag       = `GO;
-					next_slave_address = slave_address;
+					next_slave_address = `BNO055_SLAVE_ADDRESS;
 					next_data_reg      = data_reg;
 					next_data_tx       = data_tx;
 					next_read_write_in = read_write_in;
@@ -555,7 +546,7 @@ module bno055_driver #(
 				`BNO055_STATE_CAL_RESTORE_WAIT: begin // Wait until send completes
 					next_imu_good      = `FALSE;
 					next_go_flag       = `NOT_GO;
-					next_slave_address = slave_address;
+					next_slave_address = `BNO055_SLAVE_ADDRESS;
 					next_data_reg      = data_reg;
 					next_data_tx       = data_tx;
 					next_read_write_in = read_write_in;
@@ -569,7 +560,7 @@ module bno055_driver #(
 				`BNO055_STATE_CAL_RESTORE_STOP: begin // See if this was the last, loop around if more, otherwise, exit loop
 					next_imu_good      = `FALSE;
 					next_go_flag       = `NOT_GO;
-					next_slave_address = slave_address;
+					next_slave_address = `BNO055_SLAVE_ADDRESS;
 					next_data_reg      = data_reg;
 					next_data_tx       = data_tx;
 					next_read_write_in = read_write_in;
@@ -584,6 +575,7 @@ module bno055_driver #(
 				`BNO055_STATE_CAL_RESTORE_AGAIN: begin // Restore calibration two times, to ensure that one calibration parameter doesn't need to be written before another.
 					next_imu_good        = `FALSE;
 					next_go_flag         = `NOT_GO;
+					next_slave_address   = `BNO055_SLAVE_ADDRESS;
 					next_calibrated_once = 1'b1;
 					if(calibrated_once == 1'b1)
 						next_bno055_state = `BNO055_STATE_SET_EXT_CRYSTAL;
@@ -691,6 +683,7 @@ module bno055_driver #(
 					next_imu_good      = `FALSE;
 					next_go_flag       = `NOT_GO;
 					next_bno055_state  = `BNO055_STATE_RESET;
+					next_slave_address = `BNO055_SLAVE_ADDRESS;
 					next_return_state  = `BYTE_ALL_ZERO;
 					next_data_reg      = `BYTE_ALL_ZERO;
 					next_data_tx       = `BYTE_ALL_ZERO;

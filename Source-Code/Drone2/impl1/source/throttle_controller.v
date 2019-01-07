@@ -22,6 +22,8 @@ module throttle_controller
 	output reg active_signal,
 	input  wire [`REC_VAL_BIT_WIDTH-1:0] throttle_pwm_value_in,
 	input  wire tc_enable_n,
+	input  wire [2:0] switch_a,
+	input  wire imu_ready,
 	input  wire start_signal,
 	input  wire resetn,
 	input  wire us_clk);
@@ -38,15 +40,16 @@ module throttle_controller
 
 	// state names
 	localparam
-		STATE_WAITING       = 6'b000001,
-		STATE_DEGLITCH      = 6'b000010,
-		STATE_LINEAR_SCALE  = 6'b000100,
-		STATE_CHANGE_LIMIT  = 6'b001000,
-		STATE_ASSIGN_OUTPUT = 6'b010000,
-		STATE_COMPLETE      = 6'b100000;
+		STATE_INIT          = 7'b0000001,
+		STATE_WAITING       = 7'b0000010,
+		STATE_DEGLITCH      = 7'b0000100,
+		STATE_LINEAR_SCALE  = 7'b0001000,
+		STATE_CHANGE_LIMIT  = 7'b0010000,
+		STATE_ASSIGN_OUTPUT = 7'b0100000,
+		STATE_COMPLETE      = 7'b1000000;
 
 	// state variables
-	reg [5:0] state, next_state;
+	reg [6:0] state, next_state;
 
 	reg start_flag = `FALSE;
 	
@@ -72,7 +75,7 @@ module throttle_controller
 	// update state
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
-			state 				<= STATE_WAITING;
+			state 				<= STATE_INIT;
 		end
 		else begin
 			state 				<= next_state;
@@ -80,33 +83,43 @@ module throttle_controller
 	end
 
 	// next state logic
-	always @(state or start_flag) begin
-		case(state)
-			STATE_WAITING: begin
-				if(start_flag)
-					next_state = STATE_DEGLITCH;
-				else
+	always @(state or start_flag or imu_ready or resetn) begin
+		if (!resetn)
+			next_state = STATE_INIT;
+		else begin
+			case(state)
+				STATE_INIT: begin
+					if(imu_ready == `TRUE)
+						next_state = STATE_WAITING;
+					else
+						next_state = STATE_INIT;
+				end
+				STATE_WAITING: begin
+					if(start_flag)
+						next_state = STATE_DEGLITCH;
+					else
+						next_state = STATE_WAITING;
+				end
+				STATE_DEGLITCH: begin
+					next_state = STATE_LINEAR_SCALE;
+				end
+				STATE_LINEAR_SCALE: begin
+					next_state = STATE_CHANGE_LIMIT;
+				end
+				STATE_CHANGE_LIMIT: begin
+					next_state = STATE_ASSIGN_OUTPUT;
+				end
+				STATE_ASSIGN_OUTPUT: begin
+					next_state = STATE_COMPLETE;
+				end
+				STATE_COMPLETE: begin
 					next_state = STATE_WAITING;
-			end
-			STATE_DEGLITCH: begin
-				next_state = STATE_LINEAR_SCALE;
-			end
-			STATE_LINEAR_SCALE: begin
-				next_state = STATE_CHANGE_LIMIT;
-			end
-			STATE_CHANGE_LIMIT: begin
-				next_state = STATE_ASSIGN_OUTPUT;
-			end
-			STATE_ASSIGN_OUTPUT: begin
-				next_state = STATE_COMPLETE;
-			end
-			STATE_COMPLETE: begin
-				next_state = STATE_WAITING;
-			end
-			default: begin
-				next_state = STATE_WAITING;
-			end
-		endcase
+				end
+				default: begin
+					next_state = STATE_WAITING;
+				end
+			endcase
+		end
 	end
 
 	// output logic
@@ -117,12 +130,17 @@ module throttle_controller
 			latched_throttle 		    <= `BYTE_ALL_ZERO;
 			debounced_throttle 		    <= 0;
 			limited_throttle 		    <= 0;
-			prev_latched_throttle       <=`BYTE_ALL_ZERO;
-			prev_throttle_pwm_value_out <=`BYTE_ALL_ZERO;
+			prev_latched_throttle       <= `BYTE_ALL_ZERO;
+			prev_throttle_pwm_value_out <= `BYTE_ALL_ZERO;
 
 		end
 		else begin
 			case(state)
+				STATE_INIT: begin
+					complete_signal 		<= `TRUE; // Signal next module to start but set this module output to 0
+					active_signal 			<= `FALSE;
+					throttle_pwm_value_out  <=  0;
+				end
 				STATE_WAITING: begin
 					complete_signal 		<= `FALSE;
 					active_signal 			<= `FALSE;
@@ -164,15 +182,25 @@ module throttle_controller
 				STATE_LINEAR_SCALE: begin 
 					complete_signal      <= `FALSE; 
 					active_signal        <= `TRUE;
-					//Low throttle value, gets 2x slope 
-					if(debounced_throttle < THROTTLE_MID_RANGE_LOW_END) 
-						scaled_throttle  <= (2'd2*debounced_throttle); 
-					//High throttle value also gets 2x slope, throttle = 2*input-252 
-					else if(debounced_throttle > THROTTLE_MID_RANGE_HIGH_END) 
-						scaled_throttle  <= ((2'd2*debounced_throttle)-8'd252); 
-					//Mid range throttle gets x/2 slope, throttle = input/2+61 
-					else 
-						scaled_throttle  <= ((debounced_throttle>>>1)+6'd61); 
+					if (switch_a == 3'b001) begin //Easy mode throttle
+						//Low throttle value, gets 4x slope 
+						if(debounced_throttle < 8'd35)
+							scaled_throttle  <= (8'd4*debounced_throttle); 
+						else
+						//Mid range throttle gets x/4 slope, throttle = input/4+98 
+							scaled_throttle  <= ((debounced_throttle>>2)+8'd128); 
+					end
+					else begin //Normal/Acro mode throttle
+						//Low throttle value, gets 2x slope 
+						if(debounced_throttle < THROTTLE_MID_RANGE_LOW_END) 
+							scaled_throttle  <= (8'd2*debounced_throttle); 
+						//High throttle value also gets 2x slope, throttle = 2*input-252 
+						else if(debounced_throttle > THROTTLE_MID_RANGE_HIGH_END) 
+							scaled_throttle  <= ((8'd2*debounced_throttle)-8'd252); 
+						//Mid range throttle gets x/2 slope, throttle = input/2+61 
+						else 
+							scaled_throttle  <= ((debounced_throttle>>>1)+8'd61); 
+						end
 					end
 				STATE_CHANGE_LIMIT: begin
 					complete_signal          <= `FALSE;

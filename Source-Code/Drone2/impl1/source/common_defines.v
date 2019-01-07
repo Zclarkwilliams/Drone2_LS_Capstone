@@ -21,6 +21,11 @@
 `define HIGH	1'b1
 `define LOW 	1'b0
 
+`define LOW_ACTIVE_ENABLE  1'b0
+`define LOW_ACTIVE_DISABLE 1'b1
+`define HIGH_ACTIVE_ENABLE  1'b1
+`define HIGH_ACTIVE_DISABLE 1'b0
+
 // Conditionals
 `define TRUE	1'b1
 `define FALSE	1'b0
@@ -35,7 +40,14 @@
 
 // A byte of all zeros
 `define BYTE_ALL_ZERO            8'sd0
-`define ALL_ZERO_2BYTE          16'sd0
+
+//Bytes of all zeros and all ones
+`define ALL_ZERO_1BYTE  8'h00
+`define ALL_ZERO_2BYTE 16'h0000
+`define ALL_ZERO_4BYTE 32'h00000000
+`define ALL_ONE_1BYTE   8'hFF
+`define ALL_ONE_2BYTE  16'hFFFF
+`define ALL_ONE_4BYTE  32'hFFFFFFFF
 
 // PWM signal pulse lengths
 `define MIN_PWM_TIME_HIGH_US	16'd1000
@@ -50,17 +62,17 @@
 `define WAIT_I2C_DIVIDER        (`I2C_CLK_FREQ/`SYS_CLK_FREQ) // Number of system clock ticks per i2c scl tick, at i2c rate
 
 // Bit widths
-`define PWM_TIME_BIT_WIDTH		5'd16	// Sized to hold the MAX_PWM_TIME_HIGH_US
-`define PWM_VALUE_BIT_WIDTH 	4'd8	// Sized to hold the mapped pwm value
+`define PWM_TIME_BIT_WIDTH		16	// Sized to hold the MAX_PWM_TIME_HIGH_US
+`define PWM_VALUE_BIT_WIDTH 	8	// Sized to hold the mapped pwm value
 
-`define MOTOR_RATE_BIT_WIDTH	4'd8
+`define MOTOR_RATE_BIT_WIDTH	8
 
-`define REC_VAL_BIT_WIDTH		4'd8	// Sized to hold outputs of receiver
-`define PID_RATE_BIT_WIDTH		5'd16	// Sized to hold values from body frame controller
-`define	RATE_BIT_WIDTH			5'd16	// Sized to hold values from the angle controller
-`define IMU_VAL_BIT_WIDTH		5'd16	// Sized to hold values from the bno055_driver
+`define REC_VAL_BIT_WIDTH		8	// Sized to hold outputs of receiver
+`define PID_RATE_BIT_WIDTH		16	// Sized to hold values from body frame controller
+`define	RATE_BIT_WIDTH			16	// Sized to hold values from the angle controller
+`define IMU_VAL_BIT_WIDTH		16	// Sized to hold values from the bno055_driver
 
-`define DEBUG_WIRE_BIT_WIDTH	9'd16	// DEBUG LED wire bit width to all modules
+`define DEBUG_WIRE_BIT_WIDTH	16	// DEBUG LED wire bit width to all modules
 
 // Default values (on reset or error) for pwm pulse high values in microseconds
 `define THROTTLE_DEFAULT_PULSE_TIME_HIGH_US  16'd1000

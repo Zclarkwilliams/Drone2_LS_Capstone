@@ -38,17 +38,21 @@ module angle_controller (
 	output reg  signed [`RATE_BIT_WIDTH-1:0] yaw_rate_out,
 	output reg  signed [`RATE_BIT_WIDTH-1:0] pitch_rate_out,
 	output reg  signed [`RATE_BIT_WIDTH-1:0] roll_rate_out,
+	output reg  signed [`RATE_BIT_WIDTH-1:0] yaw_angle_error,
 	output reg  signed [`RATE_BIT_WIDTH-1:0] pitch_angle_error,
 	output reg  signed [`RATE_BIT_WIDTH-1:0] roll_angle_error,
 	output reg  active_signal,
 	output reg  complete_signal,
 	input  wire [`REC_VAL_BIT_WIDTH-1:0] throttle_target,
-	input  wire [`REC_VAL_BIT_WIDTH-1:0] yaw_target,
 	input  wire [`REC_VAL_BIT_WIDTH-1:0] pitch_target,
 	input  wire [`REC_VAL_BIT_WIDTH-1:0] roll_target,
-	input  wire signed [`RATE_BIT_WIDTH-1:0] yaw_actual /* synthesis syn_force_pads=1 syn_noprune=1*/ ,
+	input  wire yaac_enable_n,
+	input  wire signed [`RATE_BIT_WIDTH-1:0] yaw_angle_target,
+	input  wire signed [`RATE_BIT_WIDTH-1:0] yaw_angle_error_in,
 	input  wire signed [`RATE_BIT_WIDTH-1:0] pitch_actual,
 	input  wire signed [`RATE_BIT_WIDTH-1:0] roll_actual,
+	input  wire [2:0] switch_a,
+	//input  wire switch_a,
 	input  wire start_signal,
 	input  wire resetn,
 	input  wire us_clk);
@@ -56,12 +60,12 @@ module angle_controller (
 	// rate limits (16-bit, 2's complement, 12-bit integer, 4-bit fractional)
 	localparam signed [`OPS_BIT_WIDTH-1:0]
 		THROTTLE_MAX 	=  250 << `FIXED_POINT_SHIFT,
-		YAW_MAX 		=  100 << `FIXED_POINT_SHIFT,
-		YAW_MIN 		= -100 << `FIXED_POINT_SHIFT,
-		PITCH_MAX 		=  100 << `FIXED_POINT_SHIFT,
-		PITCH_MIN 		= -100 << `FIXED_POINT_SHIFT,
-		ROLL_MAX		=  100 << `FIXED_POINT_SHIFT,
-		ROLL_MIN		= -100 << `FIXED_POINT_SHIFT;
+		YAW_MAX 		=  200 << `FIXED_POINT_SHIFT,
+		YAW_MIN 		= -200 << `FIXED_POINT_SHIFT,
+		PITCH_MAX 		=  200 << `FIXED_POINT_SHIFT,
+		PITCH_MIN 		= -200 << `FIXED_POINT_SHIFT,
+		ROLL_MAX		=  200 << `FIXED_POINT_SHIFT,
+		ROLL_MIN		= -200 << `FIXED_POINT_SHIFT;
 
 
 	// Mapping input range to other
@@ -78,7 +82,10 @@ module angle_controller (
 	// working registers
 	reg signed [`OPS_BIT_WIDTH-1:0]		mapped_throttle, mapped_yaw, mapped_roll, mapped_pitch;
 	reg signed [`OPS_BIT_WIDTH-1:0] 	scaled_throttle, scaled_yaw, scaled_roll, scaled_pitch;
-	reg signed [`REC_VAL_BIT_WIDTH-1:0]	latched_throttle, latched_yaw, latched_pitch, latched_roll;
+	reg signed [`REC_VAL_BIT_WIDTH-1:0]	latched_throttle, latched_pitch, latched_roll;
+	reg signed [`RATE_BIT_WIDTH-1:0]	latched_yaw_angle_target;
+	reg signed [`RATE_BIT_WIDTH-1:0]	latched_yaw_angle_error;
+	reg [`OPS_BIT_WIDTH-1:0]            multiplier;
 
 	// state names
 	localparam
@@ -110,18 +117,19 @@ module angle_controller (
 	// update state
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
-			state 				<= STATE_WAITING;
-			latched_throttle 	<= `ALL_ZERO_2BYTE;
-			latched_yaw 		<= `ALL_ZERO_2BYTE;
-			latched_pitch 		<= `ALL_ZERO_2BYTE;
-			latched_roll 		<= `ALL_ZERO_2BYTE;
+			state 							<= STATE_WAITING;
+			latched_throttle 				<= `ALL_ZERO_2BYTE;
+			latched_yaw_angle_error 		<= `ALL_ZERO_2BYTE;
+			latched_pitch 					<= `ALL_ZERO_2BYTE;
+			latched_roll 					<= `ALL_ZERO_2BYTE;
 		end
 		else begin
-			state 				<= next_state;
-			latched_yaw 		<= yaw_target;
-			latched_roll 		<= roll_target;
-			latched_pitch 		<= pitch_target;
-			latched_throttle 	<= throttle_target;
+			state 							<= next_state;
+			latched_yaw_angle_target 		<= yaw_angle_target;
+			latched_yaw_angle_error 		<= yaw_angle_error_in;
+			latched_roll 					<= roll_target;
+			latched_pitch 					<= pitch_target;
+			latched_throttle 				<= throttle_target;
 		end
 	end
 
@@ -156,9 +164,10 @@ module angle_controller (
 	always @(posedge us_clk or negedge resetn) begin
 		if(!resetn) begin
 			// reset values
-			yaw_rate_out 	<= `ALL_ZERO_2BYTE;
-			roll_rate_out 	<= `ALL_ZERO_2BYTE;
-			pitch_rate_out	<= `ALL_ZERO_2BYTE;
+			yaw_rate_out 	 <= `ALL_ZERO_2BYTE;
+			roll_rate_out 	 <= `ALL_ZERO_2BYTE;
+			pitch_rate_out	 <= `ALL_ZERO_2BYTE;
+			multiplier       <= 0;
 
 		end
 		else begin
@@ -166,25 +175,39 @@ module angle_controller (
 				STATE_WAITING: begin
 					complete_signal 		<= `FALSE;
 					active_signal 			<= `FALSE;
+					if (switch_a == 3'b001)
+					//if (switch_a)
+						multiplier <= 16'sd2;
+					else
+						multiplier <= 16'sd1;
 				end
 				STATE_MAPPING: begin
 					complete_signal 		<= `FALSE;
-					active_signal 			<= `TRUE;
-
-					mapped_throttle 		<= {THROTTLE_F_PAD, latched_throttle, THROTTLE_R_PAD};
+					active_signal 			<= `TRUE;	
+					// Yaw Accumulator is disabled, use original yaw handling
 					// input values mapped from 0 - 250 to -31.25 - 31.25
-					mapped_yaw 				<= $signed({FRONT_PAD, latched_yaw,   END_PAD}) - MAPPING_SUBS;
-					mapped_roll 			<= $signed({FRONT_PAD, latched_roll,  END_PAD}) - MAPPING_SUBS + roll_actual; // roll value from IMU is flipped, add instead of subtract
-					mapped_pitch 			<= $signed({FRONT_PAD, latched_pitch, END_PAD}) - MAPPING_SUBS - pitch_actual;
+					if(yaac_enable_n)
+						mapped_yaw          <= $signed({FRONT_PAD, latched_yaw_angle_target[7:0], END_PAD}) - MAPPING_SUBS;
+					// Yaw Accumulator is enabled, use new yaw handling - Calculated in YAAc
+					else
+						mapped_yaw	 		<= latched_yaw_angle_error;
+					mapped_throttle 		<= $signed({THROTTLE_F_PAD, latched_throttle, THROTTLE_R_PAD});
+					// input values mapped from 0 - 250 to -31.25 - 31.25
+					mapped_roll 			<= ($signed({FRONT_PAD, latched_roll,  END_PAD}) - MAPPING_SUBS)*multiplier + roll_actual; // roll value from IMU is flipped, add instead of subtract
+					mapped_pitch 			<= ($signed({FRONT_PAD, latched_pitch, END_PAD}) - MAPPING_SUBS)*multiplier - pitch_actual;
+					
 				end
 				STATE_SCALING: begin
 					complete_signal 		<= `FALSE;
 					active_signal			<= `TRUE;
 					// Apply scaler: (axis_val * scale_multiplier) / Scale_divisor
-					scaled_yaw				<= scale_val(mapped_yaw, `YAW_SCALE_MULT, `YAW_SCALE_SHIFT);
-					scaled_roll				<= scale_val(mapped_roll, `ROLL_SCALE_MULT, `ROLL_SCALE_SHIFT);
-					scaled_pitch 			<= scale_val(mapped_pitch, `PITCH_SCALE_MULT, `PITCH_SCALE_SHIFT);
-					scaled_throttle			<= scale_val(mapped_throttle, `THROTTLE_SCALE_MULT, `THROTTLE_SCALE_SHIFT);
+					if(yaac_enable_n)
+						scaled_yaw			<= scale_val(mapped_yaw, `YAW_OLD_AC_K_P, `YAW_AC_K_P_SHIFT);
+					else
+						scaled_yaw			<= scale_val(mapped_yaw, `YAW_YAAC_AC_K_P, `YAW_AC_K_P_SHIFT);
+					scaled_roll				<= scale_val(mapped_roll, `ROLL_AC_K_P, `ROLL_AC_K_P_SHIFT);
+					scaled_pitch 			<= scale_val(mapped_pitch, `PITCH_AC_K_P, `PITCH_AC_K_P_SHIFT);
+					scaled_throttle			<= scale_val(mapped_throttle, `THROTTLE_AC_K_P, `THROTTLE_AC_K_P_SHIFT);
 				end
 				STATE_LIMITING: begin
 					complete_signal 		<= `FALSE;
@@ -222,6 +245,7 @@ module angle_controller (
 					else
 						pitch_rate_out		<= scaled_pitch;
 
+					yaw_angle_error			<= latched_yaw_angle_error;
 					pitch_angle_error		<= mapped_pitch;
 					roll_angle_error		<= mapped_roll;
 				end
