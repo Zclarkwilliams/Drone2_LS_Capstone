@@ -182,7 +182,7 @@ module throttle_controller
 				STATE_LINEAR_SCALE: begin 
 					complete_signal      <= `FALSE; 
 					active_signal        <= `TRUE;
-					if (switch_a == 3'b001) begin //Easy mode throttle
+					if (switch_a[0]) begin //Easy mode throttle
 						//Low throttle value, gets 4x slope 
 						if(debounced_throttle < 8'd35)
 							scaled_throttle  <= (8'd4*debounced_throttle); 

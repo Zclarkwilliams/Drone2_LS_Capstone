@@ -175,8 +175,7 @@ module angle_controller (
 				STATE_WAITING: begin
 					complete_signal 		<= `FALSE;
 					active_signal 			<= `FALSE;
-					if (switch_a == 3'b001)
-					//if (switch_a)
+					if (switch_a[0])
 						multiplier <= 16'sd2;
 					else
 						multiplier <= 16'sd1;

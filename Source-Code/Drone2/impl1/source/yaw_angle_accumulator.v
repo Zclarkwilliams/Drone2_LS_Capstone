@@ -64,7 +64,6 @@ module yaw_angle_accumulator (
 	reg signed [`RATE_BIT_WIDTH-1:0]    yaw_angle_error_temp;
 	reg signed [`RATE_BIT_WIDTH-1:0]    yaw_angle_error;
 	reg signed [`RATE_BIT_WIDTH-1:0]    old_yaw_angle_error;
-	reg signed [`RATE_BIT_WIDTH-1:0]    multiplier;
 	reg old_yaw_stick_out_of_neutral_window;
 	
 	//Next values of above registers
@@ -483,9 +482,13 @@ module yaw_angle_accumulator (
 			latched_yaw_stick_normalized     <= `ALL_ZERO_2BYTE;
 		end
 		else begin
-			if(trigger_yaw_stick_normalized == `TRUE)
-				//latched_yaw_stick_normalized <= (latched_yaw_pwm_value - yaw_stick_neutral_value);
-				latched_yaw_stick_normalized <= (latched_yaw_pwm_value - yaw_stick_neutral_value)*multiplier;
+			if(trigger_yaw_stick_normalized == `TRUE) begin
+				if (switch_a[0])
+					latched_yaw_stick_normalized <= (latched_yaw_pwm_value - yaw_stick_neutral_value)*`YAW_ACCUMULATOR_INPUT_MULTIPLIER;
+				else
+					latched_yaw_stick_normalized <= (latched_yaw_pwm_value - yaw_stick_neutral_value)>>>2;
+				
+			end
 		end
 	end
 	
@@ -573,7 +576,6 @@ module yaw_angle_accumulator (
 			latched_throttle_pwm_value <= `ALL_ZERO_2BYTE;
 			latched_yaw_pwm_value      <= `ALL_ZERO_2BYTE;
 			latched_yaw_angle_imu      <= `ALL_ZERO_2BYTE;
-			multiplier                 <= 16'sd1;
 		end
 		else begin
 			if(trigger_latch_new_values == `TRUE) begin
@@ -583,10 +585,6 @@ module yaw_angle_accumulator (
 					latched_yaw_angle_imu <= old_yaw_angle_imu;
 				else
 					latched_yaw_angle_imu <= yaw_angle_imu;
-				if (switch_a == 3'b001)
-					multiplier            <= `YAW_ACCUMULATOR_INPUT_MULTIPLIER;
-				else
-					multiplier            <= 16'sd1;
 			end
 		end
 	end
