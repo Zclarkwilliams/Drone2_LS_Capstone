@@ -236,6 +236,7 @@ module i2c_module(
 			busy                = `HIGH;
 			rstn_imu            = `LOW;
 			clear_read_count    = `HIGH;
+			next_i2c_cmd_state  = `I2C_STATE_RESET;
 			next_wd_event_count = 0;
 		end
 		else if (wd_event_active) begin // Handle watchdog timer wrap around, reset IMU and EFB
