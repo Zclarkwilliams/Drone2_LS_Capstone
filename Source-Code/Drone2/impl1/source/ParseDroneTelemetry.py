@@ -19,24 +19,25 @@ TELNET='/usr/bin/telnet'
 SSH_OPTIONS='-xo UserKnownHostsFile="/dev/null"'
 repeatCount = 80 #Number of times to print a '=' to seperate fields
 
-IMU_PIT_ROT_ANG_INDEX = 0
-IMU_ROL_ROT_ANG_INDEX = 1
-IMU_YAW_ROT_ANG_INDEX = 2
-IMU_PIT_ROT_RAT_INDEX = 3
-IMU_ROL_ROT_RAT_INDEX = 4
-IMU_YAW_ROT_RAT_INDEX = 5
-IMU_CALIBR_STAT_INDEX = 6
-RECV_THR_VAL_INDEX    = 7
-RECV_YAW_VAL_INDEX    = 8
-RECV_ROL_VAL_INDEX    = 9
-RECV_PIT_VAL_INDEX    = 10
-RECV_AUX1_VAL_INDEX   = 11
-RECV_AUX2_VAL_INDEX   = 12
-RECV_SWAB_VAL_INDEX   = 13
-YAAC_ANG_ERR_INDEX    = 14
-YAAC_ANG_TGT_INDEX    = 15
-YAAC_DBG_OUT_INDEX    = 16
-YAAC_STK_NEU_INDEX    = 17
+IMU_PIT_ROT_ANG_INDEX  = 0
+IMU_ROL_ROT_ANG_INDEX  = 1
+IMU_YAW_ROT_ANG_INDEX  = 2
+IMU_PIT_ROT_RAT_INDEX  = 3
+IMU_ROL_ROT_RAT_INDEX  = 4
+IMU_YAW_ROT_RAT_INDEX  = 5
+IMU_CALIBR_STAT_INDEX  = 6
+RECV_THR_VAL_INDEX     = 7
+RECV_YAW_VAL_INDEX     = 8
+RECV_ROL_VAL_INDEX     = 9
+RECV_PIT_VAL_INDEX     = 10
+RECV_AUX1_VAL_INDEX    = 11
+RECV_AUX2_VAL_INDEX    = 12
+RECV_SWAB_VAL_INDEX    = 13
+YAAC_ANG_ERR_INDEX     = 14
+YAAC_ANG_TGT_INDEX     = 15
+YAAC_AMC_LIN_VEL_INDEX = 16
+YAAC_YAW_RATE_INDEX    = 17
+YAAC_SWA_SWB_INDEX     = 18
 
 name_indices = {
     0 : "IMU X rotation angle   ",
@@ -55,9 +56,9 @@ name_indices = {
     13: "Recv SWA/SWB value     ",
     14: "YAAc Yaw angle error   ",
     15: "YAAc Yaw angle target  ",
-    #16: "YAAc debug output      ",
-    16: "Yaw rate to mixer      ",
-    17: "Generic debug index 17 ",
+    16: "AMC z linear velocity  ",
+    17: "Yaw rate to mixer      ",
+    18: "SWA and SWB values     ",
 }
 
 disp_type = {
@@ -77,8 +78,9 @@ disp_type = {
     13: 'unsigned8',
     14: 'signed16',
     15: 'signed16',
-    16: 'signed16',
-    17: 'binary8',
+    16: 'unsigned16',
+    17: 'signed16',
+    18: 'binary8',
 }
 
 

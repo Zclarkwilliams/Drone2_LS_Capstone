@@ -16,7 +16,7 @@
  * @motor_2_pwm:  signal to drive the ESC connected to motor 2
  * @motor_3_pwm:  signal to drive the ESC connected to motor 3
  * @motor_4_pwm:  signal to drive the ESC connected to motor 4
- * @rstn_imu:     signal to reset IMU from FPGA
+ * @resetn_imu:     signal to reset IMU from FPGA
  * @led_data_out: signal mapping data to FPGA board's 8 LEDs
  *
  * Inputs:
@@ -45,7 +45,7 @@ module drone2 (
     output wire motor_2_pwm,
     output wire motor_3_pwm,
     output wire motor_4_pwm,
-    output wire rstn_imu,
+    output wire resetn_imu,
     output reg  [7:0] led_data_out,
     // Inputs
     input wire throttle_pwm,
@@ -108,6 +108,12 @@ module drone2 (
     wire imu_good;
     wire imu_data_valid;
     wire [7:0] imu_debug;
+    
+    //--------- Auto Mode Controller Wires --------//
+    wire  [`REC_VAL_BIT_WIDTH-1:0] amc_throttle_val;
+    wire  amc_active_signal;
+    wire  amc_complete_signal;
+    wire  [`RATE_BIT_WIDTH-1:0] amc_z_linear_velocity;
 
     //--------- Throttle Controller Wires ---------//
     wire [`REC_VAL_BIT_WIDTH-1:0]
@@ -202,7 +208,9 @@ module drone2 (
         .us_clk(us_clk),
         .resetn(resetn));
         
-        
+    /*
+    *  Determine running flight mode from mode selector switches a and b
+    */    
     flight_mode MODE(
         .swa_swb_val(swa_swb_val),
         .switch_a(switch_a),
@@ -240,20 +248,35 @@ module drone2 (
         .scl_2(scl_2),
         .sda_2(sda_2),
         // Inputs
-        .rstn(resetn),
+        .resetn(resetn),
         .sys_clk(sys_clk),
-        .rstn_imu(rstn_imu),
+        .resetn_imu(resetn_imu),
         .next_mod_active(throttle_controller_active));
+        
+    auto_mode_controller AMC (
+        .throttle_pwm_val_out(amc_throttle_val),
+        .active_signal(amc_active_signal),
+        .complete_signal(amc_complete_signal),
+        .z_linear_velocity(amc_z_linear_velocity),
+        .imu_good(imu_good),
+        .z_linear_accel(z_linear_accel),
+        .throttle_pwm_val_in(throttle_val),
+        .switch_a(switch_a),
+        .switch_b(switch_b),
+        .start_signal(imu_data_valid),
+        .resetn(resetn),
+        .us_clk(us_clk)
+    );
 
      throttle_controller TC(
         .throttle_pwm_value_out(tc_throttle_value),
         .complete_signal(throttle_controller_complete),
         .active_signal(throttle_controller_active),
-        .throttle_pwm_value_in(throttle_val),
-        .start_signal(imu_data_valid),
+        .throttle_pwm_value_in(amc_throttle_val),
+        .start_signal(amc_complete_signal),
         .tc_enable_n(tc_enable_n),
         .switch_a(switch_a),
-        .imu_ready(imu_good),
+        .imu_good(imu_good),
         .resetn(resetn),
         .us_clk(us_clk));        
         
@@ -275,7 +298,7 @@ module drone2 (
         .yaac_enable_n(yaac_enable_n),
         .switch_a(switch_a),
         .debug_out(yaac_debug),
-        .imu_ready(imu_good),
+        .imu_good(imu_good),
         .start_signal(throttle_controller_complete),
         .resetn(resetn),
         .us_clk(us_clk)
@@ -402,8 +425,9 @@ module drone2 (
         .rec_swa_swb_val(swa_swb_val),
         .yaac_yaw_angle_error(yaac_yaw_angle_error),
         .yaac_yaw_angle_target(yaac_yaw_angle_target),
-        .debug_16_in_16_bits(yaw_rate),
-        .debug_17_in_16_bits({11'd0, switch_b, switch_a})
+        .amc_z_linear_velocity(amc_z_linear_velocity),
+        .debug_17_in_16_bits(yaw_rate),
+        .debug_18_in_16_bits({11'd0, switch_b, switch_a})
 
     );
     // Enable bits

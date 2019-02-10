@@ -52,7 +52,6 @@ module angle_controller (
     input  wire signed [`RATE_BIT_WIDTH-1:0] pitch_actual,
     input  wire signed [`RATE_BIT_WIDTH-1:0] roll_actual,
     input  wire [2:0] switch_a,
-    //input  wire switch_a,
     input  wire start_signal,
     input  wire resetn,
     input  wire us_clk);

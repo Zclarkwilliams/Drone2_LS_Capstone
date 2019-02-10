@@ -23,7 +23,7 @@ module throttle_controller
     input  wire [`REC_VAL_BIT_WIDTH-1:0] throttle_pwm_value_in,
     input  wire tc_enable_n,
     input  wire [2:0] switch_a,
-    input  wire imu_ready,
+    input  wire imu_good,
     input  wire start_signal,
     input  wire resetn,
     input  wire us_clk);
@@ -82,13 +82,13 @@ module throttle_controller
     end
 
     // next state logic
-    always @(state or start_flag or imu_ready or resetn) begin
+    always @(state or start_flag or imu_good or resetn) begin
         if (!resetn)
             next_state = STATE_INIT;
         else begin
             case(state)
                 STATE_INIT: begin
-                    if(imu_ready == `TRUE)
+                    if(imu_good == `TRUE)
                         next_state = STATE_WAITING;
                     else
                         next_state = STATE_INIT;

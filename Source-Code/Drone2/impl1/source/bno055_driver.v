@@ -19,11 +19,11 @@
  *  Module takes as inputs:
  *          sys_clk                 master clock
  *          next_mod_active         Handshake signal from next module acknowledging the data valid strobe
- *          rstn                    async negative reset signal 0 = reset, 1 = not reset
+ *          resetn                    async negative reset signal 0 = reset, 1 = not reset
 
  * Module provides as output (all values are 16-bit, 2's complement):
  *          led_data_out,          Module calibration status output for LED indication of IMU operating state
- *          rstn_imu               Low active reset signal to IMU hardware to trigger reset
+ *          resetn_imu               Low active reset signal to IMU hardware to trigger reset
  *          imu_good               The IMU is either in an error or initial bootup states, measurements not yet active
  *          valid_strobe           Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
  *          accel_rate_x           Accelerometer X-Axis                Precision: 1 m/s^2 = 100 LSB
@@ -71,11 +71,11 @@ module bno055_driver #(
     inout  wire scl_2,
     inout  wire sda_1,
     inout  wire sda_2,
-    input  wire rstn,
+    input  wire resetn,
     output wire [7:0]led_data_out,
     input  wire sys_clk,
     input  wire next_mod_active,
-    output wire rstn_imu,
+    output wire resetn_imu,
     output reg  imu_good,
     output reg  valid_strobe,
     output reg [15:0]accel_rate_x,
@@ -133,7 +133,7 @@ module bno055_driver #(
     reg  [5:0]led_view_index;                         //  Index in data_rx_reg that is being monitored with status LEDs
     reg  [5:0]next_led_view_index;                    //  Next value of LED View Index
     reg  [7:0]data_rx_reg[`DATA_RX_BYTE_REG_CNT-1:0]; //  Store all measurement bytes from i2c read burst
-    reg  rstn_buffer;                                 //  Negedge clears received measurement buffer
+    reg  resetn_buffer;                                 //  Negedge clears received measurement buffer
     reg  rx_data_latch_strobe;                        //  Strobe data output register, latch onto current data in rx buffer, asynchronous latch
     reg  rx_data_latch_tmp;                           //  Synchronously latched value of the data latch strobe
     reg  next_imu_good;                               //  Next value of module imu_good bit
@@ -158,8 +158,8 @@ module bno055_driver #(
                     .sda_1(sda_1),
                     .scl_2(scl_2),
                     .sda_2(sda_2),
-                    .rstn(rstn),
-                    .rstn_imu(rstn_imu),
+                    .resetn(resetn),
+                    .resetn_imu(resetn_imu),
                     .target_read_count(target_read_count),
                     .slave_address(slave_address),
                     .module_data_out(data_rx),
@@ -175,8 +175,8 @@ module bno055_driver #(
 
     //  Generates a multiple of 1ms length duration delay trigger - Defaulted to 650 ms for BNO055 reset and boot time
     //  When the count down counter wraps around the timer is triggered and stops counting
-    always@(posedge sys_clk, negedge clear_waiting_ms, negedge rstn) begin
-        if(~rstn)
+    always@(posedge sys_clk, negedge clear_waiting_ms, negedge resetn) begin
+        if(~resetn)
             count_ms <= 32'hFFFFFFFF;
         else if( clear_waiting_ms == `CLEAR_MS_TIMER )
             count_ms <= (`WAIT_MS_DIVIDER*wait_ms);
@@ -188,14 +188,14 @@ module bno055_driver #(
 
     //  During a read cycle decrement the data_rx_reg_index until it reaches 0 if one_byte_ready is asserted
     //  If a byte has been read assign it to the data_rx_reg byte array at the location specified by data_rx_reg_index
-    always@(posedge sys_clk, negedge rstn_buffer, negedge rstn) begin
-        if(~rstn) begin
+    always@(posedge sys_clk, negedge resetn_buffer, negedge resetn) begin
+        if(~resetn) begin
             // Initialize data rx register to all 0s on reset
             for(data_rx_reg_index = 0; data_rx_reg_index < `DATA_RX_BYTE_REG_CNT; data_rx_reg_index = data_rx_reg_index+1'b1)
                 data_rx_reg[data_rx_reg_index] <= 8'b0;
             data_rx_reg_index <= 0;
         end
-        else if(~rstn_buffer ) begin
+        else if(~resetn_buffer ) begin
             data_rx_reg_index <= 0;
         end
         else if (one_byte_ready) begin
@@ -217,8 +217,8 @@ module bno055_driver #(
     //  When timer wraps around the enable signal is set for clock tick, or delayed for 1 additional tick
     //  If rx_data_latch_strobe is not asserted then the enable signal is asserted
     //  Otherwise it will be asserted the next clock tick
-    always@(posedge sys_clk, negedge rstn) begin
-        if(~rstn) begin  // Reset, set starting values
+    always@(posedge sys_clk, negedge resetn) begin
+        if(~resetn) begin  // Reset, set starting values
             master_trigger_count_ms <= `WAIT_MS_DIVIDER*20;
             valid_strobe_enable     <= `FALSE;
         end 
@@ -243,8 +243,8 @@ module bno055_driver #(
     //  The modules after this run at a slower clock rate and require handshaking of this signal
     //  This block will hold valid_strobe high until the next module's active signal goes high
     //  Which acknowledges that receipt of this valid_strobe
-    always@(posedge sys_clk, negedge rstn) begin
-        if(~rstn)
+    always@(posedge sys_clk, negedge resetn) begin
+        if(~resetn)
             valid_strobe     <= `LOW;
         else if (valid_strobe_enable == `TRUE) begin
             if(~valid_strobe)                             // Valid not yet asserted
@@ -264,8 +264,8 @@ module bno055_driver #(
 
     //  Take data read byte array and assign the byte values to output data wires
     //  Most of the data outputs are 16 bit words
-    always@(posedge sys_clk, negedge rstn) begin
-        if(~rstn) begin
+    always@(posedge sys_clk, negedge resetn) begin
+        if(~resetn) begin
             accel_rate_x      <= 16'b0;
             accel_rate_y      <= 16'b0;
             accel_rate_z      <= 16'b0;
@@ -344,8 +344,8 @@ module bno055_driver #(
 
 
     // Advance state and registered data at each positive clock edge
-    always@(posedge sys_clk, negedge rstn) begin
-        if(~rstn) begin
+    always@(posedge sys_clk, negedge resetn) begin
+        if(~resetn) begin
             data_reg            <= `BYTE_ALL_ZERO;
             data_tx             <= `BYTE_ALL_ZERO;
             read_write_in       <= `I2C_READ;
@@ -380,7 +380,7 @@ module bno055_driver #(
 
     // IMU FSM, Determine next state of FSM and drive i2c module inputs
     always@(*) begin
-        if( ~(rstn & rstn_imu) ) begin
+        if( ~(resetn & resetn_imu) ) begin
             next_imu_good             = `FALSE;
             clear_waiting_ms          = `RUN_MS_TIMER;
             next_bno055_state         = `BNO055_STATE_RESET;
@@ -391,7 +391,7 @@ module bno055_driver #(
             next_read_write_in        = `I2C_READ;
             next_led_view_index       = `FALSE;
             next_wait_ms              = INIT_TIME; // Reset to Normal takes 650 ms for BNO055
-            rstn_buffer               = `LOW;
+            resetn_buffer               = `LOW;
             next_target_read_count    = 1'b1;
             rx_data_latch_strobe      = `LOW;
             i2c_number                = 1'b0; // Default to i2c EFB #1
@@ -411,7 +411,7 @@ module bno055_driver #(
             next_read_write_in        = read_write_in;
             next_led_view_index       = led_view_index;
             next_wait_ms              = wait_ms;
-            rstn_buffer               = `HIGH;
+            resetn_buffer               = `HIGH;
             next_target_read_count    = target_read_count;
             rx_data_latch_strobe      = `LOW;
             i2c_number                = 1'b0; // Default to i2c EFB #1
@@ -611,7 +611,7 @@ module bno055_driver #(
                     next_data_tx       = `BYTE_ALL_ZERO;
                     next_go_flag       = `NOT_GO;
                     next_bno055_state  = `BNO055_STATE_WAIT_20MS;
-                    rstn_buffer        = `LOW; // Clear RX data buffer index before starting next state's read burst
+                    resetn_buffer        = `LOW; // Clear RX data buffer index before starting next state's read burst
                     if((count_ms[31] == 1'b1) ) begin // Wait for count_ms wrapped around to 0x3FFFFFF
                         next_wait_ms       = 'd20; // Pause for 20 ms between iterations, for next wait state, not used in this one
                         next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
@@ -641,7 +641,7 @@ module bno055_driver #(
                     next_data_tx       = `BYTE_ALL_ZERO;
                     next_go_flag       = `NOT_GO;
                     next_bno055_state  = `BNO055_STATE_WAIT_IMU_POLL_TIME;
-                    rstn_buffer        = `LOW; // Clear the RX data buffer index starting next state's read burst
+                    resetn_buffer        = `LOW; // Clear the RX data buffer index starting next state's read burst
                     if((count_ms[31] == 1'b1) ) begin // Wait for count_ms wrapped around to 0x3FFFFFF
                         next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
                     end
@@ -651,7 +651,7 @@ module bno055_driver #(
                 `BNO055_SUB_STATE_START: begin // Begin i2c transaction, wait for busy to be asserted
                     next_slave_address    = `BNO055_SLAVE_ADDRESS;
                     next_go_flag          = `GO;
-                    if(busy && rstn_imu) // Stay here until i2c is busy AND the IMU isn't in reset (Prevent glitch at WD event)
+                    if(busy && resetn_imu) // Stay here until i2c is busy AND the IMU isn't in reset (Prevent glitch at WD event)
                         next_bno055_state = `BNO055_SUB_STATE_WAIT_I2C;
                     else
                         next_bno055_state = `BNO055_SUB_STATE_START;
@@ -659,7 +659,7 @@ module bno055_driver #(
                 `BNO055_SUB_STATE_WAIT_I2C: begin // Wait for end of i2c transaction, wait for busy to be cleared
                     next_go_flag          = `NOT_GO;
                     next_slave_address    = `BNO055_SLAVE_ADDRESS;
-                    if(~busy && rstn_imu) // Stay here until i2c is not busy AND the IMU isn't in reset (Prevent glitch at WD event)
+                    if(~busy && resetn_imu) // Stay here until i2c is not busy AND the IMU isn't in reset (Prevent glitch at WD event)
                         next_bno055_state = `BNO055_SUB_STATE_STOP;
                     else
                         next_bno055_state = `BNO055_SUB_STATE_WAIT_I2C;

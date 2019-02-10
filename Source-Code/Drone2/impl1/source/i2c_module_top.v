@@ -15,7 +15,7 @@
 module i2c_module(
 	inout  wire scl_1, scl_2,              // I2C EFB #1 and #2 SCL wires
 	inout  wire sda_1, sda_2,              // I2C EFB #1 and #2 SDA wires
-	input  wire rstn,                      // Async negative global reset signal 0 = reset, 1 = not reset
+	input  wire resetn,                    // Async negative global reset signal 0 = reset, 1 = not reset
 	input  wire [5:0] target_read_count,   // The number of bytes to for the continuous read burst - Max value is 31 bytes
 	output reg  [7:0] module_data_out,     // Received data byte for i2c read cycles
 	input  wire [7:0] module_data_in,      // Byte input for i2c writes
@@ -27,14 +27,14 @@ module i2c_module(
 	input  wire sys_clk,                   // master clock for module, efb, and output to higher level modules
 	input  wire i2c_number,                // I2C EFB module to use 0 = EFB1, , 1= EFB2
 	output reg  busy,                      // Busy signal out from module while running an i2c transaction
-	output reg  rstn_imu                   // Low active reset signal to IMU hardware to trigger reset
+	output reg  resetn_imu                 // Low active reset signal to IMU hardware to trigger reset
 );
 
 	reg  [7:0] addr;                                // Wishbone address register
 	reg  [7:0] data_tx;                             // Temp storage of data to be written
 	wire [7:0] data_rx;                             // Temp storage of received data
 	wire ack;                                       // Ack from slave
-	reg  rstn_local;                                // Manual EFB I2C reset
+	reg  resetn_local;                              // Manual EFB I2C reset
 	reg  we, next_we;                               // Write enable, 1 for write, 0 for read
 	reg  stb, next_stb;                             // Strobe from master
 	wire cyc;                                       // Cycle start from master
@@ -90,21 +90,21 @@ module i2c_module(
 
 	// Connect the I2C module to this top module
 	I2C_EFB_WB i2c_top(
-		.wb_clk_i(sys_clk),					// Positive edge clock, >7.5x I2C rate
-		.wb_rst_i( ~(rstn & rstn_local) ),	// Active-high, synchronous reset signal that will only reset the WISHBONE interface logic.
-		.wb_cyc_i(cyc),						// Active high start of bus cycle
-		.wb_stb_i(stb),						// Active high strobe, WISHBONE slave is the target for current transaction
-		.wb_we_i(we),						// Read/Write control, 1=Write, 0=Read
-		.wb_adr_i(addr),					// 8-bit address of EFB register
-		.wb_dat_i(data_tx),					// Transmitted data byte TO EFB
-		.wb_dat_o(data_rx),					// Received data byte from EFB
-		.wb_ack_o(ack),						// Active-high command ack signal from EFB module, indicates that requested command is ack'd
-		.i2c1_scl(scl_1),					// I2C #2 scl inout
-		.i2c1_sda(sda_1),					// I2C #2 sda  inout
-		.i2c1_irqo(irq1_out),				// I2C #2 IRQ Output
-		.i2c2_scl(scl_2),					// I2C #2 scl inout
-		.i2c2_sda(sda_2),					// I2C #2 sda inout
-		.i2c2_irqo(irq2_out)				// I2C #2 IRQ Output
+		.wb_clk_i(sys_clk),					   // Positive edge clock, >7.5x I2C rate
+		.wb_rst_i( ~(resetn & resetn_local) ), // Active-high, synchronous reset signal that will only reset the WISHBONE interface logic.
+		.wb_cyc_i(cyc),						   // Active high start of bus cycle
+		.wb_stb_i(stb),						   // Active high strobe, WISHBONE slave is the target for current transaction
+		.wb_we_i(we),						   // Read/Write control, 1=Write, 0=Read
+		.wb_adr_i(addr),					   // 8-bit address of EFB register
+		.wb_dat_i(data_tx),					   // Transmitted data byte TO EFB
+		.wb_dat_o(data_rx),					   // Received data byte from EFB
+		.wb_ack_o(ack),						   // Active-high command ack signal from EFB module, indicates that requested command is ack'd
+		.i2c1_scl(scl_1),					   // I2C #2 scl inout
+		.i2c1_sda(sda_1),					   // I2C #2 sda  inout
+		.i2c1_irqo(irq1_out),				   // I2C #2 IRQ Output
+		.i2c2_scl(scl_2),					   // I2C #2 scl inout
+		.i2c2_sda(sda_2),					   // I2C #2 sda inout
+		.i2c2_irqo(irq2_out)				   // I2C #2 IRQ Output
 );
 
 	// #0.100 forces delay during simulation to prevent mismatch with real synthesized behavior
@@ -112,8 +112,8 @@ module i2c_module(
 
 	// Generates a multiple of 1us length duration delay trigger
 	//  When the count down counter wraps around the timer is triggered and stops counting
-	always@(posedge sys_clk, negedge clear_waiting_us, negedge rstn) begin
-		if(~rstn)
+	always@(posedge sys_clk, negedge clear_waiting_us, negedge resetn) begin
+		if(~resetn)
 			count_us       <= 12'hFFF;
 		else if( clear_waiting_us == `CLEAR_US_TIMER )
 			count_us       <= (`WAIT_US_DIVIDER*5);
@@ -124,12 +124,12 @@ module i2c_module(
 	end
 
 	// Generates a 60 ms watchdog timer
-	always@(posedge sys_clk, negedge rstn) begin
-		if(~rstn) begin
+	always@(posedge sys_clk, negedge resetn) begin
+		if(~resetn) begin
 			count_wd_delay  <= 32'hFFFFFFFF;
 			wd_event_active <= `FALSE;
 		end
-		else if ( (clear_watchdog  == `CLEAR_WD_TIMER) || (~rstn_imu) ) begin // If IMU is being rest keep WD from running
+		else if ( (clear_watchdog  == `CLEAR_WD_TIMER) || (~resetn_imu) ) begin // If IMU is being rest keep WD from running
 			count_wd_delay <= (`WAIT_MS_DIVIDER*60);
 			wd_event_active <= `FALSE;
 		end
@@ -144,8 +144,8 @@ module i2c_module(
 	end
 
 	// Advance state and next values at each positive clock edge
-	always@(posedge sys_clk, negedge rstn) begin
-		if( ~(rstn) ) begin
+	always@(posedge sys_clk, negedge resetn) begin
+		if( ~(resetn) ) begin
 			we             <= `FALSE;
 			stb            <= `FALSE;
 			addr           <= `BYTE_ALL_ZERO;
@@ -172,8 +172,8 @@ module i2c_module(
 	end
 
 	// Take single input bit and assign either read or write action
-	always@(posedge sys_clk, negedge rstn) begin
-		if(~rstn) begin // Default to NO action
+	always@(posedge sys_clk, negedge resetn) begin
+		if(~resetn) begin // Default to NO action
 				read_action  <= 1'b0;
 				write_action <= 1'b0;
 		end
@@ -191,8 +191,8 @@ module i2c_module(
 
 	// Assign module output data if data latch is asserted and still reading bytes
 	// Does nothing for a write action
-	always@(posedge sys_clk, negedge rstn) begin
-		if(~rstn) begin
+	always@(posedge sys_clk, negedge resetn) begin
+		if(~resetn) begin
 			module_data_out        <= 8'b00;
 			next_one_byte_ready    <= 1'b0;
 		end
@@ -208,8 +208,8 @@ module i2c_module(
 
 	// Decrement bytes_read_remain when data_latch goes positive
 	// or if clear_read_count goes negative set it to starting value
-	always@(posedge data_latch, negedge clear_read_count, negedge rstn) begin
-		if( (rstn == 1'b0) || (clear_read_count == 1'b0) ) begin
+	always@(posedge data_latch, negedge clear_read_count, negedge resetn) begin
+		if( (resetn == 1'b0) || (clear_read_count == 1'b0) ) begin
 			bytes_read_remain <= target_read_count;
 		end
 		else begin
@@ -220,32 +220,32 @@ module i2c_module(
 	//  I2C FSM, Determine next state of FSM and drive EFB inputs
 	always@(*) begin
 		// Default to preserve these values, can be altered in lower steps
-		rstn_local          = `HIGH;
+		resetn_local        = `HIGH;
 		clear_waiting_us    = `RUN_US_TIMER;
 		clear_watchdog      = `RUN_WD_TIMER;
 		next_data_latch     = `FALSE;
 		busy                = `HIGH;
-		rstn_imu            = `HIGH;
+		resetn_imu          = `HIGH;
 		clear_read_count    = `HIGH;
 		next_wd_event_count = wd_event_count;
-		if(~rstn) begin  // Block FSM while rstn held low
-			rstn_local          = `HIGH;
+		if(~resetn) begin  // Block FSM while resetn held low
+			resetn_local        = `HIGH;
 			clear_waiting_us    = `RUN_US_TIMER;
 			clear_watchdog      = `CLEAR_WD_TIMER;
 			next_data_latch     = `FALSE;
 			busy                = `HIGH;
-			rstn_imu            = `LOW;
+			resetn_imu          = `LOW;
 			clear_read_count    = `HIGH;
 			next_i2c_cmd_state  = `I2C_STATE_RESET;
 			next_wd_event_count = 0;
 		end
 		else if (wd_event_active) begin // Handle watchdog timer wrap around, reset IMU and EFB
-			rstn_local          = `LOW;
+			resetn_local        = `LOW;
 			clear_waiting_us    = `RUN_US_TIMER;
 			clear_watchdog      = `CLEAR_WD_TIMER;
 			next_data_latch     = `FALSE;
 			busy                = `HIGH;
-			rstn_imu            = `LOW;
+			resetn_imu          = `LOW;
 			clear_read_count    = `HIGH;
 			next_i2c_cmd_state  = `I2C_STATE_RESET;
 			if(wd_event_count[7] != 1'b1) // If this counter already hit 128, just stop, prevent wrap around and masking issue
@@ -257,13 +257,13 @@ module i2c_module(
 				// Module startup states
 //++++++++++++++++++++++++++++++++++++++++++++++++//
 				`I2C_STATE_RESET: begin
-					rstn_local         = `LOW; // Trigger manual reset of EFB I2C module
+					resetn_local       = `LOW; // Trigger manual reset of EFB I2C module
 					clear_watchdog     = `CLEAR_WD_TIMER; // Hold watchdog low, don't run it yet
 					next_we            = `I2C_WE_READ;
 					next_stb           = `I2C_CMD_STOP;
 					next_addr          = `BYTE_ALL_ZERO;
 					next_data_tx       = `BYTE_ALL_ZERO;
-					rstn_imu           = `LOW;
+					resetn_imu         = `LOW;
 					next_i2c_cmd_state = `I2C_STATE_SET_PRESCALE_LOW;
 					clear_read_count   = `HIGH;
 				end
@@ -275,7 +275,7 @@ module i2c_module(
 						next_addr          = `BYTE_ALL_ZERO;
 						next_data_tx       = `BYTE_ALL_ZERO;
 						next_ack_flag      = `FALSE;
-						rstn_imu           = `LOW;
+						resetn_imu         = `LOW;
 						clear_read_count   = `LOW;
 						next_i2c_cmd_state = `I2C_STATE_SET_PRESCALE_HI;
 					end
@@ -285,7 +285,7 @@ module i2c_module(
 						next_addr          = efb_registers[`I2C_BR0_INDEX][i2c_number];
 						next_data_tx       = 8'd190; // Prescaler value for a 38.00 MHz clock to 400kHz i2c rate
 						next_ack_flag      = `TRUE;
-						rstn_imu           = `LOW;
+						resetn_imu         = `LOW;
 						clear_read_count   = `HIGH;
 						next_i2c_cmd_state = `I2C_STATE_SET_PRESCALE_LOW;
 					end
