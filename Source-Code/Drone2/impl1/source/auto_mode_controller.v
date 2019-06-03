@@ -33,7 +33,7 @@ module auto_mode_controller (
 );
 
     // number of total FSM states, determines the number of required bits for states
-    `define AMC_NUM_STATES 8
+    `define AMC_NUM_STATES 10
     // state names
     localparam
         STATE_INIT          = `AMC_NUM_STATES'b1<<0,
@@ -41,13 +41,19 @@ module auto_mode_controller (
         STATE_WAIT_AUTO     = `AMC_NUM_STATES'b1<<2,
         STATE_LATCH         = `AMC_NUM_STATES'b1<<3,
         STATE_ZERO_ACCEL    = `AMC_NUM_STATES'b1<<4,
-        STATE_CALC_VELOCITY = `AMC_NUM_STATES'b1<<5,
-        STATE_UP_DOWN       = `AMC_NUM_STATES'b1<<6,
-        STATE_COMPLETE      = `AMC_NUM_STATES'b1<<7;
+        STATE_LAST_ACCEL    = `AMC_NUM_STATES'b1<<5,
+        STATE_CALC_VELOCITY = `AMC_NUM_STATES'b1<<6,
+        STATE_AUTO_START    = `AMC_NUM_STATES'b1<<7,
+        STATE_UP_DOWN       = `AMC_NUM_STATES'b1<<8,
+        STATE_COMPLETE      = `AMC_NUM_STATES'b1<<9;
 
 
     reg next_complete_signal;
     reg next_active_signal;
+    reg small_accel_val_now;
+    reg small_accel_val_prev;
+    reg next_small_accel_val_now;
+    reg next_small_accel_val_prev;
 	reg signed [`RATE_BIT_WIDTH-1:0] next_z_linear_velocity;
 	reg signed [31:0] z_linear_velocity_internal;
 	reg signed [31:0] next_z_linear_velocity_internal;
@@ -57,27 +63,32 @@ module auto_mode_controller (
 	reg signed [31:0] next_z_linear_accel_latched_zero;
     reg signed [31:0] next_z_linear_accel_zeroed;
     reg signed [31:0] next_debug;
+	reg [`REC_VAL_BIT_WIDTH-1:0] throttle_pwm_val_calc;
 	reg [`REC_VAL_BIT_WIDTH-1:0] throttle_pwm_val_latched;
 	reg [`REC_VAL_BIT_WIDTH-1:0] next_throttle_pwm_val_latched;
+	reg [`REC_VAL_BIT_WIDTH-1:0] next_throttle_pwm_val_calc;
 	reg [`REC_VAL_BIT_WIDTH-1:0] next_throttle_pwm_val_out;
 
-    reg [27:0]count_ms;   //  Count from 0 to value determined by clock rate, used to generate N us delay trigger
-    reg clear_waiting_ms; //  Reset waiting X us timer.
+    reg [27:0]count__auto_time_ms; //  Count from 0 to value determined by clock rate, used to generate N us delay trigger
+                                   //  Each count value indicates one ms
+    reg clear_auto_mode_timer;     //  Reset auto mode waiting X ms timer.
 
     // state variables
     reg [`AMC_NUM_STATES-1:0] state, next_state;
     reg start_flag = `FALSE;
 	reg direction;
 	reg next_direction;
+    reg once;
+    reg next_once;
     //  Generates a multiple of 1us length duration delay trigger - Defaulted to 10 seconds total time
     //  When the count down counter wraps around the timer is triggered and stops counting
-    always@(posedge us_clk, negedge clear_waiting_ms, negedge resetn) begin
+    always@(posedge us_clk, negedge clear_auto_mode_timer, negedge resetn) begin
         if(~resetn)
-            count_ms <= 28'hFFFFFFF;
-        else if( clear_waiting_ms == 1'b0 )
-            count_ms <= (1_000*10); //Reset to 10 seconds with a 1ms clock
-        else if( count_ms != 28'hFFFFFFF )
-            count_ms <= (count_ms - 1'b1);
+            count__auto_time_ms <= 28'hFFFFFFF;
+        else if( clear_auto_mode_timer == 1'b0 )
+            count__auto_time_ms <= (1_000*10); //Reset to 10 seconds with a 1ms clock
+        else if( count__auto_time_ms != 28'hFFFFFFF )
+            count__auto_time_ms <= (count__auto_time_ms - 1'b1);
         // Otherwise leave count_us unchanged.
     end
 
@@ -102,26 +113,34 @@ module auto_mode_controller (
             state                       <= STATE_INIT;
             complete_signal             <= `FALSE;
             active_signal               <= `FALSE;
+            small_accel_val_now         <= `FALSE;
+            small_accel_val_prev        <= `FALSE;
 			direction                   <= 1'b0;
+            throttle_pwm_val_calc       <= 8'b0;
 			z_linear_accel_latched      <= 32'b0;
             z_linear_accel_latched_zero <= 32'b0;
 			throttle_pwm_val_latched    <= 8'b0;
 			z_linear_velocity_internal  <= 32'b0;
 			throttle_pwm_val_out        <= 8'b0;
 			z_linear_accel_zeroed       <= 32'b0;
+            once                        <= `FALSE;
 			debug                       <= 32'b0;
         end
         else begin
             state                       <= next_state;
             complete_signal             <= next_complete_signal;
             active_signal               <= next_active_signal;
+            small_accel_val_now         <= next_small_accel_val_now;
+            small_accel_val_prev        <= next_small_accel_val_prev;
 			direction                   <= next_direction;
+            throttle_pwm_val_calc       <= next_throttle_pwm_val_calc;
 			z_linear_accel_latched      <= next_z_linear_accel_latched;
             z_linear_accel_latched_zero <= next_z_linear_accel_latched_zero;
 			throttle_pwm_val_latched    <= next_throttle_pwm_val_latched;
 			z_linear_velocity_internal  <= next_z_linear_velocity_internal;
 			throttle_pwm_val_out        <= next_throttle_pwm_val_out;
 			z_linear_accel_zeroed       <= next_z_linear_accel_zeroed;
+            once                        <= next_once;
 			debug                       <= next_debug;
         end
     end
@@ -136,12 +155,21 @@ module auto_mode_controller (
                 STATE_NOT_AUTO      : next_state = start_flag   ? STATE_LATCH    : STATE_NOT_AUTO;
                 STATE_WAIT_AUTO     : next_state = start_flag   ? STATE_LATCH    : STATE_WAIT_AUTO;
                 STATE_LATCH         : next_state = STATE_ZERO_ACCEL;
-                STATE_ZERO_ACCEL    : next_state = STATE_CALC_VELOCITY;
-                //STATE_CALC_VELOCITY : next_state = switch_a[1]  ? STATE_UP_DOWN  : STATE_COMPLETE;
-                // Ignore switch position for now, just go to complete
-                STATE_CALC_VELOCITY : next_state = STATE_COMPLETE;
+                STATE_ZERO_ACCEL    : next_state = STATE_LAST_ACCEL;
+                STATE_LAST_ACCEL    : next_state = STATE_CALC_VELOCITY;
+                //STATE_CALC_VELOCITY : next_state = (switch_a[2] && (throttle_pwm_val_latched >= 'd10)) ? ( ~once ? STATE_AUTO_START : STATE_UP_DOWN)  : STATE_COMPLETE;
+                STATE_CALC_VELOCITY : begin
+                    if (switch_a[2] && (throttle_pwm_val_latched >= 'd10) && ~once )
+                        next_state = STATE_AUTO_START;
+                    else if ((throttle_pwm_val_latched >= 'd10) && once && ~count__auto_time_ms[27])
+                        next_state = STATE_UP_DOWN;
+                    else
+                        next_state = STATE_COMPLETE;
+                end
+                STATE_AUTO_START    : next_state = STATE_UP_DOWN;
                 STATE_UP_DOWN       : next_state = STATE_COMPLETE;
-                STATE_COMPLETE      : next_state = count_ms[27] ? STATE_NOT_AUTO : STATE_WAIT_AUTO;
+                STATE_COMPLETE      : next_state = count__auto_time_ms[27] ? STATE_NOT_AUTO : STATE_WAIT_AUTO;
+                //STATE_COMPLETE      : next_state = STATE_NOT_AUTO;
             endcase
     end
 
@@ -151,95 +179,137 @@ module auto_mode_controller (
         if(!resetn) begin
             next_complete_signal             = `FALSE;
             next_active_signal               = `FALSE;
-			clear_waiting_ms                 = `FALSE;
+			clear_auto_mode_timer            = `FALSE;
+            next_small_accel_val_now         = `FALSE;
+            next_small_accel_val_prev        = `FALSE;
 			next_z_linear_accel_latched      = 32'b0;
             next_z_linear_accel_latched_zero = 32'b0;
             next_z_linear_accel_zeroed       = 32'b0;
 			next_throttle_pwm_val_latched    = 8'b0;
 			next_direction                   = 1'b0;
+            next_throttle_pwm_val_calc       = 8'b0;
+            next_throttle_pwm_val_out        = 8'b0;
 			next_z_linear_velocity_internal  = 32'b0;
+            next_once                        = `FALSE;
 		end
         else begin
-			clear_waiting_ms                 = `FALSE;
+			clear_auto_mode_timer            = `FALSE;
+            next_small_accel_val_now         = small_accel_val_now;
+            next_small_accel_val_prev        = small_accel_val_prev;
 			next_z_linear_accel_latched      = z_linear_accel_latched;
             next_z_linear_accel_latched_zero = z_linear_accel_latched_zero;
             next_z_linear_accel_zeroed       = z_linear_accel_zeroed;
 			next_throttle_pwm_val_latched    = throttle_pwm_val_latched;
 			next_direction                   = switch_b[0]? 1'b1 : 1'b0;
 			next_z_linear_velocity_internal  = z_linear_velocity_internal;
+            next_throttle_pwm_val_calc       = throttle_pwm_val_calc;
 			next_throttle_pwm_val_out        = throttle_pwm_val_out;
+            next_once                        = once;
             next_debug                       = debug;
             case(state)
                 STATE_INIT          : begin
                     next_complete_signal             = `FALSE;
                     next_active_signal               = `FALSE;
+                    clear_auto_mode_timer            = `FALSE;
 			        next_throttle_pwm_val_out        = 16'b0;
+                    next_once                        = `FALSE;
                 end
                 STATE_NOT_AUTO      : begin
                     next_complete_signal             = `FALSE;
                     next_active_signal               = `FALSE;
-			        clear_waiting_ms                 = `FALSE;
-					next_throttle_pwm_val_out        = throttle_pwm_val_latched;
+			        clear_auto_mode_timer            = `FALSE;
+                    //next_throttle_pwm_val_calc       = 8'd150; //Set this to hover value when not in auto mode
+                    next_throttle_pwm_val_calc       = 8'd0;
                 end
                 STATE_LATCH         : begin
                     next_complete_signal             = `FALSE;
-                    next_active_signal               = active_signal;
+                    next_active_signal               = `TRUE;
+                    clear_auto_mode_timer            = `FALSE;
+                    next_throttle_pwm_val_latched    = throttle_pwm_val_in;
 					next_z_linear_accel_latched      = $signed({z_linear_accel, 16'b0});
-                    //if (throttle_pwm_val_in < 'd10)
-                    // Decoupled from throttle for now, allows debug of function without running throttle
-                    if (z_linear_accel_latched_zero == 32'd0)
-                        next_z_linear_accel_latched_zero = z_linear_accel_latched;
-					next_throttle_pwm_val_latched    = throttle_pwm_val_in;
+                    // Zero acceleration  throttle when throttle idle
+                    if (throttle_pwm_val_in < 'd10)
+                        next_z_linear_accel_latched_zero = $signed({z_linear_accel, 16'b0});
+                    // Decoupled from throttle, allows debug of function without running throttle
+                    // if (z_linear_accel_latched_zero == 32'd0)
+                    //    next_z_linear_accel_latched_zero = z_linear_accel_latched;
                 end
                 STATE_ZERO_ACCEL         : begin
                     next_complete_signal             = `FALSE;
-                    next_active_signal               = active_signal;
+                    next_active_signal               = `TRUE;
+                    clear_auto_mode_timer            = `FALSE;
                     next_z_linear_accel_zeroed       = $signed(z_linear_accel_latched - z_linear_accel_latched_zero);
+                end
+                STATE_LAST_ACCEL         : begin
+                    next_complete_signal             = `FALSE;
+                    next_active_signal               = `TRUE;
+                    clear_auto_mode_timer            = `FALSE;
+                    next_small_accel_val_now         = ((z_linear_accel_zeroed <= $signed((10)<<<16)) && (z_linear_accel_zeroed >= $signed((-10)<<<16)));
+                    next_small_accel_val_prev        = small_accel_val_now;
                 end
 				STATE_CALC_VELOCITY : begin
                     next_complete_signal             = `FALSE;
-                    next_active_signal               = active_signal;
+                    next_active_signal               = `TRUE;
+                    clear_auto_mode_timer            = `FALSE;
                     next_debug                       = z_linear_accel_latched_zero;
-                    // Don't accumulate on small accelerations, remove from accumulated value to remove error over time
-                    // if there is no accel, we're probably not moving. Zero acceleration is difficult to achieve in reality
-                    // Subtract from vel if its positive and add to it if its negative
-                    // remove amount is shifted 10 bits, so it's only removing 0.015625 m/s per iteration
-                    if ((z_linear_accel_zeroed <= $signed((10)<<<16)) && (z_linear_accel_zeroed >= $signed((-10)<<<16))) begin
-                        if ((z_linear_velocity_internal < $signed((1)<<<10)) && (z_linear_velocity_internal > $signed((-1)<<<10))) begin
+                    /*
+                    Don't accumulate on small accelerations, remove from accumulated value to remove error over time
+                    if there is no accel, we're probably not moving. Zero acceleration is difficult to achieve in reality
+                    Subtract from vel if its positive and add to it if its negative
+                    remove amount is shifted 10 bits, so it's only removing 0.015625 m/s per iteration
+                    
+                    Only do this if previous and current accel values were both small, otherwise accumulate normally
+                    This prevents issues with acceleration crossover (negative to positive and vice versa) zeroing velocity prematurely
+                    */
+                    if (small_accel_val_now && small_accel_val_prev) begin
+                        if ((z_linear_velocity_internal < $signed((10)<<<10)) && (z_linear_velocity_internal > $signed((-10)<<<10))) begin
                             next_z_linear_velocity_internal  = 0;
                         end
-                        else if ($signed(z_linear_velocity_internal[31:16]) > 0) begin
-				            next_z_linear_velocity_internal  = (z_linear_velocity_internal - $signed(1<<10));
+                        else if ($signed(z_linear_velocity_internal>>>8) > 0) begin
+				            next_z_linear_velocity_internal  = (z_linear_velocity_internal - $signed('sd10<<<10));
                         end
-                        else if ($signed(z_linear_velocity_internal[31:16]) < 0) begin
-                            next_z_linear_velocity_internal  = (z_linear_velocity_internal + $signed(1<<10));
+                        else if ($signed(z_linear_velocity_internal>>>8) < 0) begin
+                            next_z_linear_velocity_internal  = (z_linear_velocity_internal + $signed('sd10<<<10));
                         end
                         else begin
                             next_z_linear_velocity_internal  = 0;
                         end
                     end
                     else begin
-                        if ($signed(z_linear_velocity_internal[31:16]) > 0) 
-				            next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed) - $signed(1<<1);
-                        else if ($signed(z_linear_velocity_internal[31:16]) < 0)
-				            next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed) + $signed(1<<1);
+                        if ($signed(z_linear_velocity_internal>>>8) > 0) 
+				            next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed) - $signed(1<<<0);
+                        else if ($signed(z_linear_velocity_internal>>>8) < 0)
+				            next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed) + $signed(1<<<0);
                         else
 				            next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed);
                     end
 				end
+                STATE_AUTO_START     : begin
+                    next_complete_signal             = `FALSE;
+                    next_active_signal               = `FALSE;
+                    clear_auto_mode_timer            = `TRUE;
+                end
                 STATE_WAIT_AUTO     : begin
                     next_complete_signal             = `FALSE;
                     next_active_signal               = `FALSE;
-					// Just here for debug, will be removed later
-					next_throttle_pwm_val_out        = throttle_pwm_val_latched;
+                    clear_auto_mode_timer            = `FALSE;
                 end
                 STATE_UP_DOWN       : begin
                     next_complete_signal             = `FALSE;
                     next_active_signal               = `TRUE;
+                    next_once                        = ~once ? `TRUE : `FALSE;
+                    clear_auto_mode_timer            = `FALSE;
+                    next_throttle_pwm_val_calc       = 8'd20;
                 end
                 STATE_COMPLETE      : begin
                     next_complete_signal             = `TRUE;
                     next_active_signal               = `FALSE;
+                    clear_auto_mode_timer            = `FALSE;
+					//next_throttle_pwm_val_out        = throttle_pwm_val_latched;
+                    // Only set throttle if switch is in auto mode and throttle is not in off position
+                    // Prevents run-away and also cuts off throttle when radio is if
+                    // Switch a defaults to bit 2 true with no connected transmitter
+					next_throttle_pwm_val_out        = (switch_a[2] && (throttle_pwm_val_latched >=  'd10) && ~count__auto_time_ms[27] ) ? throttle_pwm_val_calc : throttle_pwm_val_latched;
                 end
             endcase
 		end

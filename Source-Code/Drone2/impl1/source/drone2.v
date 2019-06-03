@@ -116,7 +116,7 @@ module drone2 (
 
     //--------- Throttle Controller Wires ---------//
     wire [`REC_VAL_BIT_WIDTH-1:0]
-        tc_throttle_value;
+        tc_throttle_val;
     wire throttle_controller_complete,
         throttle_controller_active,
         tc_enable_n;
@@ -269,13 +269,13 @@ module drone2 (
     );
 
      throttle_controller TC(
-        .throttle_pwm_value_out(tc_throttle_value),
+        .throttle_pwm_value_out(tc_throttle_val),
         .complete_signal(throttle_controller_complete),
         .active_signal(throttle_controller_active),
-        //.throttle_pwm_value_in(amc_throttle_val),
-        .throttle_pwm_value_in(throttle_val),
-        //.start_signal(amc_complete_signal),
-        .start_signal(imu_data_valid),
+        .throttle_pwm_value_in(amc_throttle_val),
+        //.throttle_pwm_value_in(throttle_val),
+        .start_signal(amc_complete_signal),
+        //.start_signal(imu_data_valid),
         .tc_enable_n(tc_enable_n),
         .switch_a(switch_a),
         .imu_good(imu_good),
@@ -294,7 +294,7 @@ module drone2 (
         .yaw_angle_error_out(yaac_yaw_angle_error),
         .active_signal(yaac_active),
         .complete_signal(yaac_complete),
-        .throttle_pwm_value_input(tc_throttle_value),
+        .throttle_pwm_value_input(tc_throttle_val),
         .yaw_pwm_value_input(yaw_val),
         .yaw_angle_imu(z_rotation),
         .yaac_enable_n(yaac_enable_n),
@@ -324,7 +324,7 @@ module drone2 (
         .complete_signal(ac_valid_strobe),
         .active_signal(ac_active),
         // Inputs
-        .throttle_target(tc_throttle_value),
+        .throttle_target(tc_throttle_val),
         .yaac_enable_n(yaac_enable_n),
         .yaw_angle_target(yaac_yaw_angle_target),
         .yaw_angle_error_in(yaac_yaw_angle_error),
@@ -418,7 +418,7 @@ module drone2 (
         .imu_y_rotation_rate(y_rotation_rate),
         .imu_z_rotation_rate(z_rotation_rate),
         .imu_calibration_status(imu_debug),
-        .rec_throttle_val(tc_throttle_value),
+        .rec_throttle_val(throttle_val),
         .rec_yaw_val(yaw_val),
         .rec_roll_val(roll_val),
         .rec_pitch_val(pitch_val),
@@ -431,8 +431,9 @@ module drone2 (
         //.yaac_yaw_angle_target(yaac_yaw_angle_target),
         .yaac_yaw_angle_target(z_linear_accel_zeroed[31:16]),
         .amc_z_linear_velocity(amc_z_linear_velocity),
-        .debug_17_in_16_bits(amc_debug[31:16]),
+        //.debug_17_in_16_bits(amc_debug[31:16]),
         //.debug_17_in_16_bits({8'd0,amc_throttle_val}),
+        .debug_17_in_16_bits({8'd0,tc_throttle_val}),
         //.debug_17_in_16_bits(yaw_rate),
         .debug_18_in_16_bits({11'd0, switch_b, switch_a})
 
