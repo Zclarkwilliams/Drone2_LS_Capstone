@@ -319,10 +319,6 @@ module bno055_driver #(
             gravity_accel_z   <= {data_rx_reg[`GRA_DATA_Z_MSB_INDEX],data_rx_reg[`GRA_DATA_Z_LSB_INDEX]};
             temperature       <= data_rx_reg[`TEMPERATURE_DATA_INDEX];
             calib_status      <= data_rx_reg[`CALIBRATION_DATA_INDEX];
-            // Set these to 0 for now, just to have something connected, need to make it a velocity later
-            x_velocity        <= 8'b0;
-            y_velocity        <= 8'b0;
-            z_velocity        <= 8'b0;
         end
     end
 

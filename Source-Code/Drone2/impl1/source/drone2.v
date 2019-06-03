@@ -91,9 +91,6 @@ module drone2 (
 
     //---------------- IMU Wires ------------------//
     wire [`IMU_VAL_BIT_WIDTH-1:0]
-        x_linear_rate,
-        y_linear_rate,
-        z_linear_rate,
         x_rotation,
         y_rotation,
         z_rotation,
@@ -113,6 +110,8 @@ module drone2 (
     wire  [`REC_VAL_BIT_WIDTH-1:0] amc_throttle_val;
     wire  amc_active_signal;
     wire  amc_complete_signal;
+    wire  [31:0] z_linear_accel_zeroed;
+    wire  [31:0] amc_debug;
     wire  [`RATE_BIT_WIDTH-1:0] amc_z_linear_velocity;
 
     //--------- Throttle Controller Wires ---------//
@@ -237,9 +236,6 @@ module drone2 (
         .linear_accel_x(x_linear_accel),
         .linear_accel_y(y_linear_accel),
         .linear_accel_z(z_linear_accel),
-        .x_velocity(x_linear_rate),
-        .y_velocity(y_linear_rate),
-        .z_velocity(z_linear_rate),
         // DEBUG WIRE
         .led_data_out(imu_debug),
         // InOuts
@@ -251,12 +247,16 @@ module drone2 (
         .resetn(resetn),
         .sys_clk(sys_clk),
         .resetn_imu(resetn_imu),
-        .next_mod_active(throttle_controller_active));
+        .next_mod_active(throttle_controller_active)
+    );
+
         
     auto_mode_controller AMC (
+        .debug(amc_debug),
         .throttle_pwm_val_out(amc_throttle_val),
         .active_signal(amc_active_signal),
         .complete_signal(amc_complete_signal),
+        .z_linear_accel_zeroed(z_linear_accel_zeroed),
         .z_linear_velocity(amc_z_linear_velocity),
         .imu_good(imu_good),
         .z_linear_accel(z_linear_accel),
@@ -272,8 +272,10 @@ module drone2 (
         .throttle_pwm_value_out(tc_throttle_value),
         .complete_signal(throttle_controller_complete),
         .active_signal(throttle_controller_active),
-        .throttle_pwm_value_in(amc_throttle_val),
-        .start_signal(amc_complete_signal),
+        //.throttle_pwm_value_in(amc_throttle_val),
+        .throttle_pwm_value_in(throttle_val),
+        //.start_signal(amc_complete_signal),
+        .start_signal(imu_data_valid),
         .tc_enable_n(tc_enable_n),
         .switch_a(switch_a),
         .imu_good(imu_good),
@@ -422,11 +424,16 @@ module drone2 (
         .rec_pitch_val(pitch_val),
         .rec_aux1_val(aux1_val),
         .rec_aux2_val(aux2_val),
-        .rec_swa_swb_val(swa_swb_val),
-        .yaac_yaw_angle_error(yaac_yaw_angle_error),
-        .yaac_yaw_angle_target(yaac_yaw_angle_target),
+        //.rec_swa_swb_val(swa_swb_val),
+        .rec_swa_swb_val(z_linear_accel),
+        //.yaac_yaw_angle_error(yaac_yaw_angle_error),
+        .yaac_yaw_angle_error(z_linear_accel_zeroed[31:16]),
+        //.yaac_yaw_angle_target(yaac_yaw_angle_target),
+        .yaac_yaw_angle_target(z_linear_accel_zeroed[31:16]),
         .amc_z_linear_velocity(amc_z_linear_velocity),
-        .debug_17_in_16_bits(yaw_rate),
+        .debug_17_in_16_bits(amc_debug[31:16]),
+        //.debug_17_in_16_bits({8'd0,amc_throttle_val}),
+        //.debug_17_in_16_bits(yaw_rate),
         .debug_18_in_16_bits({11'd0, switch_b, switch_a})
 
     );

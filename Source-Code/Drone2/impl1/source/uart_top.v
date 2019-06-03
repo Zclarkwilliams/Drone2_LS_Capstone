@@ -41,6 +41,8 @@ module uart_top
 		rec_pitch_val,
 		rec_aux1_val,
 		rec_aux2_val,
+        //Changed size to 16 bits to debug additional inputs (z_linear_accel)
+	input wire [`RATE_BIT_WIDTH-1:0]
 		rec_swa_swb_val,
 	input wire [`RATE_BIT_WIDTH-1:0]
 		yaac_yaw_angle_error,
@@ -202,12 +204,12 @@ module uart_top
 				TX_WAIT: 		next_state = (~txrdy_n) ? ((tx_byte_index == TX_BYTE_INDEX_MAX) ? TX_NEXT_WORD : TX_INC) : TX_WAIT; //0x080
 				TX_NEXT_WORD:	next_state = (tx_word_index == TX_WORD_INDEX_MAX) ? TX_STOP : TX_SET;                               //0x100
 				TX_STOP: 		next_state = WAIT;                                                                                  //0x200
-				default: next_state = INIT0;
+				default:        next_state = INIT0;
 			endcase
 		end
 	end
 	
-	function automatic [7:0] hex_convert;
+	function automatic [15:0] hex_convert;
 		input reg [3:0]tx_nibble;
 		begin
 			case(tx_nibble)
@@ -227,6 +229,8 @@ module uart_top
 				4'd13:   hex_convert = {9'd0, "D"};
 				4'd14:   hex_convert = {9'd0, "E"};
 				4'd15:   hex_convert = {9'd0, "F"};
+				4'd16:   hex_convert = {2'd0, "10"};
+                default: hex_convert = {16'd0};
 			endcase
 		end
 	endfunction
@@ -238,14 +242,15 @@ module uart_top
 		input reg[15:0] tx_word;
 		begin
 			case(tx_byte_index)
-				4'd0: next_dat_i = hex_convert(tx_word_index[7:4]);
-				4'd1: next_dat_i = hex_convert(tx_word_index[3:0]);
-				4'd2: next_dat_i = hex_convert(tx_word[15:12]);
-				4'd3: next_dat_i = hex_convert(tx_word[11: 8]);
-				4'd4: next_dat_i = hex_convert(tx_word[ 7: 4]);
-				4'd5: next_dat_i = hex_convert(tx_word[ 3: 0]);
-				4'd6: next_dat_i = {1'b0, "\n"};
-				4'd7: next_dat_i = {1'b0, "\r"};
+				4'd0:    next_dat_i = hex_convert(tx_word_index[7:4]);
+				4'd1:    next_dat_i = hex_convert(tx_word_index[3:0]);
+				4'd2:    next_dat_i = hex_convert(tx_word[15:12]);
+				4'd3:    next_dat_i = hex_convert(tx_word[11: 8]);
+				4'd4:    next_dat_i = hex_convert(tx_word[ 7: 4]);
+				4'd5:    next_dat_i = hex_convert(tx_word[ 3: 0]);
+				4'd6:    next_dat_i = {1'b0, "\n"};
+				4'd7:    next_dat_i = {1'b0, "\r"};
+                default: next_dat_i = 8'b0;
 			endcase
 		end
 	endtask
@@ -318,7 +323,9 @@ module uart_top
 						8'd10: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_pitch_val});
 						8'd11: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_aux1_val});
 						8'd12: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_aux2_val});
-						8'd13: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_swa_swb_val});
+						//8'd13: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_swa_swb_val});
+                        //Changed size to 16 bits to debug additional bits for (z_linear_accel)
+						8'd13: transmit_word(tx_word_index, tx_byte_index, rec_swa_swb_val);
 						8'd14: transmit_word(tx_word_index, tx_byte_index, yaac_yaw_angle_error);
 						8'd15: transmit_word(tx_word_index, tx_byte_index, yaac_yaw_angle_target);
 						8'd16: transmit_word(tx_word_index, tx_byte_index, amc_z_linear_velocity);
@@ -345,12 +352,26 @@ module uart_top
 					next_tx_word_index = tx_word_index + 8'd1;
 				end
 				TX_STOP: begin
-					next_tx_byte_index = 4'd0;
-					next_tx_word_index = 8'd0;
-					next_cyc_i = 1'h0;
-					next_dat_i = 16'h0000;
-					next_adr_i = 8'h00;
+			        next_cyc_i = 1'h0;
+			        next_dat_i = 16'h0000;
+			        next_adr_i = 8'h00;
+			        next_sel_i = 4'h0;
+			        next_cti_i = 3'h0;
+			        next_bte_i = 2'h0;
 					next_we_i  = 1'h1;
+			        next_tx_byte_index = 4'd0;
+			        next_tx_word_index = 8'd0;
+                end
+				default: begin
+			        next_cyc_i = 1'h0;
+			        next_dat_i = 16'h0000;
+			        next_adr_i = 8'h00;
+			        next_sel_i = 4'h0;
+			        next_cti_i = 3'h0;
+			        next_bte_i = 2'h0;
+					next_we_i  = 1'h1;
+			        next_tx_byte_index = 4'd0;
+			        next_tx_word_index = 8'd0;
 				end
 			endcase
 		end
