@@ -229,7 +229,7 @@ module uart_top
 				4'd13:   hex_convert = {9'd0, "D"};
 				4'd14:   hex_convert = {9'd0, "E"};
 				4'd15:   hex_convert = {9'd0, "F"};
-				4'd16:   hex_convert = {2'd0, "10"};
+				4'd16:   hex_convert = {1'b0, "1",1'b0, "0"};
                 default: hex_convert = {16'd0};
 			endcase
 		end
@@ -248,9 +248,9 @@ module uart_top
 				4'd3:    next_dat_i = hex_convert(tx_word[11: 8]);
 				4'd4:    next_dat_i = hex_convert(tx_word[ 7: 4]);
 				4'd5:    next_dat_i = hex_convert(tx_word[ 3: 0]);
-				4'd6:    next_dat_i = {1'b0, "\n"};
-				4'd7:    next_dat_i = {1'b0, "\r"};
-                default: next_dat_i = 8'b0;
+				4'd6:    next_dat_i = {9'b0, "\n"};
+				4'd7:    next_dat_i = {9'b0, "\r"};
+                default: next_dat_i = 16'b0;
 			endcase
 		end
 	endtask

@@ -184,7 +184,7 @@ module auto_mode_controller (
                 STATE_LATCH         : begin
                     next_complete_signal             = `FALSE;
                     next_active_signal               = active_signal;
-					next_z_linear_accel_latched      = {z_linear_accel, 16'b0};
+					next_z_linear_accel_latched      = $signed({z_linear_accel, 16'b0});
                     //if (throttle_pwm_val_in < 'd10)
                     // Decoupled from throttle for now, allows debug of function without running throttle
                     if (z_linear_accel_latched_zero == 32'd0)
@@ -194,7 +194,7 @@ module auto_mode_controller (
                 STATE_ZERO_ACCEL         : begin
                     next_complete_signal             = `FALSE;
                     next_active_signal               = active_signal;
-                    next_z_linear_accel_zeroed       = (z_linear_accel_latched - z_linear_accel_latched_zero);
+                    next_z_linear_accel_zeroed       = $signed(z_linear_accel_latched - z_linear_accel_latched_zero);
                 end
 				STATE_CALC_VELOCITY : begin
                     next_complete_signal             = `FALSE;
@@ -203,16 +203,28 @@ module auto_mode_controller (
                     // Don't accumulate on small accelerations, remove from accumulated value to remove error over time
                     // if there is no accel, we're probably not moving. Zero acceleration is difficult to achieve in reality
                     // Subtract from vel if its positive and add to it if its negative
-                    if ((z_linear_accel_zeroed <= (20<<16)) && (z_linear_accel_zeroed >= (-20<<16))) begin
-                        if ($signed(z_linear_velocity_internal[31:16]) > 0) begin
-				            next_z_linear_velocity_internal  = (z_linear_velocity_internal - $signed(1<<16));
+                    // remove amount is shifted 10 bits, so it's only removing 0.015625 m/s per iteration
+                    if ((z_linear_accel_zeroed <= $signed((10)<<<16)) && (z_linear_accel_zeroed >= $signed((-10)<<<16))) begin
+                        if ((z_linear_velocity_internal < $signed((1)<<<10)) && (z_linear_velocity_internal > $signed((-1)<<<10))) begin
+                            next_z_linear_velocity_internal  = 0;
+                        end
+                        else if ($signed(z_linear_velocity_internal[31:16]) > 0) begin
+				            next_z_linear_velocity_internal  = (z_linear_velocity_internal - $signed(1<<10));
                         end
                         else if ($signed(z_linear_velocity_internal[31:16]) < 0) begin
-                            next_z_linear_velocity_internal  = (z_linear_velocity_internal + $signed(1<<16));
+                            next_z_linear_velocity_internal  = (z_linear_velocity_internal + $signed(1<<10));
+                        end
+                        else begin
+                            next_z_linear_velocity_internal  = 0;
                         end
                     end
                     else begin
-				        next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed);
+                        if ($signed(z_linear_velocity_internal[31:16]) > 0) 
+				            next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed) - $signed(1<<1);
+                        else if ($signed(z_linear_velocity_internal[31:16]) < 0)
+				            next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed) + $signed(1<<1);
+                        else
+				            next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed);
                     end
 				end
                 STATE_WAIT_AUTO     : begin
@@ -234,7 +246,7 @@ module auto_mode_controller (
     end
 
 	// Drive linear velocity module output from high 16 bits of internal linear velocity value
-	assign z_linear_velocity = z_linear_velocity_internal[31:16];
+	assign z_linear_velocity = z_linear_velocity_internal[24:9];
 
     // Calculate linear velocity from linear acceleration and previous linear velocity
     function automatic signed [31:0] calc_z_linear_velocity;
