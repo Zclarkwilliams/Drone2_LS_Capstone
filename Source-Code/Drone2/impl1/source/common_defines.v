@@ -26,6 +26,14 @@
 `define HIGH_ACTIVE_ENABLE  1'b1
 `define HIGH_ACTIVE_DISABLE 1'b0
 
+
+`define SWITCH_A_ACRO 0
+`define SWITCH_A_EASY 1
+`define SWITCH_A_AUTO 2
+
+`define SWITCH_B_UP   0
+`define SWITCH_B_DOWN 1
+
 // Conditionals
 `define TRUE	1'b1
 `define FALSE	1'b0

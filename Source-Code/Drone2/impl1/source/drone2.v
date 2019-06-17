@@ -431,11 +431,11 @@ module drone2 (
         //.yaac_yaw_angle_target(yaac_yaw_angle_target),
         .yaac_yaw_angle_target(z_linear_accel_zeroed[31:16]),
         .amc_z_linear_velocity(amc_z_linear_velocity),
-        //.debug_17_in_16_bits(amc_debug[31:16]),
+        .debug_17_in_16_bits(amc_debug[15:0]),
         //.debug_17_in_16_bits({8'd0,amc_throttle_val}),
-        .debug_17_in_16_bits({8'd0,tc_throttle_val}),
         //.debug_17_in_16_bits(yaw_rate),
-        .debug_18_in_16_bits({11'd0, switch_b, switch_a})
+        .debug_18_in_16_bits({8'd0,tc_throttle_val})
+        //.debug_18_in_16_bits({11'd0, switch_b, switch_a})
 
     );
     // Enable bits
