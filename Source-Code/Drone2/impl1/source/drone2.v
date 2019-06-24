@@ -47,6 +47,7 @@ module drone2 (
     output wire motor_4_pwm,
     output wire resetn_imu,
     output reg  [7:0] led_data_out,
+    output wire urf_trigger_out,
     // Inputs
     input wire throttle_pwm,
     input wire yaw_pwm,
@@ -56,6 +57,7 @@ module drone2 (
     input wire aux2_pwm,
     input wire swa_swb_pwm,
     input wire machxo3_switch_reset_n,
+    input wire urf_echo_in,
     // Serial IO
     inout wire sda_1,
     inout wire sda_2,
@@ -163,6 +165,13 @@ module drone2 (
     wire [1:0] switch_b;
     //wire switch_a;
     //assign switch_a = swa_swb_val[6];
+    
+    //--------- Ultrasonic Range Finder Wires --------//
+    wire  urf_active_signal;
+    wire  urf_complete_signal;
+    wire  urf_valid;
+    wire [15:0]urf_debug;
+    wire [9:0] urf_range;
 
 
     /**
@@ -400,6 +409,18 @@ module drone2 (
         .us_clk(us_clk),
         .resetn(resetn));
         
+    ultrasonic_range_finder URF (
+        .urf_range(urf_range),
+        .active_signal(urf_active_signal),
+        .complete_signal(urf_complete_signal),
+        .urf_trigger_out(urf_trigger_out),
+        .urf_valid(urf_valid),
+        .urf_debug(urf_debug),
+        .urf_echo_in(urf_echo_in),
+        .resetn(resetn),
+        .us_clk(us_clk)
+    );
+        
         
     uart_top uart
     (
@@ -431,10 +452,12 @@ module drone2 (
         //.yaac_yaw_angle_target(yaac_yaw_angle_target),
         .yaac_yaw_angle_target(z_linear_accel_zeroed[31:16]),
         .amc_z_linear_velocity(amc_z_linear_velocity),
-        .debug_17_in_16_bits(amc_debug[15:0]),
+        .debug_17_in_16_bits(urf_debug[15:0]),
+        //.debug_17_in_16_bits(amc_debug[15:0]),
         //.debug_17_in_16_bits({8'd0,amc_throttle_val}),
         //.debug_17_in_16_bits(yaw_rate),
-        .debug_18_in_16_bits({8'd0,tc_throttle_val})
+        .debug_18_in_16_bits({6'd0,urf_range})
+        //.debug_18_in_16_bits({8'd0,tc_throttle_val})
         //.debug_18_in_16_bits({11'd0, switch_b, switch_a})
 
     );
