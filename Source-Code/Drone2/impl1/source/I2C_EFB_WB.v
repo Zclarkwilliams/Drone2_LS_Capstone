@@ -13,16 +13,16 @@ module I2C_EFB_WB (wb_clk_i, wb_rst_i, wb_cyc_i, wb_stb_i, wb_we_i,
     input wire wb_cyc_i;
     input wire wb_stb_i;
     input wire wb_we_i;
-    input wire [7:0] wb_adr_i;
-    input wire [7:0] wb_dat_i;
+    input wire [7:0]  wb_adr_i;
+    input wire [7:0]  wb_dat_i;
     output wire [7:0] wb_dat_o;
     output wire wb_ack_o;
     output wire i2c1_irqo;
     output wire i2c2_irqo;
-    inout wire i2c1_scl;
-    inout wire i2c1_sda;
-    inout wire i2c2_scl;
-    inout wire i2c2_sda;
+    inout wire  i2c1_scl;
+    inout wire  i2c1_sda;
+    inout wire  i2c2_scl;
+    inout wire  i2c2_sda;
 
     wire scuba_vhi;
     wire scuba_vlo;

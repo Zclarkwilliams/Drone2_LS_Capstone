@@ -58,13 +58,13 @@ module ultrasonic_range_finder (
     always @(posedge us_clk or negedge resetn) begin
         if(!resetn) begin
             urf_trigger_out <= `FALSE;
-			urf_range_calc  <= 0;
-			high_us_time    <= 0;
+            urf_range_calc  <= 0;
+            high_us_time    <= 0;
             error           <= `FALSE;
         end
         else begin
             urf_trigger_out <= next_urf_trigger;
-			urf_range_calc  <= next_urf_range_calc;
+            urf_range_calc  <= next_urf_range_calc;
             high_us_time    <= next_high_us_time;
             error           <= next_error;
             
@@ -79,7 +79,7 @@ module ultrasonic_range_finder (
             next_urf_range_calc  = 0;
             next_high_us_time    = 0;
             next_error           = `FALSE;
-		end
+        end
         else begin
             next_urf_trigger     = `FALSE;
             next_urf_range_calc  = urf_range_calc;
@@ -88,7 +88,7 @@ module ultrasonic_range_finder (
             case(`TRUE)
                 in_range(count_us_time, `START, `SET_TRIGGER)      : begin  //Set Trigger
                     active               = `TRUE;
-			        next_urf_trigger     = `TRUE;
+                    next_urf_trigger     = `TRUE;
                     next_high_us_time    = 0;
                     next_error           = urf_echo_in ? `TRUE : `FALSE;   //If echo input already high, then generate error
                 end
@@ -111,7 +111,7 @@ module ultrasonic_range_finder (
                     next_error           = `FALSE;
                 end
             endcase
-		end
+        end
     end
     
     
@@ -160,18 +160,18 @@ module ultrasonic_range_finder (
             //Remove padded low-order 14 bits from result
             calc_urf_range = calc_urf_range_internal[31:14];
         end
-	endfunction
+    endfunction
     
     
     
-	function automatic reg in_range;
-		input reg [17:0]value;
-		input reg [17:0]lower_lim;
-		input reg [17:0]upper_lim;
-		if ( (value >= lower_lim) && (value < upper_lim) )
-			in_range = 1'b1;
-		else
-			in_range = 1'b0;
-	endfunction
+    function automatic reg in_range;
+        input reg [17:0]value;
+        input reg [17:0]lower_lim;
+        input reg [17:0]upper_lim;
+        if ( (value >= lower_lim) && (value < upper_lim) )
+            in_range = 1'b1;
+        else
+            in_range = 1'b0;
+    endfunction
 
 endmodule

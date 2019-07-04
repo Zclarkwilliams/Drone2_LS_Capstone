@@ -73,9 +73,9 @@ module txcver_fifo (Data, Clock, WrEn, RdEn, Reset, Q, Empty, Full,
                  .module_type("pmi_fifo"),
                  .pmi_implementation("EBR")
                  )
-     		tx_fifo_inst
+             tx_fifo_inst
                  (
-                 	.Data(Data),
+                     .Data(Data),
                   .Clock(Clock),
                   .WrEn(WrEn),
                   .RdEn(RdEn),

@@ -58,7 +58,7 @@ module rxcver #(parameter DATAWIDTH=8,
      clk,
      // Register
      rbr,
-     rbr_fifo,	     
+     rbr_fifo,         
      // Rising edge of rbr, lsr read strobes
      rbr_rd,
      lsr_rd,
@@ -92,34 +92,34 @@ module rxcver #(parameter DATAWIDTH=8,
 
    output [7:0]           rbr_fifo;
    output [DATAWIDTH-1:0]  rbr ;  
-   output 		   rx_rdy      ;
-   output 		   overrun_err ;
-   output 		   parity_err  ;
-   output 		   frame_err   ;
-   output 		   break_int   ;
+   output            rx_rdy      ;
+   output            overrun_err ;
+   output            parity_err  ;
+   output            frame_err   ;
+   output            break_int   ;
    output                  fifo_empty  ;
    output                  fifo_almost_full;
    input[15:0]             divisor;
    
-   reg [3:0] 	           databit_recved_num;
+   reg [3:0]                databit_recved_num;
    reg [DATAWIDTH-1:0]     rsr;
-   reg 			   rx_parity_err  ;
-   reg 			   rx_frame_err ;
-   reg 			   rx_idle;
-   reg 			   rbr_datardy;
-   reg [3:0] 	           count;
-   reg 			   hunt;
-   reg 			   hunt_one;
-   reg 			   sin_d0;
-   reg 			   sin_d1;
-   reg 			   rx_frame_err_d1;
-   reg 			   rx_idle_d1;
-   reg 			   overrun_err_int;
-   reg 			   parity_err_int;
-   reg 			   frame_err_int;
-   reg 			   break_int_int;
-   reg 			   sampled_once;
-   reg 			   rxclk_en;    
+   reg                rx_parity_err  ;
+   reg                rx_frame_err ;
+   reg                rx_idle;
+   reg                rbr_datardy;
+   reg [3:0]                count;
+   reg                hunt;
+   reg                hunt_one;
+   reg                sin_d0;
+   reg                sin_d1;
+   reg                rx_frame_err_d1;
+   reg                rx_idle_d1;
+   reg                overrun_err_int;
+   reg                parity_err_int;
+   reg                frame_err_int;
+   reg                break_int_int;
+   reg                sampled_once;
+   reg                rxclk_en;    
 
    wire [7:0]             rbr_fifo;
    wire [2:0]             rbr_fifo_error;
@@ -128,10 +128,10 @@ module rxcver #(parameter DATAWIDTH=8,
 
    
    // State Machine Definition
-   localparam	idle   = 3'b000;
-   localparam	shift  = 3'b001;
-   localparam	parity = 3'b010;
-   localparam	stop   = 3'b011;
+   localparam    idle   = 3'b000;
+   localparam    shift  = 3'b001;
+   localparam    parity = 3'b010;
+   localparam    stop   = 3'b011;
    localparam   idle1  = 3'b100;
    reg [2:0]    cs_state;
 //parameter    lat_family = `LATTICE_FAMILY;
@@ -195,33 +195,33 @@ module rxcver #(parameter DATAWIDTH=8,
    begin
       if (FIFO == 1) 
       begin
-       		always @(posedge clk or posedge reset) 
-       		begin
-        			if (reset) 
-          			rbr_datardy <= 1'b0;
-        			else 
-        			begin
-	   							if (fifo_empty)	   
+               always @(posedge clk or posedge reset) 
+               begin
+                    if (reset) 
+                      rbr_datardy <= 1'b0;
+                    else 
+                    begin
+                                   if (fifo_empty)       
             // clear RbrDataRDY when RBR is read by CPU in 450 or FIFO is
-	    // empty in 550 mode
-            				rbr_datardy <= 1'b0; 
-	   							else if (!fifo_empty)	   
+        // empty in 550 mode
+                            rbr_datardy <= 1'b0; 
+                                   else if (!fifo_empty)       
             // set RbrDataRDY at RxIdle_r rising edge
-            				rbr_datardy <= 1'b1;
-        					end    
-       				end
-      		end
+                            rbr_datardy <= 1'b1;
+                            end    
+                       end
+              end
       else 
       begin
        always @(posedge clk or posedge reset) begin
         if (reset) 
           rbr_datardy <= 1'b0;
         else begin
-           if (rbr_rd)   	   
+           if (rbr_rd)          
             // clear RbrDataRDY when RBR is read by CPU in 450 or FIFO is
-	    // empty in 550 mode
+        // empty in 550 mode
             rbr_datardy <= 1'b0;
-           else if ((rx_idle == 1'b1) && (rx_idle_d1 == 1'b0))	   
+           else if ((rx_idle == 1'b1) && (rx_idle_d1 == 1'b0))       
             // set RbrDataRDY at RxIdle_r rising edge
             rbr_datardy <= 1'b1;
         end    
@@ -252,7 +252,7 @@ endgenerate
      else if (cs_state == idle)
           rx_idle <= 1'b1;
      else
-          rx_idle <= 1'b0;		
+          rx_idle <= 1'b0;        
      end
    
     ////////////////////////////////////////////////////////////////////////////////
@@ -283,51 +283,51 @@ endgenerate
            rx_parity_err <= 1'b1;
            rx_frame_err <= 1'b0;
            cs_state <= idle;
-	   			 counter  <= 16'b0000_0000_0000_0000;
+                    counter  <= 16'b0000_0000_0000_0000;
        end   
        else 
        case (cs_state)
            idle: 
            begin
-		   				if ((sin_d0 == 1'b0) && (sin_d0_delay == 1'b1)) 
-		   				begin
-		      				cs_state <= idle1;
-	           	end
-		  				counter <= divisor - 1'b1; 
-	         end  
-	   			idle1: 
-	   			begin
-		    			if (counter == divisor_2) 
-		    			begin
-		      				if (sin_d0 == 1'b1)
-		        				cs_state <= idle;
-		      				else 
-		      				begin
+                           if ((sin_d0 == 1'b0) && (sin_d0_delay == 1'b1)) 
+                           begin
+                              cs_state <= idle1;
+                   end
+                          counter <= divisor - 1'b1; 
+             end  
+                   idle1: 
+                   begin
+                        if (counter == divisor_2) 
+                        begin
+                              if (sin_d0 == 1'b1)
+                                cs_state <= idle;
+                              else 
+                              begin
                         rsr <= 0;
                         databit_recved_num <= 4'h0;
                         rx_parity_err <= ~ parity_even;
                         rx_frame_err <= 1'b0;
-		      				end
-	            end
-	           
-	           if (counter == 16'b0000_0000_0000_0001) 
-	           begin
-		      			cs_state <= shift;
-		      			counter  <= divisor;
-	           end
+                              end
+                end
+               
+               if (counter == 16'b0000_0000_0000_0001) 
+               begin
+                          cs_state <= shift;
+                          counter  <= divisor;
+               end
                    else
-	             counter <= counter - 1'b1; 		   
-                  end	       
-	                		      
+                 counter <= counter - 1'b1;            
+                  end           
+                                  
            shift: begin
                     if (counter == divisor_2) begin
-		      rsr <= {sin_d0, rsr[7:1]};
+              rsr <= {sin_d0, rsr[7:1]};
                       rx_parity_err <= rx_parity_err ^ sin_d0;
                       databit_recved_num <= databit_recved_num + 4'd1; 
                     end
 
-	            if (counter == 16'b0000_0000_0000_0001) begin
-		      if ((databits==2'b00 && databit_recved_num == 4'h5) ||
+                if (counter == 16'b0000_0000_0000_0001) begin
+              if ((databits==2'b00 && databit_recved_num == 4'h5) ||
                           (databits==2'b01 && databit_recved_num == 4'h6) ||
                           (databits==2'b10 && databit_recved_num == 4'h7) ||
                           (databits==2'b11 && databit_recved_num == 4'h8))  
@@ -336,10 +336,10 @@ endgenerate
                           else
                             cs_state <= parity;
 
-		      counter  <= divisor;
-	            end	
-		    else 
-                      counter <= counter - 1'b1;		    
+              counter  <= divisor;
+                end    
+            else 
+                      counter <= counter - 1'b1;            
                   end 
 
            parity: begin
@@ -351,26 +351,26 @@ endgenerate
                            rx_parity_err <= ~sin_d0;
                          else
                            rx_parity_err <= sin_d0;
-		     end
+             end
 
-		     if (counter == 16'b0000_0000_0000_0001) begin
-		       cs_state <= stop;
-	               counter  <= divisor;	       
-		     end
+             if (counter == 16'b0000_0000_0000_0001) begin
+               cs_state <= stop;
+                   counter  <= divisor;           
+             end
                      else 
-                      counter <= counter - 1'b1;		     
-	           end
+                      counter <= counter - 1'b1;             
+               end
 
            stop: begin  
-	           if (counter == divisor_2) begin
-		     // The Receiver checks the 1st Stopbit only regardless of the number
+               if (counter == divisor_2) begin
+             // The Receiver checks the 1st Stopbit only regardless of the number
                      // of Stop bits selected.
                      // Stop bit needs to be '1', otherwise it's a Framing error
                      rx_frame_err <= ~sin_d0;
-		     cs_state     <= idle;
-	           end
+             cs_state     <= idle;
+               end
                    counter <= counter - 1'b1;
-	         end
+             end
           default: 
                 cs_state <= idle;
           endcase
@@ -378,57 +378,57 @@ endgenerate
    
       
    ////////////////////////////////////////////////////////////////////////////////
-			// Receiver Buffer Register
+            // Receiver Buffer Register
    ////////////////////////////////////////////////////////////////////////////////
  generate
    if (FIFO == 1) begin
    always @(posedge clk or posedge reset) 
    begin 
-	 		if (reset) 
-	 		begin
-   		    fifo_din <= 0;
-	 		 	 fifo_wr  <= 0; 
-	 		end
-	 		else if ((rx_idle == 1'b1) && (rx_idle_d1 == 1'b0)) 
-	 		begin
-   		    if (break_int_int)
-   		    begin 
-   		        fifo_din <= {8'b0, 3'b100};
-   		        fifo_wr  <= 1'b1;
-   		    end
-   		    else 
-   		    begin  
-   		    			case (databits)
-   		          2'b00: fifo_din <= { 3'b000, rsr[7:3], 1'b0, parity_err_int, frame_err_int};
-   		          2'b01: fifo_din <= { 2'b00 , rsr[7:2], 1'b0, parity_err_int, frame_err_int};
-   		          2'b10: fifo_din <= { 1'b0  , rsr[7:1], 1'b0, parity_err_int, frame_err_int};
-   		          default: fifo_din <= {rsr, 1'b0, parity_err_int, frame_err_int};
-   		    			endcase
-	 		 	 			fifo_wr   <= 1'b1; 
-	 		 	 	end
-   		 end 
-   		 else
-	 					fifo_wr    <= 1'b0;	
+             if (reset) 
+             begin
+               fifo_din <= 0;
+                   fifo_wr  <= 0; 
+             end
+             else if ((rx_idle == 1'b1) && (rx_idle_d1 == 1'b0)) 
+             begin
+               if (break_int_int)
+               begin 
+                   fifo_din <= {8'b0, 3'b100};
+                   fifo_wr  <= 1'b1;
+               end
+               else 
+               begin  
+                           case (databits)
+                     2'b00: fifo_din <= { 3'b000, rsr[7:3], 1'b0, parity_err_int, frame_err_int};
+                     2'b01: fifo_din <= { 2'b00 , rsr[7:2], 1'b0, parity_err_int, frame_err_int};
+                     2'b10: fifo_din <= { 1'b0  , rsr[7:1], 1'b0, parity_err_int, frame_err_int};
+                     default: fifo_din <= {rsr, 1'b0, parity_err_int, frame_err_int};
+                           endcase
+                               fifo_wr   <= 1'b1; 
+                       end
+            end 
+            else
+                         fifo_wr    <= 1'b0;    
    end
    //
    always @(posedge clk or posedge reset)
         if (reset)
           fifo_wr_q <= 0;
         else
-	  fifo_wr_q <= fifo_wr;
+      fifo_wr_q <= fifo_wr;
    assign fifo_wr_pulse = fifo_wr & ~fifo_wr_q;  
    rxcver_fifo RX_FIFO(
-	              .Data        (fifo_din),
-		      .Clock       (clk),
-		      .WrEn        (fifo_wr_pulse),
-		      .RdEn        (rbr_rd),
-		      .Reset       (reset),
-		      .Q           (rbr_fifo),
-		      .Q_error     (rbr_fifo_error),
-		      .Empty       (fifo_empty),
-		      .Full        (fifo_full),
-		      .AlmostEmpty (fifo_almost_empty),
-		      .AlmostFull  (fifo_almost_full));   
+                  .Data        (fifo_din),
+              .Clock       (clk),
+              .WrEn        (fifo_wr_pulse),
+              .RdEn        (rbr_rd),
+              .Reset       (reset),
+              .Q           (rbr_fifo),
+              .Q_error     (rbr_fifo_error),
+              .Empty       (fifo_empty),
+              .Full        (fifo_full),
+              .AlmostEmpty (fifo_almost_empty),
+              .AlmostFull  (fifo_almost_full));   
    end
    else begin
    always @(posedge clk or posedge reset) begin 
@@ -442,7 +442,7 @@ endgenerate
             default: rbr <= rsr;
           endcase
      end
-   end     	
+   end         
  endgenerate  
    ////////////////////////////////////////////////////////////////////////////////
    // Delayed Signals for edge detections
@@ -518,14 +518,14 @@ generate
         else if (fifo_full && fifo_wr)
           overrun_err_int <= 1'b1;
         else if (lsr_rd)
-	  overrun_err_int <= 1'b0;
+      overrun_err_int <= 1'b0;
 
        assign   overrun_err = overrun_err_int;
        assign   parity_err  = rbr_fifo_error[1];
        assign   frame_err   = rbr_fifo_error[0];
        assign   break_int   = rbr_fifo_error[2];
    // Receiver ready for read when data is available in rbr
-   assign  rx_rdy = rbr_datardy;	
+   assign  rx_rdy = rbr_datardy;    
   end
   else begin
    always @(posedge clk or posedge reset) begin 

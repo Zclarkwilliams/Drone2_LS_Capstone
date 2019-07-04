@@ -66,20 +66,20 @@ module auto_mode_controller (
     reg small_accel_val_prev;
     reg next_small_accel_val_now;
     reg next_small_accel_val_prev;
-	reg signed [`RATE_BIT_WIDTH-1:0] next_z_linear_velocity;
-	reg signed [31:0] z_linear_velocity_internal;
-	reg signed [31:0] next_z_linear_velocity_internal;
-	reg signed [31:0] z_linear_accel_latched;
-	reg signed [31:0] next_z_linear_accel_latched;
-	reg signed [31:0] z_linear_accel_latched_zero;
-	reg signed [31:0] next_z_linear_accel_latched_zero;
+    reg signed [`RATE_BIT_WIDTH-1:0] next_z_linear_velocity;
+    reg signed [31:0] z_linear_velocity_internal;
+    reg signed [31:0] next_z_linear_velocity_internal;
+    reg signed [31:0] z_linear_accel_latched;
+    reg signed [31:0] next_z_linear_accel_latched;
+    reg signed [31:0] z_linear_accel_latched_zero;
+    reg signed [31:0] next_z_linear_accel_latched_zero;
     reg signed [31:0] next_z_linear_accel_zeroed;
     reg signed [31:0] next_debug;
-	reg [`REC_VAL_BIT_WIDTH-1:0] throttle_pwm_val_calc;
-	reg [`REC_VAL_BIT_WIDTH-1:0] throttle_pwm_val_latched;
-	reg [`REC_VAL_BIT_WIDTH-1:0] next_throttle_pwm_val_latched;
-	reg [`REC_VAL_BIT_WIDTH-1:0] next_throttle_pwm_val_calc;
-	reg [`REC_VAL_BIT_WIDTH-1:0] next_throttle_pwm_val_out;
+    reg [`REC_VAL_BIT_WIDTH-1:0] throttle_pwm_val_calc;
+    reg [`REC_VAL_BIT_WIDTH-1:0] throttle_pwm_val_latched;
+    reg [`REC_VAL_BIT_WIDTH-1:0] next_throttle_pwm_val_latched;
+    reg [`REC_VAL_BIT_WIDTH-1:0] next_throttle_pwm_val_calc;
+    reg [`REC_VAL_BIT_WIDTH-1:0] next_throttle_pwm_val_out;
 
     reg [27:0]count__auto_time_ms; //  Count from 0 to value determined by clock rate, used to generate N us delay trigger
                                    //  Each count value indicates one ms
@@ -131,15 +131,15 @@ module auto_mode_controller (
             small_accel_val_now         <= `FALSE;
             small_accel_val_prev        <= `FALSE;
             throttle_pwm_val_calc       <= 8'b0;
-			z_linear_accel_latched      <= 32'b0;
+            z_linear_accel_latched      <= 32'b0;
             z_linear_accel_latched_zero <= 32'b0;
-			throttle_pwm_val_latched    <= 8'b0;
-			z_linear_velocity_internal  <= 32'b0;
-			throttle_pwm_val_out        <= 8'b0;
-			z_linear_accel_zeroed       <= 32'b0;
+            throttle_pwm_val_latched    <= 8'b0;
+            z_linear_velocity_internal  <= 32'b0;
+            throttle_pwm_val_out        <= 8'b0;
+            z_linear_accel_zeroed       <= 32'b0;
             in_air_flag                 <= `FALSE;
             on_ground_flag              <= `TRUE;
-			debug                       <= 32'b0;
+            debug                       <= 32'b0;
         end
         else begin
             state                       <= next_state;
@@ -149,15 +149,15 @@ module auto_mode_controller (
             small_accel_val_now         <= next_small_accel_val_now;
             small_accel_val_prev        <= next_small_accel_val_prev;
             throttle_pwm_val_calc       <= next_throttle_pwm_val_calc;
-			z_linear_accel_latched      <= next_z_linear_accel_latched;
+            z_linear_accel_latched      <= next_z_linear_accel_latched;
             z_linear_accel_latched_zero <= next_z_linear_accel_latched_zero;
-			throttle_pwm_val_latched    <= next_throttle_pwm_val_latched;
-			z_linear_velocity_internal  <= next_z_linear_velocity_internal;
-			throttle_pwm_val_out        <= next_throttle_pwm_val_out;
-			z_linear_accel_zeroed       <= next_z_linear_accel_zeroed;
+            throttle_pwm_val_latched    <= next_throttle_pwm_val_latched;
+            z_linear_velocity_internal  <= next_z_linear_velocity_internal;
+            throttle_pwm_val_out        <= next_throttle_pwm_val_out;
+            z_linear_accel_zeroed       <= next_z_linear_accel_zeroed;
             in_air_flag                 <= next_in_air_flag;
             on_ground_flag              <= next_on_ground_flag;
-			debug                       <= next_debug;
+            debug                       <= next_debug;
         end
     end
 
@@ -265,30 +265,30 @@ module auto_mode_controller (
         if(!resetn) begin
             next_complete_signal             = `FALSE;
             next_active_signal               = `FALSE;
-			clear_auto_mode_timer            = `FALSE;
+            clear_auto_mode_timer            = `FALSE;
             next_small_accel_val_now         = `FALSE;
             next_small_accel_val_prev        = `FALSE;
-			next_z_linear_accel_latched      = 32'b0;
+            next_z_linear_accel_latched      = 32'b0;
             next_z_linear_accel_latched_zero = 32'b0;
             next_z_linear_accel_zeroed       = 32'b0;
-			next_throttle_pwm_val_latched    = 8'b0;
+            next_throttle_pwm_val_latched    = 8'b0;
             next_throttle_pwm_val_calc       = 8'b0;
             next_throttle_pwm_val_out        = 8'b0;
-			next_z_linear_velocity_internal  = 32'b0;
+            next_z_linear_velocity_internal  = 32'b0;
             next_in_air_flag                 = `FALSE;
             next_on_ground_flag              = `TRUE;
-		end
+        end
         else begin
-			clear_auto_mode_timer            = `FALSE;
+            clear_auto_mode_timer            = `FALSE;
             next_small_accel_val_now         = small_accel_val_now;
             next_small_accel_val_prev        = small_accel_val_prev;
-			next_z_linear_accel_latched      = z_linear_accel_latched;
+            next_z_linear_accel_latched      = z_linear_accel_latched;
             next_z_linear_accel_latched_zero = z_linear_accel_latched_zero;
             next_z_linear_accel_zeroed       = z_linear_accel_zeroed;
-			next_throttle_pwm_val_latched    = throttle_pwm_val_latched;
-			next_z_linear_velocity_internal  = z_linear_velocity_internal;
+            next_throttle_pwm_val_latched    = throttle_pwm_val_latched;
+            next_z_linear_velocity_internal  = z_linear_velocity_internal;
             next_throttle_pwm_val_calc       = throttle_pwm_val_calc;
-			next_throttle_pwm_val_out        = throttle_pwm_val_out;
+            next_throttle_pwm_val_out        = throttle_pwm_val_out;
             next_in_air_flag                 = in_air_flag;
             next_on_ground_flag              = on_ground_flag;
             next_debug                       = debug;
@@ -297,7 +297,7 @@ module auto_mode_controller (
                     next_complete_signal             = `FALSE;
                     next_active_signal               = `FALSE;
                     clear_auto_mode_timer            = `FALSE;
-			        next_throttle_pwm_val_out        = 16'b0;
+                    next_throttle_pwm_val_out        = 16'b0;
                 end
                 STATE_WAIT           : begin
                     next_complete_signal             = `FALSE;
@@ -309,7 +309,7 @@ module auto_mode_controller (
                     next_active_signal               = `TRUE;
                     clear_auto_mode_timer            = `FALSE;
                     next_throttle_pwm_val_latched    = throttle_pwm_val_in;
-					next_z_linear_accel_latched      = $signed({z_linear_accel, 16'b0});
+                    next_z_linear_accel_latched      = $signed({z_linear_accel, 16'b0});
                     // Zero acceleration  throttle when throttle idle
                     if (throttle_pwm_val_in < 'd10)
                         next_z_linear_accel_latched_zero = $signed({z_linear_accel, 16'b0});
@@ -330,7 +330,7 @@ module auto_mode_controller (
                     next_small_accel_val_now         = ((z_linear_accel_zeroed <= $signed((10)<<<16)) && (z_linear_accel_zeroed >= $signed((-10)<<<16)));
                     next_small_accel_val_prev        = small_accel_val_now;
                 end
-				STATE_CALC_VELOCITY : begin
+                STATE_CALC_VELOCITY : begin
                     next_complete_signal             = `FALSE;
                     next_active_signal               = `TRUE;
                     clear_auto_mode_timer            = `FALSE;
@@ -349,7 +349,7 @@ module auto_mode_controller (
                             next_z_linear_velocity_internal  = 0;
                         end
                         else if ($signed(z_linear_velocity_internal>>>8) > 0) begin
-				            next_z_linear_velocity_internal  = (z_linear_velocity_internal - $signed('sd10<<<10));
+                            next_z_linear_velocity_internal  = (z_linear_velocity_internal - $signed('sd10<<<10));
                         end
                         else if ($signed(z_linear_velocity_internal>>>8) < 0) begin
                             next_z_linear_velocity_internal  = (z_linear_velocity_internal + $signed('sd10<<<10));
@@ -360,13 +360,13 @@ module auto_mode_controller (
                     end
                     else begin
                         if ($signed(z_linear_velocity_internal>>>8) > 0) 
-				            next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed) - $signed(1<<<0);
+                            next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed) - $signed(1<<<0);
                         else if ($signed(z_linear_velocity_internal>>>8) < 0)
-				            next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed) + $signed(1<<<0);
+                            next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed) + $signed(1<<<0);
                         else
-				            next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed);
+                            next_z_linear_velocity_internal  = calc_z_linear_velocity(z_linear_velocity_internal, z_linear_accel_zeroed);
                     end
-				end
+                end
                 STATE_AUTO_SUB_STATE : begin
                     next_complete_signal             = `FALSE;
                     next_active_signal               = `TRUE;
@@ -432,11 +432,11 @@ module auto_mode_controller (
                 end
                 endcase
             end
-		end
+        end
     end
 
-	// Drive linear velocity module output from high 16 bits of internal linear velocity value
-	assign z_linear_velocity = z_linear_velocity_internal[24:9];
+    // Drive linear velocity module output from high 16 bits of internal linear velocity value
+    assign z_linear_velocity = z_linear_velocity_internal[24:9];
 
     // Calculate linear velocity from linear acceleration and previous linear velocity
     function automatic signed [31:0] calc_z_linear_velocity;
@@ -463,6 +463,6 @@ module auto_mode_controller (
                                   (z_linear_accel_calc>>>26) +
                                   (z_linear_accel_calc>>>27) +
                                   (z_linear_accel_calc>>>31)  );
-	endfunction
+    endfunction
 
 endmodule

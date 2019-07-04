@@ -172,90 +172,90 @@ module angle_controller (
         else begin
             case(state)
                 STATE_WAITING: begin
-                    complete_signal         <= `FALSE;
-                    active_signal           <= `FALSE;
+                    complete_signal       <= `FALSE;
+                    active_signal         <= `FALSE;
                     if (switch_a[0])   // Acro mode pitch/roll rate  
-                        multiplier <= 16'sd2;
+                        multiplier        <= 16'sd2;
                     else               // Easy mode pitch/roll rate  
-                        multiplier <= 16'sd1;
+                        multiplier        <= 16'sd1;
                 end
                 STATE_MAPPING: begin
-                    complete_signal         <= `FALSE;
-                    active_signal           <= `TRUE;    
+                    complete_signal       <= `FALSE;
+                    active_signal         <= `TRUE;    
                     // Yaw Accumulator is disabled, use original yaw handling
                     // input values mapped from 0 - 250 to -31.25 - 31.25
                     if(yaac_enable_n)
-                        mapped_yaw          <= $signed({FRONT_PAD, latched_yaw_angle_target[7:0], END_PAD}) - MAPPING_SUBS;
+                        mapped_yaw        <= $signed({FRONT_PAD, latched_yaw_angle_target[7:0], END_PAD}) - MAPPING_SUBS;
                     // Yaw Accumulator is enabled, use new yaw handling - Calculated in YAAc
                     else
-                        mapped_yaw          <= latched_yaw_angle_error;
-                    mapped_throttle         <= $signed({THROTTLE_F_PAD, latched_throttle, THROTTLE_R_PAD});
+                        mapped_yaw        <= latched_yaw_angle_error;
+                    mapped_throttle       <= $signed({THROTTLE_F_PAD, latched_throttle, THROTTLE_R_PAD});
                     // input values mapped from 0 - 250 to -31.25 - 31.25
-                    mapped_roll             <= ($signed({FRONT_PAD, latched_roll,  END_PAD}) - MAPPING_SUBS)*multiplier + roll_actual; // roll value from IMU is flipped, add instead of subtract
-                    mapped_pitch            <= ($signed({FRONT_PAD, latched_pitch, END_PAD}) - MAPPING_SUBS)*multiplier - pitch_actual;
+                    mapped_roll           <= ($signed({FRONT_PAD, latched_roll,  END_PAD}) - MAPPING_SUBS)*multiplier + roll_actual; // roll value from IMU is flipped, add instead of subtract
+                    mapped_pitch          <= ($signed({FRONT_PAD, latched_pitch, END_PAD}) - MAPPING_SUBS)*multiplier - pitch_actual;
                     
                 end
                 STATE_SCALING: begin
-                    complete_signal         <= `FALSE;
-                    active_signal           <= `TRUE;
+                    complete_signal       <= `FALSE;
+                    active_signal         <= `TRUE;
                     // Apply scaler: (axis_val * scale_multiplier) / Scale_divisor
                     if(yaac_enable_n)
-                        scaled_yaw          <= scale_val(mapped_yaw, `YAW_OLD_AC_K_P, `YAW_AC_K_P_SHIFT);
+                        scaled_yaw        <= scale_val(mapped_yaw, `YAW_OLD_AC_K_P, `YAW_AC_K_P_SHIFT);
                     else
-                        scaled_yaw          <= scale_val(mapped_yaw, `YAW_YAAC_AC_K_P, `YAW_AC_K_P_SHIFT);
-                    scaled_roll             <= scale_val(mapped_roll, `ROLL_AC_K_P, `ROLL_AC_K_P_SHIFT);
-                    scaled_pitch            <= scale_val(mapped_pitch, `PITCH_AC_K_P, `PITCH_AC_K_P_SHIFT);
-                    scaled_throttle         <= scale_val(mapped_throttle, `THROTTLE_AC_K_P, `THROTTLE_AC_K_P_SHIFT);
+                        scaled_yaw        <= scale_val(mapped_yaw, `YAW_YAAC_AC_K_P, `YAW_AC_K_P_SHIFT);
+                    scaled_roll           <= scale_val(mapped_roll, `ROLL_AC_K_P, `ROLL_AC_K_P_SHIFT);
+                    scaled_pitch          <= scale_val(mapped_pitch, `PITCH_AC_K_P, `PITCH_AC_K_P_SHIFT);
+                    scaled_throttle       <= scale_val(mapped_throttle, `THROTTLE_AC_K_P, `THROTTLE_AC_K_P_SHIFT);
                 end
                 STATE_LIMITING: begin
-                    complete_signal         <= `FALSE;
-                    active_signal           <= `TRUE;
+                    complete_signal       <= `FALSE;
+                    active_signal         <= `TRUE;
 
                     // Throttle rate limits
                     if(scaled_throttle > THROTTLE_MAX)
-                        throttle_rate_out   <= THROTTLE_MAX;
+                        throttle_rate_out <= THROTTLE_MAX;
                     else if(scaled_throttle < `MOTOR_VAL_MIN)
-                        throttle_rate_out   <= `MOTOR_VAL_MIN;
+                        throttle_rate_out <= `MOTOR_VAL_MIN;
                     else
-                        throttle_rate_out   <= scaled_throttle;
+                        throttle_rate_out <= scaled_throttle;
 
                     // Yaw rate limits
                     if(scaled_yaw > YAW_MAX)
-                        yaw_rate_out        <= YAW_MAX;
+                        yaw_rate_out      <= YAW_MAX;
                     else if(scaled_yaw < YAW_MIN)
-                        yaw_rate_out        <= YAW_MIN;
+                        yaw_rate_out      <= YAW_MIN;
                     else
-                        yaw_rate_out        <= scaled_yaw;
+                        yaw_rate_out      <= scaled_yaw;
 
                     // Roll rate limits
                     if(scaled_roll > ROLL_MAX)
-                        roll_rate_out       <= ROLL_MAX;
+                        roll_rate_out     <= ROLL_MAX;
                     else if(scaled_roll < ROLL_MIN)
-                        roll_rate_out       <= ROLL_MIN;
+                        roll_rate_out     <= ROLL_MIN;
                     else
-                        roll_rate_out       <= scaled_roll;
+                        roll_rate_out     <= scaled_roll;
 
                     // Pitch rate limits
                     if(scaled_pitch > PITCH_MAX)
-                        pitch_rate_out      <= PITCH_MAX;
+                        pitch_rate_out    <= PITCH_MAX;
                     else if(scaled_pitch < PITCH_MIN)
-                        pitch_rate_out      <= PITCH_MIN;
+                        pitch_rate_out    <= PITCH_MIN;
                     else
-                        pitch_rate_out      <= scaled_pitch;
+                        pitch_rate_out    <= scaled_pitch;
 
-                    yaw_angle_error         <= latched_yaw_angle_error;
-                    pitch_angle_error       <= mapped_pitch;
-                    roll_angle_error        <= mapped_roll;
+                    yaw_angle_error       <= latched_yaw_angle_error;
+                    pitch_angle_error     <= mapped_pitch;
+                    roll_angle_error      <= mapped_roll;
                 end
                 STATE_COMPLETE: begin
-                    complete_signal         <= `TRUE;
-                    active_signal           <= `FALSE;
+                    complete_signal       <= `TRUE;
+                    active_signal         <= `FALSE;
                 end
                 default: begin
-                    pitch_rate_out          <= `ALL_ZERO_2BYTE;
-                    yaw_rate_out            <= `ALL_ZERO_2BYTE;
-                    roll_rate_out           <= `ALL_ZERO_2BYTE;
-                    throttle_rate_out       <= `ALL_ZERO_2BYTE;
+                    pitch_rate_out        <= `ALL_ZERO_2BYTE;
+                    yaw_rate_out          <= `ALL_ZERO_2BYTE;
+                    roll_rate_out         <= `ALL_ZERO_2BYTE;
+                    throttle_rate_out     <= `ALL_ZERO_2BYTE;
                 end
             endcase
         end

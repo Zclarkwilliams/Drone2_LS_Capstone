@@ -100,54 +100,54 @@ module rxcver_fifo (Data, Clock, WrEn, RdEn, Reset, Q, Q_error, Empty, Full,
    always @(posedge Clock or posedge Reset)
      begin
         if (Reset)
-	   begin
-	        wr_pointer1 <=  0;
+       begin
+            wr_pointer1 <=  0;
                 rd_pointer1 <=  0; 
                 valid_RdEn <=  0;
-                rd_pointer_prev <= 0;		
- 		fifo[0] <=  0;
-		fifo[1] <=  0;
-		fifo[2] <=  0;
-		fifo[3] <=  0;
-		fifo[4] <=  0;
-		fifo[5] <=  0;
-		fifo[6] <=  0;
-		fifo[7] <=  0;
-		fifo[8] <=  0;
-		fifo[9] <=  0;
-		fifo[10] <=  0;
-		fifo[11] <=  0;
-		fifo[12] <=  0;
-		fifo[13] <=  0;
-		fifo[14] <=  0;
-		fifo[15] <=  0;	
-           end	
+                rd_pointer_prev <= 0;        
+         fifo[0] <=  0;
+        fifo[1] <=  0;
+        fifo[2] <=  0;
+        fifo[3] <=  0;
+        fifo[4] <=  0;
+        fifo[5] <=  0;
+        fifo[6] <=  0;
+        fifo[7] <=  0;
+        fifo[8] <=  0;
+        fifo[9] <=  0;
+        fifo[10] <=  0;
+        fifo[11] <=  0;
+        fifo[12] <=  0;
+        fifo[13] <=  0;
+        fifo[14] <=  0;
+        fifo[15] <=  0;    
+           end    
         else
            begin
-	     if (WrEn == 1 && RdEn !=1 && Full !=1) begin
-	       fifo[wr_pointer1%16] <=  Data[2:0];
-	       wr_pointer1          <=  wr_pointer1 + 1; end
+         if (WrEn == 1 && RdEn !=1 && Full !=1) begin
+           fifo[wr_pointer1%16] <=  Data[2:0];
+           wr_pointer1          <=  wr_pointer1 + 1; end
 
-	     else if (WrEn != 1 && RdEn ==1 && Empty !=1) begin
+         else if (WrEn != 1 && RdEn ==1 && Empty !=1) begin
                valid_RdEn          <=  1'b1;
-	       rd_pointer_prev     <=  rd_pointer1;
-	       rd_pointer1          <=  rd_pointer1 +1; end 
+           rd_pointer_prev     <=  rd_pointer1;
+           rd_pointer1          <=  rd_pointer1 +1; end 
 
-	     else if (WrEn == 1 && RdEn ==1) begin
-	       rd_pointer_prev     <=  rd_pointer1;
-               valid_RdEn          <=  1'b1;	     
-	       fifo[wr_pointer1%16] <=  Data[2:0];
-	       rd_pointer1          <=  rd_pointer1 + 1;
-	       wr_pointer1          <=  wr_pointer1 + 1; 
+         else if (WrEn == 1 && RdEn ==1) begin
+           rd_pointer_prev     <=  rd_pointer1;
+               valid_RdEn          <=  1'b1;         
+           fifo[wr_pointer1%16] <=  Data[2:0];
+           rd_pointer1          <=  rd_pointer1 + 1;
+           wr_pointer1          <=  wr_pointer1 + 1; 
               end  
-//	     else
-//	       valid_RdEn          <= 1'b0;	     
+//         else
+//           valid_RdEn          <= 1'b0;         
 
              if (valid_RdEn)  begin   
-	       fifo[rd_pointer_prev%16] <= 0;
-	       valid_RdEn          <= 1'b0;
-	     end    
-	   end
+           fifo[rd_pointer_prev%16] <= 0;
+           valid_RdEn          <= 1'b0;
+         end    
+       end
      end
 
 

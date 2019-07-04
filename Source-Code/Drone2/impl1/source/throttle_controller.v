@@ -238,7 +238,7 @@ module throttle_controller
                     if(tc_enable_n)
                         throttle_pwm_value_out  <= latched_throttle;
                     else
-                        {trash_bits, throttle_pwm_value_out} <= limited_throttle;
+                        throttle_pwm_value_out  <= limited_throttle[`REC_VAL_BIT_WIDTH-1:0];
                 end
                 STATE_COMPLETE: begin
                     complete_signal             <= `TRUE;

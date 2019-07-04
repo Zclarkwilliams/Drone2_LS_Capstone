@@ -50,9 +50,6 @@
  *          gravity_accel_z        Gravitational Acceleration Z-Axis   Precision: 1 m/s^2 = 100 LSB
  *          temperature            Temperature in degrees Celsius      Precision: 1 Deg C = 1 LSB
  *          calib_status           Calibration status register
- *          x_velocity             Linear velocity in the X direction, one byte signed integer
- *          y_velocity             Linear velocity in the Y direction, one byte signed integer
- *          z_velocity             Linear velocity in the Z direction, one byte signed integer
  *
  * TODO: Add module description with description of inputs/outputs
  *         instead of with the variable. Make this file look like all of
@@ -101,10 +98,7 @@ module bno055_driver #(
     output reg [15:0]gravity_accel_y,
     output reg [15:0]gravity_accel_z,
     output reg [7:0]temperature,
-    output reg [7:0]calib_status,
-    output reg [15:0]x_velocity,
-    output reg [15:0]y_velocity,
-    output reg [15:0]z_velocity
+    output reg [7:0]calib_status
 );
 
     reg  read_write_in, next_read_write_in;           //  Value and next value of signal to i2c module to indicate read or write transaction, 1 = read, 0 = write
@@ -290,9 +284,6 @@ module bno055_driver #(
             gravity_accel_z   <= 16'b0;
             temperature       <= 8'b0;
             calib_status      <= 8'b0;
-            x_velocity        <= 8'b0;
-            y_velocity        <= 8'b0;
-            z_velocity        <= 8'b0;
         end
         else if(rx_data_latch_strobe) begin
             accel_rate_x      <= {data_rx_reg[`ACC_DATA_X_MSB_INDEX],data_rx_reg[`ACC_DATA_X_LSB_INDEX]};

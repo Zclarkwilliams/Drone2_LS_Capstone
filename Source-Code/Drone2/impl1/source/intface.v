@@ -57,55 +57,55 @@ module intface #(parameter CLK_IN_MHZ = 25,
                  parameter ADDRWIDTH = 3,
                  parameter DATAWIDTH = 8,
                  parameter FIFO = 0) 
-       (
-        // Global reset and clock
-        reset,
-        clk,
-        // wishbone interface
-        adr_i,
-        dat_i,
-        dat_o,
-        stb_i,
-        cyc_i,
-        we_i,
-        sel_i,
-        bte_i,
-        ack_o,
-        intr,
-        // Registers
-        rbr,
-        rbr_fifo,		
-        thr,
-        // Rising edge of registers read/write strobes
-        rbr_rd,
-        thr_wr,
-        lsr_rd,
-        `ifdef MODEM
-        msr_rd,
-        msr,
-        mcr,
-        `endif
-        // Receiver/Transmitter control
-        databits,
-        stopbits,
-        parity_en,
-        parity_even,
-        parity_stick,
-        tx_break,
-        // Receiver/Transmitter status
-        rx_rdy,
-        overrun_err,
-        parity_err,
-        frame_err,
-        break_int,
-        thre,
-        temt,
-	fifo_empty,
-	fifo_empty_thr,
-	thr_rd,
-	fifo_almost_full,
-	divisor
-       ); 
+    (
+    // Global reset and clock
+    reset,
+    clk,
+    // wishbone interface
+    adr_i,
+    dat_i,
+    dat_o,
+    stb_i,
+    cyc_i,
+    we_i,
+    sel_i,
+    bte_i,
+    ack_o,
+    intr,
+    // Registers
+    rbr,
+    rbr_fifo,        
+    thr,
+    // Rising edge of registers read/write strobes
+    rbr_rd,
+    thr_wr,
+    lsr_rd,
+    `ifdef MODEM
+    msr_rd,
+    msr,
+    mcr,
+    `endif
+    // Receiver/Transmitter control
+    databits,
+    stopbits,
+    parity_en,
+    parity_even,
+    parity_stick,
+    tx_break,
+    // Receiver/Transmitter status
+    rx_rdy,
+    overrun_err,
+    parity_err,
+    frame_err,
+    break_int,
+    thre,
+    temt,
+    fifo_empty,
+    fifo_empty_thr,
+    thr_rd,
+    fifo_almost_full,
+    divisor
+    ); 
     
     input   reset ;
     input   clk;   
@@ -121,15 +121,15 @@ module intface #(parameter CLK_IN_MHZ = 25,
     input [3:0]  sel_i;
     input [1:0]  bte_i;
 
-    input [7:0]          rbr_fifo;
-    input [DATAWIDTH-1:0] rbr; 
-    input                 rx_rdy      ;
-    input                 overrun_err ;
-    input                 parity_err  ;
-    input                 frame_err   ;
-    input                 break_int   ;
-    input                 thre        ;
-    input                 temt        ;
+    input [7:0]             rbr_fifo;
+    input [DATAWIDTH-1:0]   rbr; 
+    input                   rx_rdy      ;
+    input                   overrun_err ;
+    input                   parity_err  ;
+    input                   frame_err   ;
+    input                   break_int   ;
+    input                   thre        ;
+    input                   temt        ;
     
     output                  lsr_rd   ;
     output [15:0] dat_o ;
@@ -152,13 +152,13 @@ module intface #(parameter CLK_IN_MHZ = 25,
     `endif
     output [15:0]           divisor;
     
-   reg    ack_o;
-    
-   reg  [DATAWIDTH-1:0] data_8bit ;
-   wire [15:0]    dat_o ;
+    reg    ack_o;
+
+    reg  [DATAWIDTH-1:0] data_8bit ;
+    wire [15:0]    dat_o ;
   
-   wire [DATAWIDTH-1:0]    thr_fifo;
-   reg [DATAWIDTH-1:0]     thr_nonfifo; 	   
+    wire [DATAWIDTH-1:0]    thr_fifo;
+    reg [DATAWIDTH-1:0]     thr_nonfifo;        
 
  generate
    if (FIFO == 1)
@@ -171,17 +171,17 @@ module intface #(parameter CLK_IN_MHZ = 25,
    reg [6:0] lsr;
    reg  [6:0] lcr;
 
-   wire [3:0] 		    iir     ;
+   wire [3:0]             iir     ;
   `ifdef MODEM
-   reg  [3:0] 		    ier     ;
+   reg  [3:0]             ier     ;
    `else 
-   reg  [2:0] 		    ier     ;
+   reg  [2:0]             ier     ;
    `endif 
    
-   wire 		    rx_rdy_int   ;
-   wire 		    thre_int    ;
-   wire 		    dataerr_int ;
-   wire 		    data_err     ;
+   wire             rx_rdy_int   ;
+   wire             thre_int    ;
+   wire             dataerr_int ;
+   wire             data_err     ;
    
    wire thr_wr_strobe;
    wire rbr_rd_strobe;
@@ -193,7 +193,7 @@ module intface #(parameter CLK_IN_MHZ = 25,
    reg lsr2_r, lsr3_r, lsr4_r;
 
    reg  thr_wr;
-   wire rbr_rd_fifo;	   	   
+   wire rbr_rd_fifo;              
    reg  rbr_rd_nonfifo;
 
  generate
@@ -289,14 +289,14 @@ module intface #(parameter CLK_IN_MHZ = 25,
  generate
    if (FIFO == 1)
      assign iir_rd_strobe = (adr_i[ADDRWIDTH-1:0] == A_IIR) &&  cyc_i && stb_i && ~we_i && ~ack_o;  
-   else 	   
+   else        
      assign iir_rd_strobe = (adr_i[ADDRWIDTH-1:0] == A_IIR) &&  cyc_i && stb_i && ~we_i;
  endgenerate 
 
  generate
    if (FIFO == 1)
      assign lsr_rd_strobe = (adr_i[ADDRWIDTH-1:0] == A_LSR) &&  cyc_i && stb_i && ~we_i && ~ack_o; 
-   else    	
+   else        
      assign lsr_rd_strobe = (adr_i[ADDRWIDTH-1:0] == A_LSR) &&  cyc_i && stb_i && ~we_i;  
  endgenerate 
  
@@ -312,10 +312,10 @@ module intface #(parameter CLK_IN_MHZ = 25,
  generate
   if (FIFO == 1) begin
    always @(cyc_i or stb_i or we_i or adr_i or rbr_fifo or iir 
-	   `ifdef MODEM
+       `ifdef MODEM
            or msr
-	   `endif 
-	   or lsr)
+       `endif 
+       or lsr)
    begin
      case (adr_i[ADDRWIDTH-1:0])
        A_RBR: data_8bit <= rbr_fifo;
@@ -325,10 +325,10 @@ module intface #(parameter CLK_IN_MHZ = 25,
        A_MSR: data_8bit <= msr;
        `endif
        default: data_8bit <= 8'b11111111;
-   endcase	   
+   endcase       
    end
   end
-  else begin	  
+  else begin      
   // Register Read
  always @(posedge clk or posedge reset)  begin 
    if (reset)
@@ -364,7 +364,7 @@ begin
             lcr <= 7'h00; end 
        else if (cyc_i && stb_i && we_i)
           case (adr_i[ADDRWIDTH-1:0])  
-             	A_THR: thr_nonfifo <= dat_i[7:0];
+                 A_THR: thr_nonfifo <= dat_i[7:0];
                 `ifdef MODEM
                A_IER: ier <= dat_i[3:0];
                A_MCR: mcr <= dat_i[1:0];
@@ -409,17 +409,17 @@ endgenerate
    assign fifo_wr_pulse_thr = thr_wr_strobe;
    assign fifo_din_thr      = dat_i[7:0];
    txcver_fifo TX_FIFO(
-	              .Data        (fifo_din_thr),
-		      			.Clock       (clk),
-		      .WrEn        (fifo_wr_pulse_thr),
-		      .RdEn        (thr_rd),
-		      .Reset       (reset),
-		      .Q           (thr_fifo),
-		      .Empty       (fifo_empty_thr),
-		      .Full        (fifo_full_thr),
-		      .AlmostEmpty (fifo_almost_empty_thr),
-		      .AlmostFull  (fifo_almost_full_thr)   
-	              );
+            .Data        (fifo_din_thr),
+            .Clock       (clk),
+            .WrEn        (fifo_wr_pulse_thr),
+            .RdEn        (thr_rd),
+            .Reset       (reset),
+            .Q           (thr_fifo),
+            .Empty       (fifo_empty_thr),
+            .Full        (fifo_full_thr),
+            .AlmostEmpty (fifo_almost_empty_thr),
+            .AlmostFull  (fifo_almost_full_thr)   
+                  );
  end
 endgenerate
 
@@ -501,7 +501,7 @@ endgenerate
  generate
    if (FIFO == 1)
      assign data_err = overrun_err | lsr2_r | lsr3_r | lsr4_r;
-   else	   
+   else       
      assign data_err = overrun_err | parity_err | frame_err | break_int;
  endgenerate
 
@@ -538,7 +538,7 @@ if (FIFO == 1) begin
             idle: begin
                if (ier[2] == 1'b1 && data_err == 1'b1 )
                  cs_state <= int0;
-               else if (ier[0] == 1'b1 && (fifo_almost_full || !fifo_empty) )	       
+               else if (ier[0] == 1'b1 && (fifo_almost_full || !fifo_empty) )           
                  cs_state <= int1;
                else if (ier[1] == 1'b1 && thre == 1'b1)
                  cs_state <= int2;
@@ -548,20 +548,20 @@ if (FIFO == 1) begin
             `endif
             end
             int0: begin
-	       if ((lsr_rd_strobe == 1'b1) || (ier[2] == 1'b0)) begin    
-		 if (ier[0] == 1'b1 && fifo_almost_full) 
-		   cs_state <= int1;
-                else	      
-	           cs_state <= idle; end
+           if ((lsr_rd_strobe == 1'b1) || (ier[2] == 1'b0)) begin    
+         if (ier[0] == 1'b1 && fifo_almost_full) 
+           cs_state <= int1;
+                else          
+               cs_state <= idle; end
             end
             int1: begin
                if (data_err == 1'b1 && ier[2] == 1'b1)
-		  cs_state <= int0;     
-	       else if (!fifo_almost_full || (ier[0] == 1'b0))	     	       
-	          cs_state <= idle;
+          cs_state <= int0;     
+           else if (!fifo_almost_full || (ier[0] == 1'b0))                    
+              cs_state <= idle;
             end
             int2: begin
-               if (iir_rd_strobe_delay || (thre == 1'b0) || (ier[1] == 1'b0))  	       
+               if (iir_rd_strobe_delay || (thre == 1'b0) || (ier[1] == 1'b0))             
                  cs_state <= idle;
             end
            `ifdef MODEM
@@ -584,7 +584,7 @@ else  begin
             idle: begin
                if (ier[2] == 1'b1 && data_err == 1'b1)
                  cs_state <= int0;
-               else if (ier[0] == 1'b1 && rx_rdy == 1'b1)       	       
+               else if (ier[0] == 1'b1 && rx_rdy == 1'b1)                  
                  cs_state <= int1;
                else if (ier[1] == 1'b1 && thre == 1'b1)
                  cs_state <= int2;
@@ -594,20 +594,20 @@ else  begin
             `endif
             end
             int0: begin
-	       if ((lsr_rd_strobe == 1'b1) || (ier[2] == 1'b0)) begin	      
-		 if (ier[0] == 1'b1 && rx_rdy) 
-		   cs_state <= int1;
-                else	      
-	           cs_state <= idle; end
+           if ((lsr_rd_strobe == 1'b1) || (ier[2] == 1'b0)) begin          
+         if (ier[0] == 1'b1 && rx_rdy) 
+           cs_state <= int1;
+                else          
+               cs_state <= idle; end
             end
             int1: begin
                if (data_err == 1'b1 && ier[2] == 1'b1)
-		  cs_state <= int0;     
-	       else if ((rx_rdy == 1'b0) || (ier[0] == 1'b0)) 	       
-	           cs_state <= idle;
+          cs_state <= int0;     
+           else if ((rx_rdy == 1'b0) || (ier[0] == 1'b0))            
+               cs_state <= idle;
             end
-            int2: begin 	       
-	       if (iir_rd_strobe || (thre == 1'b0) || (ier[1] == 1'b0))	       
+            int2: begin            
+           if (iir_rd_strobe || (thre == 1'b0) || (ier[1] == 1'b0))           
                  cs_state <= idle;
             end
            `ifdef MODEM
@@ -650,9 +650,9 @@ endgenerate
    assign iir = (cs_state == int0) ? 4'b0110 :
                 (cs_state == int1) ? 4'b0100 :
                 (cs_state == int2) ? 4'b0010 :
-                 `ifdef MODEM
+                `ifdef MODEM
                 (cs_state == int3) ? 4'b0000 :
-                 `endif
+                `endif
                 4'b0001 ;  // No Interrupt Pending
 
 endmodule

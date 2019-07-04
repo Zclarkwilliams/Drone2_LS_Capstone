@@ -180,7 +180,7 @@ module uart_core
         .ack_o            (UART_ACK_O  ),
         .intr             (intr        ),
         .rbr              (RBR         ),
-		.rbr_fifo         (RBR_FIFO    ),
+        .rbr_fifo         (RBR_FIFO    ),
         .thr              (THR         ),
         .rbr_rd           (rbr_rd      ),
         .thr_wr           (thr_wr      ),
@@ -201,11 +201,11 @@ module uart_core
         .break_int        (break_int   ),
         .thre             (THRE        ),
         .temt             (TEMT        ),
-	.fifo_empty       (fifo_empty  ),
-	.fifo_empty_thr   (fifo_empty_thr),
-	.thr_rd           (thr_rd),
-	.fifo_almost_full (fifo_almost_full),
-	.divisor          (divisor)
+    .fifo_empty       (fifo_empty  ),
+    .fifo_empty_thr   (fifo_empty_thr),
+    .thr_rd           (thr_rd),
+    .fifo_almost_full (fifo_almost_full),
+    .divisor          (divisor)
   );
 `else
      intface  #(.CLK_IN_MHZ(CLK_IN_MHZ),
@@ -227,7 +227,7 @@ module uart_core
         .ack_o            (UART_ACK_O    ),
         .intr             (intr          ),
         .rbr              (RBR           ),
-		.rbr_fifo         (RBR_FIFO      ),
+        .rbr_fifo         (RBR_FIFO      ),
         .thr              (THR           ),
         .rbr_rd           (rbr_rd        ),
         .thr_wr           (thr_wr        ),
@@ -245,11 +245,11 @@ module uart_core
         .break_int        (break_int     ),
         .thre             (THRE          ),
         .temt             (TEMT          ),
-	.fifo_empty       (fifo_empty  ),
-	.fifo_empty_thr   (fifo_empty_thr),
-	.thr_rd           (thr_rd),
-	.fifo_almost_full (fifo_almost_full),
-        .divisor          (divisor)	
+    .fifo_empty       (fifo_empty  ),
+    .fifo_empty_thr   (fifo_empty_thr),
+    .thr_rd           (thr_rd),
+    .fifo_almost_full (fifo_almost_full),
+        .divisor          (divisor)    
   );
 `endif
    
@@ -260,7 +260,7 @@ module uart_core
         .reset            (RESET         ),
         .clk              (CLK          ),
         .rbr              (RBR           ),
-	.rbr_fifo         (RBR_FIFO      ),
+    .rbr_fifo         (RBR_FIFO      ),
         .rbr_rd           (rbr_rd        ),
         .lsr_rd           (lsr_rd        ),
         .sin              (SIN           ),
@@ -273,9 +273,9 @@ module uart_core
         .parity_err       (parity_err    ),
         .frame_err        (frame_err     ),
         .break_int        (break_int     ),
-	.fifo_empty       (fifo_empty    ),
-	.fifo_almost_full (fifo_almost_full),
-	.divisor          (divisor       )
+    .fifo_empty       (fifo_empty    ),
+    .fifo_almost_full (fifo_almost_full),
+    .divisor          (divisor       )
   ); 
   
   txmitt #(.DATAWIDTH(DATAWIDTH),
@@ -294,9 +294,9 @@ module uart_core
         .tx_break       (tx_break      ),
         .thre           (THRE          ),
         .temt           (TEMT          ),
-	.fifo_empty_thr (fifo_empty_thr),
-	.thr_rd         (thr_rd),
-	.divisor        (divisor)
+    .fifo_empty_thr (fifo_empty_thr),
+    .thr_rd         (thr_rd),
+    .divisor        (divisor)
   );
   
  `ifdef MODEM

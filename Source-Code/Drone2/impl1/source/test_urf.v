@@ -113,7 +113,7 @@ module test_urf;
 `endif
         
     initial begin
-		$display("%t: %m Reset URF module", $time);
+        $display("%t: %m Reset URF module", $time);
         resetn = 1;
         urf_echo = 0;
         #2;
@@ -122,9 +122,8 @@ module test_urf;
         resetn = 1;
         #2;
         
-		$display("%t: %m URF Reset", $time);
-        /*
-        test_distance(115);     //Just before 2cm
+        $display("%t: %m URF Reset", $time);
+        test_distance(115);     //Just before 2cm (Smallest value)
         test_distance(116);     //2cm
         test_distance(117);     //just after 2cm
         test_distance(58*3);
@@ -149,19 +148,18 @@ module test_urf;
         test_distance(58*100);
         // Test near maximum value
         test_distance((58*400)-1); //Just prior to 400cm
-        test_distance((58*400));     //400cm
+        test_distance((58*400));   //400cm
         test_distance((58*400)+1); //just beyond 400cm
         test_distance((58*401)-1); //last good time value for 400cm
-        */
         test_distance(58*401);     //first error value for 401cm
-        test_distance(40_000);      //Test error handling at 40ms, ~half of polling interval, should go to error state
-        test_distance(80_000);      //Test error handling at 80ms, full polling interval, should also go to error state
-        test_distance(90_000);      //Test error handling at 90ms, full polling interval and 10ms, should also go to error state
-        test_distance(58*10);        //Then go to a good 10cm measurement following error
-        test_distance(58*10);        //Repeat 10cm measurement
+        test_distance(40_000);     //Test error handling at 40ms, ~half of polling interval, should go to error state
+        test_distance(80_000);     //Test error handling at 80ms, full polling interval, should also go to error state
+        test_distance(90_000);     //Test error handling at 90ms, full polling interval and 10ms, should also go to error state
+        test_distance(58*10);      //Then go to a good 10cm measurement following error
+        test_distance(58*10);      //Repeat 10cm measurement
         @(posedge us_clk);
         $display("=================================================");
-		$display("%t: %m All tests complete", $time);
-		$stop;
+        $display("%t: %m All tests complete", $time);
+        $stop;
     end
 endmodule

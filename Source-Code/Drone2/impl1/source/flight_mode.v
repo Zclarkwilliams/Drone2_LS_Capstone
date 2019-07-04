@@ -16,37 +16,37 @@
 `include "common_defines.v"
 
 module flight_mode (
-	output reg  [2:0] switch_a,
-	output reg  [1:0] switch_b,
-	input  wire [`REC_VAL_BIT_WIDTH-1:0] swa_swb_val,
-	input  wire resetn,
-	input  wire us_clk
-	);
-	
-	function automatic reg in_range;
-		input reg [`REC_VAL_BIT_WIDTH-1:0]value;
-		input reg [`REC_VAL_BIT_WIDTH-1:0]lower_lim;
-		input reg [`REC_VAL_BIT_WIDTH-1:0]upper_lim;
-		if ( (value >= lower_lim) && (value <= upper_lim) )
-			in_range = 1'b1;
-		else
-			in_range = 1'b0;
-	endfunction
-	
-	always@(posedge us_clk, negedge resetn) begin
-		if(~resetn) begin
-			switch_a <= 3'b000; switch_b <= 2'b00; 
-		end
-		else begin
-			case(`TRUE)
-				in_range(swa_swb_val, 8'd0,   8'd49 ): begin switch_a <= 3'b100; switch_b <= 2'b01; end // SWA mode 2, SWB mode 0
-				in_range(swa_swb_val, 8'd50,  8'd99 ): begin switch_a <= 3'b100; switch_b <= 2'b10; end // SWA mode 2, SWB mode 1
-				in_range(swa_swb_val, 8'd100, 8'd149): begin switch_a <= 3'b001; switch_b <= 2'b11; end // When SWA is in mode 0, SWB position doesn't make a difference
-				in_range(swa_swb_val, 8'd150, 8'd199): begin switch_a <= 3'b010; switch_b <= 2'b10; end // SWA mode 1, SWB mode 1
-				in_range(swa_swb_val, 8'd200, 8'd250): begin switch_a <= 3'b010; switch_b <= 2'b01; end // SWA mode 1, SWB mode 0
-				default :                              begin switch_a <= 3'b000; switch_b <= 2'b00; end // Default, undefined inputs
-			endcase
-		end
-	end
-	
+    output reg  [2:0] switch_a,
+    output reg  [1:0] switch_b,
+    input  wire [`REC_VAL_BIT_WIDTH-1:0] swa_swb_val,
+    input  wire resetn,
+    input  wire us_clk
+    );
+    
+    always@(posedge us_clk, negedge resetn) begin
+        if(~resetn) begin
+            switch_a <= 3'b000; switch_b <= 2'b00; 
+        end
+        else begin
+            case(`TRUE)
+                in_range(swa_swb_val, 8'd0,   8'd49 ): begin switch_a <= 3'b100; switch_b <= 2'b01; end // SWA mode 2, SWB mode 0
+                in_range(swa_swb_val, 8'd50,  8'd99 ): begin switch_a <= 3'b100; switch_b <= 2'b10; end // SWA mode 2, SWB mode 1
+                in_range(swa_swb_val, 8'd100, 8'd149): begin switch_a <= 3'b001; switch_b <= 2'b11; end // When SWA is in mode 0, SWB position doesn't make a difference
+                in_range(swa_swb_val, 8'd150, 8'd199): begin switch_a <= 3'b010; switch_b <= 2'b10; end // SWA mode 1, SWB mode 1
+                in_range(swa_swb_val, 8'd200, 8'd250): begin switch_a <= 3'b010; switch_b <= 2'b01; end // SWA mode 1, SWB mode 0
+                default :                              begin switch_a <= 3'b000; switch_b <= 2'b00; end // Default, undefined inputs
+            endcase
+        end
+    end    
+    
+    function automatic reg in_range;
+        input reg [`REC_VAL_BIT_WIDTH-1:0]value;
+        input reg [`REC_VAL_BIT_WIDTH-1:0]lower_lim;
+        input reg [`REC_VAL_BIT_WIDTH-1:0]upper_lim;
+        if ( (value >= lower_lim) && (value <= upper_lim) )
+            in_range = 1'b1;
+        else
+            in_range = 1'b0;
+    endfunction
+
 endmodule

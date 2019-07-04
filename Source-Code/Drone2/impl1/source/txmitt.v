@@ -127,7 +127,7 @@ module txmitt #(parameter DATAWIDTH = 16,
        thr_rd_delay <= 1'b0;
      else
        thr_rd_delay <= thr_rd_int;
-   assign thr_rd = thr_rd_int & ~thr_rd_delay; 	     
+   assign thr_rd = thr_rd_int & ~thr_rd_delay;          
  endgenerate
 
    ////////////////////////////////////////////////////////////////////////////////
@@ -146,7 +146,7 @@ module txmitt #(parameter DATAWIDTH = 16,
        if ((tx_state == start) && (!fifo_empty_thr) && !thr_rd_int)
          thr_rd_int <= 1'b1;
        else if (tx_state == shift)
-	 thr_rd_int <= 1'b0;      
+     thr_rd_int <= 1'b0;      
      end
      end
 
@@ -163,36 +163,36 @@ module txmitt #(parameter DATAWIDTH = 16,
         case (tx_state)
 
   start:  
-	if (thr_rd_delay)   
-	  tx_state <= start1;
-	  
+    if (thr_rd_delay)   
+      tx_state <= start1;
+      
   start1: begin
              if (last_word)
-		  last_word <= 1'b0;
+          last_word <= 1'b0;
             if ( ~|counter)
-	      counter <= divisor;
+          counter <= divisor;
             else begin
-	      if (counter == 16'b0000_0000_0000_0001) begin
-		 counter <= 0;
-	         tx_state <= shift;
+          if (counter == 16'b0000_0000_0000_0001) begin
+         counter <= 0;
+             tx_state <= shift;
                  tx_parity <= ~parity_even;  // TxParity initialization
-                 tx_cnt <= 0;		
-		 tsr <= thr;
-	      end
+                 tx_cnt <= 0;        
+         tsr <= thr;
+          end
               else
-	        counter <= counter - 1'b1;
-	     end
-              tx_output <= 1'b0;	
+            counter <= counter - 1'b1;
+         end
+              tx_output <= 1'b0;    
          end
 
-	 shift: begin
-	     tx_output <= tsr[0];	 
-	     if ( ~|counter)
-	      counter <= divisor;
+     shift: begin
+         tx_output <= tsr[0];     
+         if ( ~|counter)
+          counter <= divisor;
              else begin
-	      if (counter == 16'b0000_0000_0000_0001) begin
-		tx_parity <= tx_parity ^ tsr[0];
-		counter <= 0;      
+          if (counter == 16'b0000_0000_0000_0001) begin
+        tx_parity <= tx_parity ^ tsr[0];
+        counter <= 0;      
                 tsr <= {1'b0, tsr[7:1]};      // Shift serial data out
                 tx_cnt <= tx_cnt + 1;
                 if ((databits==2'b00 && tx_cnt==3'h4) || 
@@ -201,71 +201,71 @@ module txmitt #(parameter DATAWIDTH = 16,
                     (databits==2'b11 && tx_cnt==3'h7))   
                     tx_state <= (parity_en) ? parity : stop_1bit;
                 end
-	      else 
-	        counter <= counter - 1'b1;
+          else 
+            counter <= counter - 1'b1;
              end
-           end 	     
-	  parity: begin
+           end          
+      parity: begin
             if ( ~|counter)
-	      counter <= divisor;
+          counter <= divisor;
              else begin
-	      if (counter == 16'b0000_0000_0000_0001) begin
-		counter <= 0;
+          if (counter == 16'b0000_0000_0000_0001) begin
+        counter <= 0;
                 tx_state <= stop_1bit;
               end
-	      else
-		counter <= counter - 1'b1;
+          else
+        counter <= counter - 1'b1;
              end
              tx_output <= (parity_stick) ? (~parity_even) : tx_parity;
-           end 	     
+           end          
               
-	   stop_1bit: begin
+       stop_1bit: begin
              if ( ~|counter)
-	      counter <= divisor;
+          counter <= divisor;
              else begin
-	      if (counter == 16'b0000_0000_0000_0001) begin
-		counter <= 0; 
+          if (counter == 16'b0000_0000_0000_0001) begin
+        counter <= 0; 
                 if (fifo_empty_thr)
-	          last_word <= 1'b1;
+              last_word <= 1'b1;
                 if (stopbits == 2'b00)      // 1 stop bit 
-		   tx_state <= start; 	   
+           tx_state <= start;        
                 else if (stopbits == 2'b01) // 1.5 stop bits(for 5-bit data only)
                    tx_state <= stop_halfbit;
                 else
                    tx_state <= stop_2bit;    // 2 stop bits(for 6,7,8-bit data)
               end
-	      else
-		counter <= counter - 1'b1;
-             end 	
+          else
+        counter <= counter - 1'b1;
+             end     
              tx_output  <= 1'b1;
-           end		   
+           end           
    
-	   stop_2bit: begin
+       stop_2bit: begin
              if ( ~|counter)
-	      counter <= divisor;
+          counter <= divisor;
              else begin
-	      if (counter == 16'b0000_0000_0000_0001) begin
-		counter <= 0;
+          if (counter == 16'b0000_0000_0000_0001) begin
+        counter <= 0;
                 tx_state <= start;
-	      end
+          end
               else
-	        counter <= counter - 1'b1;
+            counter <= counter - 1'b1;
              end
-              tx_output <= 1'b1;	     
-           end		   
+              tx_output <= 1'b1;         
+           end           
           
-	   stop_halfbit: begin
+       stop_halfbit: begin
              if ( ~|counter)
-	      counter <= divisor_2;
+          counter <= divisor_2;
              else begin
-	      if (counter == 16'b0000_0000_0000_0001) begin
-		counter <= 0;           		   
+          if (counter == 16'b0000_0000_0000_0001) begin
+        counter <= 0;                      
                 tx_state <= start;
-	      end
+          end
               else
-	        counter <= counter - 1'b1;
+            counter <= counter - 1'b1;
              end
-              tx_output <= 1'b1;	     
+              tx_output <= 1'b1;         
            end          
           default: tx_state <= start;
         endcase             
@@ -291,29 +291,29 @@ module txmitt #(parameter DATAWIDTH = 16,
 
          start1: begin 
             if ( ~|counter)
-	      counter <= divisor;
+          counter <= divisor;
             else begin
-	      if (counter == 16'b0000_0000_0000_0001) begin
-		 counter <= 0;
-	         tx_state <= shift;
+          if (counter == 16'b0000_0000_0000_0001) begin
+         counter <= 0;
+             tx_state <= shift;
                  tx_parity <= ~parity_even;  // TxParity initialization
-                 tx_cnt <= 0;		
-		 tsr <= thr;
-	      end
+                 tx_cnt <= 0;        
+         tsr <= thr;
+          end
               else
-	        counter <= counter - 1'b1;
-	     end
+            counter <= counter - 1'b1;
+         end
               tx_output <= 1'b0;
          end
 
           shift: begin
-	     tx_output <= tsr[0];	 
-	     if ( ~|counter)
-	      counter <= divisor;
+         tx_output <= tsr[0];     
+         if ( ~|counter)
+          counter <= divisor;
              else begin
-	      if (counter == 16'b0000_0000_0000_0001) begin
-		tx_parity <= tx_parity ^ tsr[0];      
-		counter <= 0;      
+          if (counter == 16'b0000_0000_0000_0001) begin
+        tx_parity <= tx_parity ^ tsr[0];      
+        counter <= 0;      
                 tsr <= {1'b0, tsr[7:1]};      // Shift serial data out
                 tx_cnt <= tx_cnt + 3'd1;
                 if ((databits==2'b00 && tx_cnt==3'h4) || 
@@ -322,70 +322,70 @@ module txmitt #(parameter DATAWIDTH = 16,
                     (databits==2'b11 && tx_cnt==3'h7))   
                     tx_state <= (parity_en) ? parity : stop_1bit;
                 end
-	      else 
-	        counter <= counter - 1'b1;
+          else 
+            counter <= counter - 1'b1;
              end
            end 
           
           parity:begin
             if ( ~|counter)
-	      counter <= divisor;
+          counter <= divisor;
              else begin
-	      if (counter == 16'b0000_0000_0000_0001) begin
-		counter <= 0;
+          if (counter == 16'b0000_0000_0000_0001) begin
+        counter <= 0;
                 tx_state <= stop_1bit;
               end
-	      else
-		counter <= counter - 1'b1;
+          else
+        counter <= counter - 1'b1;
              end
              tx_output <= (parity_stick) ? (~parity_even) : tx_parity;
            end
 
           stop_1bit: begin
              if ( ~|counter)
-	      counter <= divisor;
+          counter <= divisor;
              else begin
-	      if (counter == 16'b0000_0000_0000_0001) begin
-		counter <= 0; 
+          if (counter == 16'b0000_0000_0000_0001) begin
+        counter <= 0; 
                 if (stopbits == 2'b00)      // 1 stop bit 
-		   tx_state <= start; 	   
+           tx_state <= start;        
                 else if (stopbits == 2'b01) // 1.5 stop bits(for 5-bit data only)
                    tx_state <= stop_halfbit;
                 else
                    tx_state <= stop_2bit;    // 2 stop bits(for 6,7,8-bit data)
               end
-	      else
-		counter <= counter - 1'b1;
-             end 	
+          else
+        counter <= counter - 1'b1;
+             end     
              tx_output  <= 1'b1;
            end
 
           stop_2bit: begin
              if ( ~|counter)
-	      counter <= divisor;
+          counter <= divisor;
              else begin
-	      if (counter == 16'b0000_0000_0000_0001) begin
-		counter <= 0;
+          if (counter == 16'b0000_0000_0000_0001) begin
+        counter <= 0;
                 tx_state <= start;
-	      end
+          end
               else
-	        counter <= counter - 1'b1;
+            counter <= counter - 1'b1;
              end
-              tx_output <= 1'b1;	     
+              tx_output <= 1'b1;         
            end
           
           stop_halfbit:begin
              if ( ~|counter)
-	      counter <= divisor_2;
+          counter <= divisor_2;
              else begin
-	      if (counter == 16'b0000_0000_0000_0001) begin
-		counter <= 0;           		   
+          if (counter == 16'b0000_0000_0000_0001) begin
+        counter <= 0;                      
                 tx_state <= start;
-	      end
+          end
               else
-	        counter <= counter - 1'b1;
+            counter <= counter - 1'b1;
              end
-              tx_output <= 1'b1;	     
+              tx_output <= 1'b1;         
            end
 
           default: tx_state <= start;
@@ -420,7 +420,7 @@ begin
    begin
          always @(posedge clk or posedge reset) begin 
         if (reset)
-          tsr_empty <= 1'b1;		
+          tsr_empty <= 1'b1;        
         else if (tx_in_stop_s == 1'b0 && tx_in_stop_s1 == 1'b1)
           tsr_empty <= 1'b1; // Set TsrEmpty flag to '1' when StopBit(s) is all transmitted 
         else if (tx_in_shift_s == 1'b1 && tx_in_shift_s1 == 1'b0)
@@ -440,7 +440,7 @@ begin
        thr_empty <= 1'b1;
      else if (thr_wr)
        thr_empty <= 1'b0; // Reset ThrEmpty flag to '0' when data is written into THR by CPU   
-     else if (fifo_empty_thr && tx_in_shift_s && !tx_in_shift_s1) // Set ThrEmpty flag to '1' THR FIFO is empty	     	     
+     else if (fifo_empty_thr && tx_in_shift_s && !tx_in_shift_s1) // Set ThrEmpty flag to '1' THR FIFO is empty                  
        thr_empty <= 1'b1;      
      end  
 end
@@ -450,8 +450,8 @@ begin
      if (reset)
        thr_empty <= 1'b1;
      else if (thr_wr)
-       thr_empty <= 1'b0; // Reset ThrEmpty flag to '0' when data is written into THR by CPU   	     
-     else if (tx_in_shift_s && !tx_in_shift_s1) // Set ThrEmpty flag to '1' when data is transferred from THR to TSR 	     
+       thr_empty <= 1'b0; // Reset ThrEmpty flag to '0' when data is written into THR by CPU            
+     else if (tx_in_shift_s && !tx_in_shift_s1) // Set ThrEmpty flag to '1' when data is transferred from THR to TSR          
        thr_empty <= 1'b1;      
      end
 end
