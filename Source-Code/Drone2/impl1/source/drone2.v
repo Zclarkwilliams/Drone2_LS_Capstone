@@ -168,8 +168,6 @@ module drone2 (
     
     //--------- Ultrasonic Range Finder Wires --------//
     wire  urf_active_signal;
-    wire  urf_complete_signal;
-    wire  urf_valid;
     wire [15:0]urf_debug;
     wire [9:0] urf_range;
 
@@ -412,9 +410,7 @@ module drone2 (
     ultrasonic_range_finder URF (
         .urf_range(urf_range),
         .active_signal(urf_active_signal),
-        .complete_signal(urf_complete_signal),
         .urf_trigger_out(urf_trigger_out),
-        .urf_valid(urf_valid),
         .urf_debug(urf_debug),
         .urf_echo_in(urf_echo_in),
         .resetn(resetn),
