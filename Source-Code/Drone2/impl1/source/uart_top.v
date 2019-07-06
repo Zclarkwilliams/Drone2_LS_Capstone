@@ -41,13 +41,11 @@ module uart_top
         rec_pitch_val,
         rec_aux1_val,
         rec_aux2_val,
-        //Changed size to 16 bits to debug additional inputs (z_linear_accel)
-    input wire [`RATE_BIT_WIDTH-1:0]
         rec_swa_swb_val,
     input wire [`RATE_BIT_WIDTH-1:0]
         yaac_yaw_angle_error,
         yaac_yaw_angle_target,
-        amc_z_linear_velocity,
+        z_linear_velocity,
         debug_17_in_16_bits,
         debug_18_in_16_bits
 );
@@ -322,12 +320,10 @@ module uart_top
                         8'd10: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_pitch_val});
                         8'd11: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_aux1_val});
                         8'd12: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_aux2_val});
-                        //8'd13: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_swa_swb_val});
-                        //Changed size to 16 bits to debug additional bits for (z_linear_accel)
-                        8'd13: transmit_word(tx_word_index, tx_byte_index, rec_swa_swb_val);
+                        8'd13: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_swa_swb_val});
                         8'd14: transmit_word(tx_word_index, tx_byte_index, yaac_yaw_angle_error);
                         8'd15: transmit_word(tx_word_index, tx_byte_index, yaac_yaw_angle_target);
-                        8'd16: transmit_word(tx_word_index, tx_byte_index, amc_z_linear_velocity);
+                        8'd16: transmit_word(tx_word_index, tx_byte_index, z_linear_velocity);
                         8'd17: transmit_word(tx_word_index, tx_byte_index, debug_17_in_16_bits);
                         8'd18: transmit_word(tx_word_index, tx_byte_index, debug_18_in_16_bits);
                         default:  next_dat_i = 16'd0;

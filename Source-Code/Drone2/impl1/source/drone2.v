@@ -112,9 +112,7 @@ module drone2 (
     wire  [`REC_VAL_BIT_WIDTH-1:0] amc_throttle_val;
     wire  amc_active_signal;
     wire  amc_complete_signal;
-    wire  [31:0] z_linear_accel_zeroed;
-    wire  [31:0] amc_debug;
-    wire  [`RATE_BIT_WIDTH-1:0] amc_z_linear_velocity;
+    wire  [15:0] amc_debug;
 
     //--------- Throttle Controller Wires ---------//
     wire [`REC_VAL_BIT_WIDTH-1:0]
@@ -168,8 +166,9 @@ module drone2 (
     
     //--------- Ultrasonic Range Finder Wires --------//
     wire  urf_active_signal;
-    wire [15:0]urf_debug;
-    wire [9:0] urf_range;
+    wire [15:0] urf_debug;
+    wire [9:0]  urf_range;
+    wire [15:0] z_linear_velocity;
 
 
     /**
@@ -178,8 +177,8 @@ module drone2 (
     defparam OSCH_inst.NOM_FREQ = "38.00";
     OSCH OSCH_inst (
         .STDBY(1'b0),
-           .OSC(sys_clk),
-           .SEDSTDBY());
+        .OSC(sys_clk),
+        .SEDSTDBY());
 
     /**
      * Then scale system clock down to 1 microsecond
@@ -263,10 +262,8 @@ module drone2 (
         .throttle_pwm_val_out(amc_throttle_val),
         .active_signal(amc_active_signal),
         .complete_signal(amc_complete_signal),
-        .z_linear_accel_zeroed(z_linear_accel_zeroed),
-        .z_linear_velocity(amc_z_linear_velocity),
+        .z_linear_velocity(z_linear_velocity),
         .imu_good(imu_good),
-        .z_linear_accel(z_linear_accel),
         .throttle_pwm_val_in(throttle_val),
         .switch_a(switch_a),
         .switch_b(switch_b),
@@ -409,6 +406,7 @@ module drone2 (
         
     ultrasonic_range_finder URF (
         .urf_range(urf_range),
+        .z_linear_velocity(z_linear_velocity),
         .active_signal(urf_active_signal),
         .urf_trigger_out(urf_trigger_out),
         .urf_debug(urf_debug),
@@ -441,20 +439,14 @@ module drone2 (
         .rec_pitch_val(pitch_val),
         .rec_aux1_val(aux1_val),
         .rec_aux2_val(aux2_val),
-        //.rec_swa_swb_val(swa_swb_val),
-        .rec_swa_swb_val(z_linear_accel),
+        .rec_swa_swb_val(swa_swb_val),
         //.yaac_yaw_angle_error(yaac_yaw_angle_error),
-        .yaac_yaw_angle_error(z_linear_accel_zeroed[31:16]),
+        .yaac_yaw_angle_error(amc_debug),
         //.yaac_yaw_angle_target(yaac_yaw_angle_target),
-        .yaac_yaw_angle_target(z_linear_accel_zeroed[31:16]),
-        .amc_z_linear_velocity(amc_z_linear_velocity),
+        .yaac_yaw_angle_target({11'd0, switch_b, switch_a}),
+        .z_linear_velocity(z_linear_velocity),
         .debug_17_in_16_bits(urf_debug[15:0]),
-        //.debug_17_in_16_bits(amc_debug[15:0]),
-        //.debug_17_in_16_bits({8'd0,amc_throttle_val}),
-        //.debug_17_in_16_bits(yaw_rate),
         .debug_18_in_16_bits({6'd0,urf_range})
-        //.debug_18_in_16_bits({8'd0,tc_throttle_val})
-        //.debug_18_in_16_bits({11'd0, switch_b, switch_a})
 
     );
     // Enable bits
