@@ -65,7 +65,7 @@ module drone2 (
     inout wire scl_2,
     
     //UART IO
-    input wire sin,
+    input  wire sin,
     output wire rxrdy_n,
     output wire sout,
     output wire txrdy_n
@@ -150,6 +150,7 @@ module drone2 (
     //--------------- Clock Wires -----------------//
     wire sys_clk;
     wire us_clk;
+    wire ms_clk;
 
     //---------------- Reset Wires ----------------//
     wire resetn;
@@ -187,6 +188,15 @@ module drone2 (
     us_clk us_clk_divider (
         .us_clk(us_clk),
         .sys_clk(sys_clk),
+        .resetn(resetn));
+
+    /**
+     * Then scale system clock down to 1 millisecond
+     *        file - ms_clk.v
+     */
+    ms_clk ms_clk_divider (
+        .ms_clk(ms_clk),
+        .us_clk(us_clk),
         .resetn(resetn));
 
     /**
@@ -252,6 +262,7 @@ module drone2 (
         // Inputs
         .resetn(resetn),
         .sys_clk(sys_clk),
+        .ms_clk(ms_clk),
         .resetn_imu(resetn_imu),
         .next_mod_active(throttle_controller_active)
     );
