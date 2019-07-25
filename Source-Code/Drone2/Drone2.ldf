@@ -6,100 +6,97 @@
         <Source name="impl1/source/I2C_EFB_WB.ipx" type="IPX_Module" type_short="IPX">
             <Options/>
         </Source>
-        <Source name="impl1/source/bno055_defines.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/bno055_defines.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/bno055_driver.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/bno055_driver.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/common_defines.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/common_defines.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/drone2.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/drone2.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options top_module="drone2"/>
         </Source>
-        <Source name="impl1/source/i2c_module_defines.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/i2c_module_defines.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/i2c_module_top.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/i2c_module_top.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/pid.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/pid.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/pwm_generator.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/pwm_generator.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/pwm_generator_block.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/pwm_generator_block.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/pwm_reader.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/pwm_reader.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/pwm_to_value.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/pwm_to_value.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/receiver.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/receiver.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/us_clk.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/us_clk.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/body_frame_controller.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/body_frame_controller.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/motor_mixer.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/motor_mixer.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/pid_parameters.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/pid_parameters.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/throttle_controller.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/throttle_controller.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/angle_controller.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/angle_controller.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/intface.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/intface.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/rxcver.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/rxcver.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/uart_top.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/uart_top.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/uart_core.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/uart_core.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/txmitt.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/txmitt.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/modem.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/modem.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/yaw_angle_accumulator.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/yaw_angle_accumulator.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/flight_mode.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/flight_mode.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/auto_mode_controller.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/auto_mode_controller.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="test_func.v" type="Verilog" type_short="Verilog" syn_sim="SimOnly">
-            <Options/>
-        </Source>
-        <Source name="impl1/source/ultrasonic_range_finder.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
-        <Source name="impl1/source/ms_clk.v" type="Verilog" type_short="Verilog">
+        <Source name="impl1/source/ultrasonic_range_finder.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
         <Source name="Drone2.lpf" type="Logic Preference" type_short="LPF">
             <Options/>
         </Source>
         <Source name="impl1/impl1.xcf" type="Programming Project File" type_short="Programming">
+            <Options/>
+        </Source>
+        <Source name="test/test.spf" type="Simulation Project File" type_short="SPF">
             <Options/>
         </Source>
         <Source name="test_func/test_func.spf" type="Simulation Project File" type_short="SPF">

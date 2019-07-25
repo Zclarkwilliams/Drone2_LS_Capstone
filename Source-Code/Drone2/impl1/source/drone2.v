@@ -150,7 +150,6 @@ module drone2 (
     //--------------- Clock Wires -----------------//
     wire sys_clk;
     wire us_clk;
-    wire ms_clk;
 
     //---------------- Reset Wires ----------------//
     wire resetn;
@@ -188,15 +187,6 @@ module drone2 (
     us_clk us_clk_divider (
         .us_clk(us_clk),
         .sys_clk(sys_clk),
-        .resetn(resetn));
-
-    /**
-     * Then scale system clock down to 1 millisecond
-     *        file - ms_clk.v
-     */
-    ms_clk ms_clk_divider (
-        .ms_clk(ms_clk),
-        .us_clk(us_clk),
         .resetn(resetn));
 
     /**
@@ -239,7 +229,9 @@ module drone2 (
      * IMU Management and Control Module
      *        file - bno055_driver.v
      */
-    bno055_driver IMU(
+    bno055_driver #(.INIT_INTERVAL(16'd10_000),
+                    .POLL_INTERVAL(16'd20))
+        IMU(
         // Outputs
         .imu_good(imu_good),
         .valid_strobe(imu_data_valid),
@@ -262,7 +254,6 @@ module drone2 (
         // Inputs
         .resetn(resetn),
         .sys_clk(sys_clk),
-        .ms_clk(ms_clk),
         .resetn_imu(resetn_imu),
         .next_mod_active(throttle_controller_active)
     );
@@ -473,7 +464,8 @@ module drone2 (
     // Update on board LEDs, all inputs are active low
     always @(posedge sys_clk) begin
         if (!resetn) begin
-            led_data_out <= 8'hAA;
+            //led_data_out <= 8'hAA;
+            led_data_out <= 8'hFF;
         end
         else begin
             led_data_out <= ~imu_debug;

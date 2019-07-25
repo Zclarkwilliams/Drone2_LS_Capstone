@@ -60,9 +60,10 @@
 `include "common_defines.v"
 `include "bno055_defines.v"
 
-module bno055_driver #(
-    parameter INIT_TIME = 16'd10000 // 10 seconds (in ms) start-up time
-)
+module bno055_driver #( 
+    parameter INIT_INTERVAL = 16'd10_000, // 10 seconds (in ms) start-up time 
+    parameter POLL_INTERVAL = 16'd20      // 20 ms between data polls 
+) 
 (
     inout  wire scl_1,
     inout  wire scl_2,
@@ -71,7 +72,6 @@ module bno055_driver #(
     input  wire resetn,
     output wire [7:0]led_data_out,
     input  wire sys_clk,
-    input  wire ms_clk,
     input  wire next_mod_active,
     output wire resetn_imu,
     output reg  imu_good,
@@ -141,6 +141,8 @@ module bno055_driver #(
     reg valid_strobe_enable;                          //  Enables the valid_strobe for one or two clock cycles
     reg next_valid_strobe_enable;                     //  The next value of the valid strobe enable
     reg [15:0]master_trigger_count_ms;                //  Counter used to generate a periodic 20ms timer tick.
+    reg [16:0]count_sys_clk_for_ms;                   //  Counts number of sys clock ticks and generate a pulse (1 sys_clk duration) every 38k (1ms)
+    reg pulse_every_1_ms;                             //  Pulse (1 sys_clk duration) every 38k sys_clk ticks (1ms)
 
     //
     //  Module body
@@ -167,19 +169,37 @@ module bno055_driver #(
                     .sys_clk(sys_clk)
     );
 
+    // Generates a sys_clk duration tick every 1 ms (38k sys_clk ticks)
+    always@(posedge sys_clk, negedge resetn) begin
+        if(~resetn) begin
+            count_sys_clk_for_ms <= (17'd38_000 - 1)/2; //Make the first tick only a half ms delay
+            pulse_every_1_ms     <= 1'b0;
+        end
+        else begin
+            if (~count_sys_clk_for_ms[16]) begin
+                count_sys_clk_for_ms <= (count_sys_clk_for_ms - 16'd1);
+                pulse_every_1_ms     <= 1'b0;
+            end
+            else begin
+                count_sys_clk_for_ms <= (76'd38_000 - 1);
+                pulse_every_1_ms     <= 1'b1;
+            end
+        end
+    end
+
     //  Generates a multiple of 1ms length duration delay trigger - Defaulted to 650 ms for BNO055 reset and boot time
     //  When the count down counter wraps around the timer is triggered and stops counting
-    always@(posedge ms_clk, negedge clear_waiting_ms, negedge resetn) begin
+    always@(negedge sys_clk, negedge clear_waiting_ms, negedge resetn) begin
         if(~resetn)
-            count_ms <= 16'hFFFF;
+            count_ms <= INIT_INTERVAL;
         else if( clear_waiting_ms == `CLEAR_MS_TIMER ) begin
             if (count_ms_init_time)
-                count_ms <= (INIT_TIME);   // Reset to Normal takes 650 ms for BNO055     
+                count_ms <= INIT_INTERVAL;              // Set delay to 650 ms for BNO055 to initialize  
             else
-                count_ms <= (16'd20);      // Normal 20 ms interval between data polls
+                count_ms <= POLL_INTERVAL;               // Normal 20 ms interval between data polls
         end
-        else if( ~count_ms[15])            // Only count down if not wrapped around yet
-            count_ms <= (count_ms - 1'b1);
+        else if( ~count_ms[15] && pulse_every_1_ms)// Only count down if not wrapped around yet and at 1ms tick
+            count_ms <= (count_ms - 16'd1);     
         else
             count_ms <= count_ms;
     end
@@ -215,7 +235,7 @@ module bno055_driver #(
     //  When timer wraps around the enable signal is set for clock tick, or delayed for 1 additional tick
     //  If rx_data_latch_strobe is not asserted then the enable signal is asserted
     //  Otherwise it will be asserted the next clock tick
-    always@(posedge ms_clk, negedge resetn) begin
+    always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin  // Reset, set starting values
             master_trigger_count_ms <= 16'd20;
             valid_strobe_enable     <= `FALSE;
@@ -230,9 +250,12 @@ module bno055_driver #(
             master_trigger_count_ms <= master_trigger_count_ms;
             valid_strobe_enable     <= `FALSE;
         end
-        //  Timer has not wrapped around, just decrement by 1
+        //  Timer has not wrapped around, just decrement by 1 every 1ms, otherwise don't decrement timer
         else begin
-            master_trigger_count_ms <= (master_trigger_count_ms - 1'b1);
+            if(pulse_every_1_ms)
+                master_trigger_count_ms <= (master_trigger_count_ms - 1'b1);
+            else
+                master_trigger_count_ms <= master_trigger_count_ms;
             valid_strobe_enable     <= `FALSE;
         end
     end
@@ -380,11 +403,11 @@ module bno055_driver #(
             next_data_tx              = `BYTE_ALL_ZERO;
             next_read_write_in        = `I2C_READ;
             next_led_view_index       = `FALSE;
-            resetn_buffer               = `LOW;
+            resetn_buffer             = `LOW;
             next_target_read_count    = 1'b1;
             rx_data_latch_strobe      = `LOW;
             i2c_number                = 1'b0; // Default to i2c EFB #1
-            next_slave_address        = slave_address;
+            next_slave_address        = `BNO055_SLAVE_ADDRESS;
             increment_cal_restore_index = 1'b0;
             clear_cal_restore_index     = 1'b0;
         end
@@ -404,33 +427,46 @@ module bno055_driver #(
             next_target_read_count    = target_read_count;
             rx_data_latch_strobe      = `LOW;
             i2c_number                = 1'b0; // Default to i2c EFB #1
-            next_slave_address        = `BNO055_SLAVE_ADDRESS;
+            next_slave_address        = slave_address;
             next_calibrated_once      = calibrated_once;
             increment_cal_restore_index = 1'b0;
             clear_cal_restore_index     = 1'b1;
             case(bno055_state)
                 `BNO055_STATE_RESET: begin
                     next_imu_good      = `FALSE;
-                    clear_waiting_ms   = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
+                    clear_waiting_ms   = `RUN_MS_TIMER;
                     count_ms_init_time = `TRUE;
-                    next_bno055_state  = `BNO055_STATE_BOOT;
+                    if(count_ms[15] || (count_ms == 16'd0)) //Timer not yet set to starting value
+                        next_bno055_state  = `BNO055_STATE_RESET;
+                    else
+                        next_bno055_state  = `BNO055_STATE_BOOT;
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
                     clear_cal_restore_index = 1'b0;
                     next_calibrated_once    = 1'b0;
                 end
                 `BNO055_STATE_BOOT: begin
                     next_imu_good      = `FALSE;
-                    clear_waiting_ms   = `RUN_MS_TIMER;
-                    next_bno055_state  = `BNO055_STATE_BOOT_WAIT;
+                    clear_waiting_ms   = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
+                    count_ms_init_time = `TRUE;
+                    // Wait for I2C to boot then start wait for IMU
+                    // Also wait for timer to initialize to INIT_INTERVAL
+                    if(~busy &&(count_ms == INIT_INTERVAL))
+                        next_bno055_state  = `BNO055_STATE_BOOT_WAIT;
+                    else 
+                        next_bno055_state  = `BNO055_STATE_BOOT;
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
                 end
                 `BNO055_STATE_BOOT_WAIT: begin
                     next_imu_good      = `FALSE;
                     clear_waiting_ms   = `RUN_MS_TIMER;
+                    count_ms_init_time = `FALSE;
                     next_bno055_state  = `BNO055_STATE_BOOT_WAIT;
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
-                    if((~busy) && (count_ms[15] == 1'b1) ) // Wait for i2c to be in not busy state and count_ms wrapped around
+                    // Wait for I2C to be not busy and timer to be set (not maximum)
+                    if(~busy && count_ms[15])
                         next_bno055_state = `BNO055_STATE_READ_CHIP_ID;
+                    else
+                        next_bno055_state = `BNO055_STATE_BOOT_WAIT;
                 end
                 `BNO055_STATE_READ_CHIP_ID: begin // Page 0
                     next_imu_good          = `FALSE;
@@ -465,7 +501,7 @@ module bno055_driver #(
                     clear_waiting_ms   = `RUN_MS_TIMER;
                     next_go_flag       = `NOT_GO;
                     next_bno055_state  = `BNO055_SUB_STATE_START;
-                    if(`BNO055_CAL_RESTORE_ENABLE == 1'b1)
+                    if(`BNO055_CAL_RESTORE_ENABLE)
                         next_return_state  = `BNO055_STATE_CAL_RESTORE_DATA;
                     else
                         next_return_state  = `BNO055_STATE_SET_EXT_CRYSTAL;
@@ -601,7 +637,7 @@ module bno055_driver #(
                     next_go_flag       = `NOT_GO;
                     next_bno055_state  = `BNO055_STATE_WAIT_20MS;
                     resetn_buffer        = `LOW; // Clear RX data buffer index before starting next state's read burst
-                    if((count_ms[15] == 1'b1) ) begin // Wait for count_ms to wrap around
+                    if(count_ms[15]) begin // Wait for count_ms to wrap around
                         next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
                     end
                 end
@@ -629,7 +665,7 @@ module bno055_driver #(
                     next_go_flag       = `NOT_GO;
                     next_bno055_state  = `BNO055_STATE_WAIT_IMU_POLL_TIME;
                     resetn_buffer        = `LOW; // Clear the RX data buffer index starting next state's read burst
-                    if((count_ms[15] == 1'b1) ) begin // Wait for count_ms wrap around
+                    if(count_ms[15]) begin // Wait for count_ms wrap around
                         next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
                     end
                 end
@@ -646,6 +682,7 @@ module bno055_driver #(
                 `BNO055_SUB_STATE_WAIT_I2C: begin // Wait for end of i2c transaction, wait for busy to be cleared
                     next_go_flag          = `NOT_GO;
                     next_slave_address    = `BNO055_SLAVE_ADDRESS;
+                    $stop;
                     if(~busy && resetn_imu) // Stay here until i2c is not busy AND the IMU isn't in reset (Prevent glitch at WD event)
                         next_bno055_state = `BNO055_SUB_STATE_STOP;
                     else
@@ -666,15 +703,23 @@ module bno055_driver #(
                 // Default case, shouldn't be triggered
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
                 default: begin
-                    next_imu_good        = `FALSE;
-                    next_go_flag         = `NOT_GO;
-                    next_bno055_state    = `BNO055_STATE_RESET;
-                    next_slave_address   = `BNO055_SLAVE_ADDRESS;
-                    next_return_state    = `BYTE_ALL_ZERO;
-                    next_data_reg        = `BYTE_ALL_ZERO;
-                    next_data_tx         = `BYTE_ALL_ZERO;
-                    next_read_write_in   = `I2C_READ;
-                    rx_data_latch_strobe = `LOW;
+                    next_imu_good             = `FALSE;
+                    clear_waiting_ms          = `RUN_MS_TIMER;
+                    count_ms_init_time        = `FALSE;
+                    next_bno055_state         = `BNO055_STATE_RESET;
+                    next_return_state         = `BNO055_STATE_RESET;
+                    next_go_flag              = `NOT_GO;
+                    next_data_reg             = `BYTE_ALL_ZERO;
+                    next_data_tx              = `BYTE_ALL_ZERO;
+                    next_read_write_in        = `I2C_READ;
+                    next_led_view_index       = `FALSE;
+                    resetn_buffer             = `LOW;
+                    next_target_read_count    = 1'b1;
+                    rx_data_latch_strobe      = `LOW;
+                    i2c_number                = 1'b0; // Default to i2c EFB #1
+                    next_slave_address        = `BNO055_SLAVE_ADDRESS;
+                    increment_cal_restore_index = 1'b0;
+                    clear_cal_restore_index     = 1'b0;
                 end
             endcase
         end
