@@ -90,7 +90,7 @@
         <Source name="impl1/source/ultrasonic_range_finder.v" type="Verilog" type_short="Verilog" syn_sim="SynOnly">
             <Options/>
         </Source>
-        <Source name="impl1/source/test_bno055_clk.v" type="Verilog" type_short="Verilog" syn_sim="SimOnly">
+        <Source name="impl1/source/test_bno055_driver.v" type="Verilog" type_short="Verilog" syn_sim="SimOnly">
             <Options/>
         </Source>
         <Source name="Drone2.lpf" type="Logic Preference" type_short="LPF">

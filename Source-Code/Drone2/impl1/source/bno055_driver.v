@@ -60,10 +60,10 @@
 `include "common_defines.v"
 `include "bno055_defines.v"
 
-module bno055_driver #( 
-    parameter INIT_INTERVAL = 16'd10_000, // 10 seconds (in ms) start-up time 
-    parameter POLL_INTERVAL = 16'd20      // 20 ms between data polls 
-) 
+module bno055_driver #(
+    parameter INIT_INTERVAL = 16'd10_000, // 10 seconds (in ms) start-up time
+    parameter POLL_INTERVAL = 16'd20      // 20 ms between data polls
+)
 (
     inout  wire scl_1,
     inout  wire scl_2,
@@ -602,7 +602,7 @@ module bno055_driver #(
                     next_go_flag         = `NOT_GO;
                     next_slave_address   = `BNO055_SLAVE_ADDRESS;
                     next_calibrated_once = 1'b1;
-                    if(calibrated_once == 1'b1)
+                    if(calibrated_once)
                         next_bno055_state = `BNO055_STATE_SET_EXT_CRYSTAL;
                     else
                         next_bno055_state = `BNO055_STATE_CAL_RESTORE_DATA;
@@ -622,11 +622,15 @@ module bno055_driver #(
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
                     clear_waiting_ms   = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
                     next_go_flag       = `NOT_GO;
-                    next_bno055_state  = `BNO055_SUB_STATE_START;
                     next_return_state  = `BNO055_STATE_WAIT_20MS;
                     next_data_reg      = `BNO055_OPR_MODE_ADDR;
                     next_data_tx       = `BNO055_OPERATION_MODE_NDOF;
                     next_read_write_in = `I2C_WRITE;
+                    // Wait for I2C to be not busy and timer to be set to polling time interval (20 ms)
+                    if(~busy && (count_ms[15] == POLL_INTERVAL) )
+                        next_bno055_state  = `BNO055_SUB_STATE_START;
+                    else
+                        next_bno055_state  = `BNO055_STATE_SET_RUN_MODE;
                 end
                 `BNO055_STATE_WAIT_20MS: begin // Wait 20ms to go from config to running mode
                     next_imu_good      = `FALSE;
@@ -635,11 +639,12 @@ module bno055_driver #(
                     next_data_reg      = `BYTE_ALL_ZERO;
                     next_data_tx       = `BYTE_ALL_ZERO;
                     next_go_flag       = `NOT_GO;
-                    next_bno055_state  = `BNO055_STATE_WAIT_20MS;
-                    resetn_buffer        = `LOW; // Clear RX data buffer index before starting next state's read burst
-                    if(count_ms[15]) begin // Wait for count_ms to wrap around
+                    resetn_buffer      = `LOW; // Clear RX data buffer index before starting next state's read burst
+                    // Wait for I2C to be not busy and timer to be at maximum
+                    if(~busy && count_ms[15])
                         next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
-                    end
+                    else
+                        next_bno055_state  = `BNO055_STATE_WAIT_20MS;
                 end
                 `BNO055_STATE_READ_IMU_DATA_BURST: begin // Page 0 - Read from Acceleration Data X-Axis LSB to Calibration Status registers - 46 bytes
                     clear_waiting_ms       = `CLEAR_MS_TIMER; //  Clear and set to wait_ms value
@@ -652,6 +657,11 @@ module bno055_driver #(
                     next_read_write_in     = `I2C_READ;
                     next_target_read_count = `DATA_RX_BYTE_REG_CNT;
                     next_led_view_index    = (`DATA_RX_BYTE_REG_CNT-1); // Calibration status will be in the last byte buffer, index 45
+                    // Wait for I2C to be not busy and timer to be set to polling time interval (20 ms)
+                    if(~busy && (count_ms[15] == POLL_INTERVAL) )
+                        next_bno055_state = `BNO055_SUB_STATE_START;
+                    else
+                        next_bno055_state = `BNO055_STATE_READ_IMU_DATA_BURST;
                 end
                 `BNO055_STATE_WAIT_IMU_POLL_TIME: begin     // Wait 20 ms between polls to maintain 50Hz polling rate
                                                             // wait time is i2c time + time spent here, for a total of 20ms,
@@ -663,11 +673,11 @@ module bno055_driver #(
                     next_data_reg      = `BYTE_ALL_ZERO;
                     next_data_tx       = `BYTE_ALL_ZERO;
                     next_go_flag       = `NOT_GO;
-                    next_bno055_state  = `BNO055_STATE_WAIT_IMU_POLL_TIME;
-                    resetn_buffer        = `LOW; // Clear the RX data buffer index starting next state's read burst
-                    if(count_ms[15]) begin // Wait for count_ms wrap around
+                    resetn_buffer      = `LOW; // Clear the RX data buffer index starting next state's read burst
+                    if(~busy && count_ms[15])  // Wait for count_ms wrap around
                         next_bno055_state  = `BNO055_STATE_READ_IMU_DATA_BURST;
-                    end
+                    else
+                        next_bno055_state  = `BNO055_STATE_WAIT_IMU_POLL_TIME;
                 end
 
                 // FSM Sub States - Repeated for each i2c transaction
@@ -682,7 +692,6 @@ module bno055_driver #(
                 `BNO055_SUB_STATE_WAIT_I2C: begin // Wait for end of i2c transaction, wait for busy to be cleared
                     next_go_flag          = `NOT_GO;
                     next_slave_address    = `BNO055_SLAVE_ADDRESS;
-                    $stop;
                     if(~busy && resetn_imu) // Stay here until i2c is not busy AND the IMU isn't in reset (Prevent glitch at WD event)
                         next_bno055_state = `BNO055_SUB_STATE_STOP;
                     else
@@ -693,9 +702,8 @@ module bno055_driver #(
                     next_slave_address    = `BNO055_SLAVE_ADDRESS;
                     next_data_reg         = `BYTE_ALL_ZERO;
                     next_data_tx          = `BYTE_ALL_ZERO;
-                    if(read_write_in == `I2C_READ) begin // Only latch data if this was a read
+                    if(read_write_in == `I2C_READ) // Only latch data if this was a read
                         rx_data_latch_strobe = `HIGH;
-                    end
                     next_bno055_state     = return_state;
                 end
 
