@@ -147,7 +147,9 @@ module bno055_driver #(
     //
     //  Module body
     //
-    assign led_data_out = (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h81 : data_rx_reg[led_view_index]; //  Output for calibration status LEDs OR indicates that the IMU is in reset
+    // Changed this from 81 to 41 since LED2 is burned out on the board I am testing with
+    assign led_data_out = (bno055_state <= `BNO055_STATE_BOOT_WAIT ) ? 8'h41 : data_rx_reg[led_view_index]; //  Output for calibration status LEDs OR indicates that the IMU is in reset
+    //assign led_data_out = bno055_state[7:0]<<1;
 
     //  Instantiate i2c driver
     i2c_module i2c( .scl_1(scl_1),
@@ -459,7 +461,7 @@ module bno055_driver #(
                 `BNO055_STATE_BOOT_WAIT: begin
                     next_imu_good      = `FALSE;
                     clear_waiting_ms   = `RUN_MS_TIMER;
-                    count_ms_init_time = `FALSE;
+                    count_ms_init_time = `FALSE;  
                     next_bno055_state  = `BNO055_STATE_BOOT_WAIT;
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
                     // Wait for I2C to be not busy and timer to be set (not maximum)
@@ -621,13 +623,14 @@ module bno055_driver #(
                     next_imu_good      = `FALSE;
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
                     clear_waiting_ms   = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
+                    count_ms_init_time = `FALSE;          // Make sure this is a POLL_INTERVAL timer
                     next_go_flag       = `NOT_GO;
                     next_return_state  = `BNO055_STATE_WAIT_20MS;
                     next_data_reg      = `BNO055_OPR_MODE_ADDR;
                     next_data_tx       = `BNO055_OPERATION_MODE_NDOF;
                     next_read_write_in = `I2C_WRITE;
                     // Wait for I2C to be not busy and timer to be set to polling time interval (20 ms)
-                    if(~busy && (count_ms[15] == POLL_INTERVAL) )
+                    if(~busy && (count_ms == POLL_INTERVAL) )
                         next_bno055_state  = `BNO055_SUB_STATE_START;
                     else
                         next_bno055_state  = `BNO055_STATE_SET_RUN_MODE;
@@ -647,7 +650,8 @@ module bno055_driver #(
                         next_bno055_state  = `BNO055_STATE_WAIT_20MS;
                 end
                 `BNO055_STATE_READ_IMU_DATA_BURST: begin // Page 0 - Read from Acceleration Data X-Axis LSB to Calibration Status registers - 46 bytes
-                    clear_waiting_ms       = `CLEAR_MS_TIMER; //  Clear and set to wait_ms value
+                    clear_waiting_ms       = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
+                    count_ms_init_time     = `FALSE;          // Make sure this is a POLL_INTERVAL timer
                     next_slave_address     = `BNO055_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
                     next_bno055_state      = `BNO055_SUB_STATE_START;
@@ -658,7 +662,7 @@ module bno055_driver #(
                     next_target_read_count = `DATA_RX_BYTE_REG_CNT;
                     next_led_view_index    = (`DATA_RX_BYTE_REG_CNT-1); // Calibration status will be in the last byte buffer, index 45
                     // Wait for I2C to be not busy and timer to be set to polling time interval (20 ms)
-                    if(~busy && (count_ms[15] == POLL_INTERVAL) )
+                    if(~busy && (count_ms == POLL_INTERVAL) )
                         next_bno055_state = `BNO055_SUB_STATE_START;
                     else
                         next_bno055_state = `BNO055_STATE_READ_IMU_DATA_BURST;
