@@ -60,9 +60,10 @@
 `include "common_defines.v"
 `include "bno055_defines.v"
 
-module bno055_driver #(
-    parameter INIT_TIME = 16'd10_000 // 10 seconds (in ms) start-up time
-)
+module bno055_driver #( 
+    parameter INIT_INTERVAL = 16'd10_000, // 10 seconds (in ms) start-up time 
+    parameter POLL_INTERVAL = 16'd20      // 20 ms between data polls 
+) 
 (
     inout  wire scl_1,
     inout  wire scl_2,
@@ -189,27 +190,18 @@ module bno055_driver #(
     //  Generates a multiple of 1ms length duration delay trigger - Defaulted to 650 ms for BNO055 reset and boot time
     //  When the count down counter wraps around the timer is triggered and stops counting
     always@(negedge sys_clk, negedge clear_waiting_ms, negedge resetn) begin
-        if(~resetn) begin
-            //count_ms <= 16'h7FFF;
-            count_ms <= INIT_TIME;
-        end
+        if(~resetn)
+            count_ms <= INIT_INTERVAL;
         else if( clear_waiting_ms == `CLEAR_MS_TIMER ) begin
-            if (count_ms_init_time) begin
-                count_ms <= INIT_TIME;              // Set delay to 650 ms for BNO055 to initialize  
-                $display("Setting delay to init time");                
-            end
-            else begin
-                count_ms <= 16'd20;                 // Normal 20 ms interval between data polls
-                $display("Setting delay to 20ms");                
-            end
+            if (count_ms_init_time)
+                count_ms <= INIT_INTERVAL;              // Set delay to 650 ms for BNO055 to initialize  
+            else
+                count_ms <= POLL_INTERVAL;               // Normal 20 ms interval between data polls
         end
-        else if( ~count_ms[15] && pulse_every_1_ms) begin// Only count down if not wrapped around yet and at 1ms tick
-            count_ms <= (count_ms - 16'd1);
-            $display("Decrement count");                
-        end
-        else begin
+        else if( ~count_ms[15] && pulse_every_1_ms)// Only count down if not wrapped around yet and at 1ms tick
+            count_ms <= (count_ms - 16'd1);     
+        else
             count_ms <= count_ms;
-        end
     end
 
     //  During a read cycle decrement the data_rx_reg_index until it reaches 0 if one_byte_ready is asserted
@@ -415,7 +407,7 @@ module bno055_driver #(
             next_target_read_count    = 1'b1;
             rx_data_latch_strobe      = `LOW;
             i2c_number                = 1'b0; // Default to i2c EFB #1
-            next_slave_address        = slave_address;
+            next_slave_address        = `BNO055_SLAVE_ADDRESS;
             increment_cal_restore_index = 1'b0;
             clear_cal_restore_index     = 1'b0;
         end
@@ -435,7 +427,7 @@ module bno055_driver #(
             next_target_read_count    = target_read_count;
             rx_data_latch_strobe      = `LOW;
             i2c_number                = 1'b0; // Default to i2c EFB #1
-            next_slave_address        = `BNO055_SLAVE_ADDRESS;
+            next_slave_address        = slave_address;
             next_calibrated_once      = calibrated_once;
             increment_cal_restore_index = 1'b0;
             clear_cal_restore_index     = 1'b1;
@@ -444,7 +436,10 @@ module bno055_driver #(
                     next_imu_good      = `FALSE;
                     clear_waiting_ms   = `RUN_MS_TIMER;
                     count_ms_init_time = `TRUE;
-                    next_bno055_state  = `BNO055_STATE_BOOT;
+                    if(count_ms[15] || (count_ms == 16'd0)) //Timer not yet set to starting value
+                        next_bno055_state  = `BNO055_STATE_RESET;
+                    else
+                        next_bno055_state  = `BNO055_STATE_BOOT;
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
                     clear_cal_restore_index = 1'b0;
                     next_calibrated_once    = 1'b0;
@@ -453,7 +448,12 @@ module bno055_driver #(
                     next_imu_good      = `FALSE;
                     clear_waiting_ms   = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
                     count_ms_init_time = `TRUE;
-                    next_bno055_state  = `BNO055_STATE_BOOT_WAIT;
+                    // Wait for I2C to boot then start wait for IMU
+                    // Also wait for timer to initialize to INIT_INTERVAL
+                    if(~busy &&(count_ms == INIT_INTERVAL))
+                        next_bno055_state  = `BNO055_STATE_BOOT_WAIT;
+                    else 
+                        next_bno055_state  = `BNO055_STATE_BOOT;
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
                 end
                 `BNO055_STATE_BOOT_WAIT: begin
@@ -462,8 +462,11 @@ module bno055_driver #(
                     count_ms_init_time = `FALSE;
                     next_bno055_state  = `BNO055_STATE_BOOT_WAIT;
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
-                    if((~busy) && count_ms[15]) // Wait for i2c to be not busy and count_ms wrapped around
+                    // Wait for I2C to be not busy and timer to be set (not maximum)
+                    if(~busy && count_ms[15])
                         next_bno055_state = `BNO055_STATE_READ_CHIP_ID;
+                    else
+                        next_bno055_state = `BNO055_STATE_BOOT_WAIT;
                 end
                 `BNO055_STATE_READ_CHIP_ID: begin // Page 0
                     next_imu_good          = `FALSE;
@@ -700,15 +703,23 @@ module bno055_driver #(
                 // Default case, shouldn't be triggered
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
                 default: begin
-                    next_imu_good        = `FALSE;
-                    next_go_flag         = `NOT_GO;
-                    next_bno055_state    = `BNO055_STATE_RESET;
-                    next_slave_address   = `BNO055_SLAVE_ADDRESS;
-                    next_return_state    = `BYTE_ALL_ZERO;
-                    next_data_reg        = `BYTE_ALL_ZERO;
-                    next_data_tx         = `BYTE_ALL_ZERO;
-                    next_read_write_in   = `I2C_READ;
-                    rx_data_latch_strobe = `LOW;
+                    next_imu_good             = `FALSE;
+                    clear_waiting_ms          = `RUN_MS_TIMER;
+                    count_ms_init_time        = `FALSE;
+                    next_bno055_state         = `BNO055_STATE_RESET;
+                    next_return_state         = `BNO055_STATE_RESET;
+                    next_go_flag              = `NOT_GO;
+                    next_data_reg             = `BYTE_ALL_ZERO;
+                    next_data_tx              = `BYTE_ALL_ZERO;
+                    next_read_write_in        = `I2C_READ;
+                    next_led_view_index       = `FALSE;
+                    resetn_buffer             = `LOW;
+                    next_target_read_count    = 1'b1;
+                    rx_data_latch_strobe      = `LOW;
+                    i2c_number                = 1'b0; // Default to i2c EFB #1
+                    next_slave_address        = `BNO055_SLAVE_ADDRESS;
+                    increment_cal_restore_index = 1'b0;
+                    clear_cal_restore_index     = 1'b0;
                 end
             endcase
         end

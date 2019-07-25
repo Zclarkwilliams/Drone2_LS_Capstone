@@ -229,7 +229,8 @@ module drone2 (
      * IMU Management and Control Module
      *        file - bno055_driver.v
      */
-    bno055_driver #(.INIT_TIME(16'd10_000))
+    bno055_driver #(.INIT_INTERVAL(16'd10_000),
+                    .POLL_INTERVAL(16'd20))
         IMU(
         // Outputs
         .imu_good(imu_good),
