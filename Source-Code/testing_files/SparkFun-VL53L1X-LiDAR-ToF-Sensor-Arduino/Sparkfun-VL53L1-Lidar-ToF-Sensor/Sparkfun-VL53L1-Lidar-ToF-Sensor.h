@@ -33,6 +33,7 @@
 #define ROI_CONFIG__USER_ROI_REQUESTED_GLOBAL_XY_SIZE                0x0080
 #define SYSTEM__SEQUENCE_CONFIG                                      0x0081
 #define SYSTEM__GROUPED_PARAMETER_HOLD                               0x0082
+#define POWER_MANAGEMENT__GO1_POWER_FORCE                            0x0083
 #define SYSTEM__INTERRUPT_CLEAR                                      0x0086
 #define SYSTEM__MODE_START                                           0x0087
 #define RESULT__RANGE_STATUS                                         0x0089
@@ -41,7 +42,9 @@
 #define RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0               0x0096
 #define RESULT__PEAK_SIGNAL_COUNT_RATE_CROSSTALK_CORRECTED_MCPS_SD0  0x0098
 #define RESULT__OSC_CALIBRATE_VAL                                    0x00DE
+#define ANA_CONFIG__POWERDOWN_GO1                                    0x00E0
 #define FIRMWARE__SYSTEM_STATUS                                      0x00E5
+#define INTERRUPT_MANAGER__ENABLES                                   0x00FD
 #define IDENTIFICATION__MODEL_ID                                     0x010F // has the value 0xEACC
 #define ROI_CONFIG__MODE_ROI_CENTRE_SPAD                             0x013E
 #define DEFAULT_DEVICE_ADDRESS                                       0x52   //1010010
@@ -134,7 +137,7 @@ const uint8_t DEFAULT_CONFIGURATION[] = {
 0xff,  // 0x80 : XY ROI (X=Width, Y=Height), use SetROI()  
 0x9B,  // 0x81 : not user-modifiable  
 0x00,  // 0x82 : not user-modifiable  
-0x00,  // 0x83 : not user-modifiable  
+0x01,  // 0x83 POWER_MANAGEMENT__GO1_POWER_FORCE enable   
 0x00,  // 0x84 : not user-modifiable  
 0x01,  // 0x85 : not user-modifiable  
 0x00,  // 0x86 : clear interrupt, use ClearInterrupt()  

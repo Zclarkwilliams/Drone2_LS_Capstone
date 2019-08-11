@@ -1,7 +1,14 @@
+#include <Keyboard.h>
+
 #include <Sparkfun-VL53L1-Lidar-ToF-Sensor.h>
 
+
+#define ENABLE_XSHUT_PIN
+
+//Debugging - disable all #defines for normal operation
 //#define PRINT_DEBUG
-//#define DEBUG_READ_BACK_STARTUP_VARS
+//#define DEBUG_READ_BACK_ALL_REGS
+//#define DEBUG_READ_BACK_STARTUP_REGS
 //#define PRINT_DATA_RDY_DEBUG
 //#define PRINT_RD_WR_1B_DEBUG
 //#define PRINT_RD_WR_2B_DEBUG
@@ -28,10 +35,11 @@ void loop(void)
 
 int Init(void)
 {
-  uint8_t Addr = 0x00;
+  uint16_t Addr = 0x0000;
   uint8_t result;
   int numElements = 91;
   uint16_t deviceID = 0;
+  uint8_t data[1];
   int i = 0;
 
   Wire.begin();
@@ -40,39 +48,45 @@ int Init(void)
   Serial.println("============================================================");
   Serial.println("VL53L1X Test");
 
-  /*
-    //Ensure device isn't in shutdown mode
-    pinMode(SHUTDOWN_PIN, OUTPUT);
-    digitalWrite(SHUTDOWN_PIN, HIGH);
-    delay(100);
-  */
-  /*
-    digitalWrite(SHUTDOWN_PIN, LOW);
-    delay(100);
-    digitalWrite(SHUTDOWN_PIN, HIGH);
-    delayMicroseconds(1200);
-  */
+#ifdef ENABLE_XSHUT_PIN
+  //Ensure device isn't in shutdown mode
+  pinMode(SHUTDOWN_PIN, OUTPUT);
+  digitalWrite(SHUTDOWN_PIN, LOW);
+  delay(100);
+  digitalWrite(SHUTDOWN_PIN, HIGH);
+  delayMicroseconds(2000);
+#endif
+
+  //wait for firmware to indicate that it's ready to proceed
+  result = WaitFirmwareStat();
 
   result =  I2CReadWord(&Wire, I2C_ID, IDENTIFICATION__MODEL_ID, &deviceID);
   Serial.print("Read chip ID: ");
   Serial.println(  deviceID, HEX);
+  if(deviceID != 0xEACC) {
+    Serial.print("Halting driver, incorrect chip ID detected, expected 0xEACC");
+    while(1);
+  }
 
 
   Serial.print("VL53L1X Begin setup, Write configuration to sensor I2C ID ");
   Serial.println(I2C_ID, HEX);
-  for (Addr = 0x2D; Addr < (numElements + 0x2D); Addr++) {
-    result = I2CWriteByte(&Wire, I2C_ID, Addr, &DEFAULT_CONFIGURATION[Addr - 0x2D], (uint8_t)1);
+  for (Addr = 0x002D; Addr < (numElements + 0x002D); Addr++) {
+    result = I2CWriteByte(&Wire, I2C_ID, Addr, &DEFAULT_CONFIGURATION[Addr - 0x002D], (uint8_t)1);
   }
 
-#ifdef DEBUG_READ_BACK_STARTUP_VARS
+#if defined DEBUG_READ_BACK_STARTUP_REGS
+  Addr = 0x002D;
   Serial.println("Reading back startup values");
-  for (Addr = 0x2D; Addr < (numElements + 0x2D); Addr++) {
-    result = I2CReadByte(&Wire, I2C_ID, Addr, &DEFAULT_CONFIGURATION[Addr - 0x2D], (uint8_t)1);
+  for (Addr = 0x002D; Addr < (numElements + 0x002D); Addr++)
+  {
+    result = I2CReadByte(&Wire, I2C_ID, Addr, data, (uint8_t)1);
+    Serial.print(data[0]);
+    Serial.print("@");
+    Serial.println(Addr, HEX);
   }
 #endif
 
-
-  result = WaitFirmwareStat();
   result = StartMeasure();
   result = PollReady();
   result = ClearInt();
@@ -80,6 +94,20 @@ int Init(void)
   result = SetTemp();
   result = SetMeasPeriod();
   result = StartMeasure();
+
+
+#ifdef DEBUG_READ_BACK_ALL_REGS
+  Addr = 0x0000;
+  Serial.println("Reading back ALL register values");
+  for (Addr = 0x0000; Addr < (0x0FFF+1); Addr++) //Debug - Read ALL registers from 0x0000 to 0xFFF
+  {
+    result = I2CReadByte(&Wire, I2C_ID, Addr, data, (uint8_t)1);
+    Serial.print(data[0], HEX);
+    Serial.print("@");
+    Serial.println(Addr, HEX);
+  }
+  //while(1); //Spin here forever (stop program)
+#endif
 
   Serial.println("VL53L1X Looper starting...");
   return 0;
@@ -123,7 +151,7 @@ int GetMeasurement(uint16_t * range)
 #endif
     result =  I2CReadWord(&Wire, I2C_ID, RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0, pBuffer);
     *range = pBuffer[0];
-    delay(1); //Wait one millisecond
+    //delay(1); //Wait one millisecond
   }
   return result;
 }
@@ -146,7 +174,7 @@ int PollReady(void)
     Serial.print("result=");
     Serial.println(result);
 #endif
-    delay(1); //Wait one millisecond
+    //delay(1); //Wait one millisecond
   }
 #ifdef PRINT_DATA_RDY_DEBUG
   Serial.print("Good data ready poll=");
@@ -166,7 +194,7 @@ int ClearInt(void)
 #endif
   while (!result) {
     result = I2CWriteByte(&Wire, I2C_ID, SYSTEM__INTERRUPT_CLEAR, &valueToWrite, (uint8_t)1);
-    delay(1); //Wait one millisecond
+    //delay(1); //Wait one millisecond
   }
   return result;
 }
@@ -181,13 +209,13 @@ int SetTemp(void)
   while (!result) {
     valueToWrite = 0x09;
     result = I2CWriteByte(&Wire, VHV_CONFIG__TIMEOUT_MACROP_LOOP_BOUND, &valueToWrite, (uint8_t)1);
-    delay(1); //Wait one millisecond
+    //delay(1); //Wait one millisecond
   }
   result = 0;
   while (!result) {
     valueToWrite = 0x00;
     result = I2CWriteByte(&Wire, I2C_ID,  VHV_CONFIG__INIT, &valueToWrite, (uint8_t)1);
-    delay(1); //Wait one millisecond
+    //delay(1); //Wait one millisecond
   }
   return result;
 }
@@ -203,7 +231,7 @@ int SetMeasPeriod(void)
   while (!result || !ClockPLL) {
     ClockPLL = 0;
     result =  I2CReadWord(&Wire, I2C_ID, RESULT__OSC_CALIBRATE_VAL, &ClockPLL);
-    delay(1); //Wait one millisecond
+    //delay(1); //Wait one millisecond
   }
   result = 0;
   ClockPLL = ClockPLL & 0x03FF;
@@ -212,7 +240,7 @@ int SetMeasPeriod(void)
   while (!result) {
     valueToWrite = (ClockPLL * 100 * 1.075);
     result = I2CWriteDWord(&Wire, I2C_ID, SYSTEM__INTERMEASUREMENT_PERIOD, valueToWrite);
-    delay(1); //Wait one millisecond
+    //delay(1); //Wait one millisecond
     Serial.print("Wrote intermeasurement period = ");
     Serial.println(valueToWrite);
   }
@@ -234,7 +262,7 @@ int WaitFirmwareStat(void)
     status = pBuffer[0] & 0x01;
     Serial.print("Firmware system status reg value : 0x");
     Serial.println(pBuffer[0]);
-    delay(1);
+    //delay(1);
   } while (status == 0);
   Serial.println("Firmware initialized\n");
   return 1;
@@ -487,5 +515,4 @@ int  I2CReadDWord(TwoWire * i2c, uint8_t DeviceAddr, uint16_t RegisterAddr, uint
 #endif
   return 1;
 }
-
 
