@@ -435,51 +435,8 @@ Total: 46 bytes
 `define MAG_RADIUS_LSB_INDEX                20
 `define MAG_RADIUS_MSB_INDEX                21
 
-
-`define BNO055_STATE_BITS                   5             //  The number of bits used to represent the current state
-`define DATA_RX_BYTE_REG_CNT                46            //  The number of byte registers used to receive all measurement data
-`define CAL_DATA_REG_CNT                    22            //  The number of byte registers used to store calibration data
-
-// Value aliases
-`define GO                                  1'b1         //  Go signal to i2c driver is logic high
-`define NOT_GO                              1'b0         //  Go signal to i2c driver is logic low
-`define SUB_STATE_GO                        1'b1         //  Go signal to sub FSM is logic high
-`define SUB_STATE_NOT_GO                    1'b0         //  Go signal to sub FSM is logic low
-`define SUB_STATE_DONE                      1'b1         //  Signal that the sub FSM is done
-`define SUB_STATE_NOT_DONE                  1'b0         //  Signal that the sub FSM is done
-`define I2C_READ                            1'b0         //  an I2C Read command
-`define I2C_WRITE                           1'b1         //  An I2C Write command
+`define BNO055_DATA_RX_BYTE_REG_CNT         46           //  The number of byte registers used to receive all measurement data
+`define BNO055_CAL_DATA_REG_CNT             22           //  The number of byte registers needed for all calibration data
 `define BNO055_CHIP_ID_REG                  8'h00        //  Chip ID Register of BNO055 at 0x00
 `define BNO055_SLAVE_ADDRESS                7'b01010_00  //  BNO055 SLAVE address 0x28
-
-`define RUN_MS_TIMER                        1'b1         //  Flag that starts multi ms timer
-`define CLEAR_MS_TIMER                      1'b0         //  Flag that stops/clears multi ms timer
-
-// State Definitions
-//
-// Initial default state of IMU FSM
-`define BNO055_STATE_RESET                  0
-// The rest of the startup states
-`define BNO055_STATE_BOOT                   1
-`define BNO055_STATE_BOOT_WAIT              2
-
-// Setup BNO055 and begin reading
-`define BNO055_STATE_READ_CHIP_ID           3
-`define BNO055_STATE_SET_UNITS              4
-`define BNO055_STATE_SET_POWER_MODE         5
-`define BNO055_STATE_CAL_RESTORE_DATA       6
-`define BNO055_STATE_CAL_RESTORE_START      7
-`define BNO055_STATE_CAL_RESTORE_WAIT       8
-`define BNO055_STATE_CAL_RESTORE_STOP       9
-`define BNO055_STATE_CAL_RESTORE_AGAIN      10
-`define BNO055_STATE_SET_EXT_CRYSTAL        11
-`define BNO055_STATE_SET_RUN_MODE           12
-`define BNO055_STATE_WAIT_20MS              13
-`define BNO055_STATE_READ_IMU_DATA_BURST    14
-`define BNO055_STATE_WAIT_IMU_POLL_TIME     15
-
-// Minor FSM states, repeated for every read or write
-`define BNO055_SUB_STATE_START              16
-`define BNO055_SUB_STATE_WAIT_I2C           17
-`define BNO055_SUB_STATE_STOP               18
 

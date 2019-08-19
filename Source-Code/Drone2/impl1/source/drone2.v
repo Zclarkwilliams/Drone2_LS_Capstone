@@ -106,7 +106,7 @@ module drone2 (
     wire imu_data_valid_monitor;
     wire imu_good;
     wire imu_data_valid;
-    wire [7:0] imu_debug;
+    wire [7:0] i2c_debug;
     
     //--------- Auto Mode Controller Wires --------//
     wire  [`REC_VAL_BIT_WIDTH-1:0] amc_throttle_val;
@@ -229,9 +229,9 @@ module drone2 (
      * IMU Management and Control Module
      *        file - bno055_driver.v
      */
-    bno055_driver #(.INIT_INTERVAL(16'd10_000),
+    i2c_device_driver #(.INIT_INTERVAL(16'd10_000),
                     .POLL_INTERVAL(16'd20))
-        IMU(
+        I2C_Devices(
         // Outputs
         .imu_good(imu_good),
         .valid_strobe(imu_data_valid),
@@ -245,7 +245,7 @@ module drone2 (
         .linear_accel_y(y_linear_accel),
         .linear_accel_z(z_linear_accel),
         // DEBUG WIRE
-        .led_data_out(imu_debug),
+        .led_data_out(i2c_debug),
         // InOuts
         .scl_1(scl_1),
         .sda_1(sda_1),
@@ -434,7 +434,7 @@ module drone2 (
         .imu_x_rotation_rate(x_rotation_rate),
         .imu_y_rotation_rate(y_rotation_rate),
         .imu_z_rotation_rate(z_rotation_rate),
-        .imu_calibration_status(imu_debug),
+        .imu_calibration_status(i2c_debug),
         .rec_throttle_val(throttle_val),
         .rec_yaw_val(yaw_val),
         .rec_roll_val(roll_val),
@@ -468,7 +468,7 @@ module drone2 (
             led_data_out <= 8'hFF;
         end
         else begin
-            led_data_out <= ~imu_debug;
+            led_data_out <= ~i2c_debug;
         end
     end
 endmodule
