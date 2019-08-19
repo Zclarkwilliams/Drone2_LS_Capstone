@@ -2,55 +2,55 @@
 
 #define SHUTDOWN_PIN 2
 
-#define SOFT_RESET                                                   0x0000
-#define I2C_SLAVE__DEVICE_ADDRESS                                    0x0001
-#define VHV_CONFIG__TIMEOUT_MACROP_LOOP_BOUND                        0x0008
-#define VHV_CONFIG__INIT                                             0x000B
-#define ALGO__CROSSTALK_COMPENSATION_PLANE_OFFSET_KCPS               0x0016
-#define ALGO__CROSSTALK_COMPENSATION_X_PLANE_GRADIENT_KCPS           0x0018
-#define ALGO__CROSSTALK_COMPENSATION_Y_PLANE_GRADIENT_KCPS           0x001A
-#define ALGO__PART_TO_PART_RANGE_OFFSET_MM                           0x001E
-#define MM_CONFIG__INNER_OFFSET_MM                                   0x0020
-#define MM_CONFIG__OUTER_OFFSET_MM                                   0x0022
-#define GPIO_HV_MUX__CTRL                                            0x0030
-#define GPIO__TIO_HV_STATUS                                          0x0031
-#define SYSTEM__INTERRUPT_CONFIG_GPIO                                0x0046
-#define PHASECAL_CONFIG__TIMEOUT_MACROP                              0x004B
-#define RANGE_CONFIG__TIMEOUT_MACROP_A_HI                            0x005E
-#define RANGE_CONFIG__VCSEL_PERIOD_A                                 0x0060
-#define RANGE_CONFIG__VCSEL_PERIOD_B                                 0x0063
-#define RANGE_CONFIG__TIMEOUT_MACROP_B_HI                            0x0061
-#define RANGE_CONFIG__TIMEOUT_MACROP_B_LO                            0x0062
-#define RANGE_CONFIG__SIGMA_THRESH                                   0x0064
-#define RANGE_CONFIG__MIN_COUNT_RATE_RTN_LIMIT_MCPS                  0x0066
-#define RANGE_CONFIG__VALID_PHASE_HIGH                               0x0069
-#define SYSTEM__INTERMEASUREMENT_PERIOD                              0x006C
-#define SYSTEM__THRESH_HIGH                                          0x0072
-#define SYSTEM__THRESH_LOW                                           0x0074
-#define SD_CONFIG__WOI_SD0                                           0x0078
-#define SD_CONFIG__INITIAL_PHASE_SD0                                 0x007A
-#define ROI_CONFIG__USER_ROI_CENTRE_SPAD                             0x007F
-#define ROI_CONFIG__USER_ROI_REQUESTED_GLOBAL_XY_SIZE                0x0080
-#define SYSTEM__SEQUENCE_CONFIG                                      0x0081
-#define SYSTEM__GROUPED_PARAMETER_HOLD                               0x0082
-#define POWER_MANAGEMENT__GO1_POWER_FORCE                            0x0083
-#define SYSTEM__INTERRUPT_CLEAR                                      0x0086
-#define SYSTEM__MODE_START                                           0x0087
-#define RESULT__RANGE_STATUS                                         0x0089
-#define RESULT__DSS_ACTUAL_EFFECTIVE_SPADS_SD0                       0x008C
-#define RESULT__AMBIENT_COUNT_RATE_MCPS_SD                           0x0090
-#define RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0               0x0096
-#define RESULT__PEAK_SIGNAL_COUNT_RATE_CROSSTALK_CORRECTED_MCPS_SD0  0x0098
-#define RESULT__OSC_CALIBRATE_VAL                                    0x00DE
-#define ANA_CONFIG__POWERDOWN_GO1                                    0x00E0
-#define FIRMWARE__SYSTEM_STATUS                                      0x00E5
-#define INTERRUPT_MANAGER__ENABLES                                   0x00FD
-#define IDENTIFICATION__MODEL_ID                                     0x010F // has the value 0xEACC
-#define ROI_CONFIG__MODE_ROI_CENTRE_SPAD                             0x013E
-#define DEFAULT_DEVICE_ADDRESS                                       0x52   //1010010
+#define VL53L1X_SOFT_RESET                                                   0x0000
+#define VL53L1X_I2C_SLAVE__DEVICE_ADDRESS                                    0x0001
+#define VL53L1X_VHV_CONFIG__TIMEOUT_MACROP_LOOP_BOUND                        0x0008
+#define VL53L1X_VHV_CONFIG__INIT                                             0x000B
+#define VL53L1X_ALGO__CROSSTALK_COMPENSATION_PLANE_OFFSET_KCPS               0x0016
+#define VL53L1X_ALGO__CROSSTALK_COMPENSATION_X_PLANE_GRADIENT_KCPS           0x0018
+#define VL53L1X_ALGO__CROSSTALK_COMPENSATION_Y_PLANE_GRADIENT_KCPS           0x001A
+#define VL53L1X_ALGO__PART_TO_PART_RANGE_OFFSET_MM                           0x001E
+#define VL53L1X_MM_CONFIG__INNER_OFFSET_MM                                   0x0020
+#define VL53L1X_MM_CONFIG__OUTER_OFFSET_MM                                   0x0022
+#define VL53L1X_GPIO_HV_MUX__CTRL                                            0x0030
+#define VL53L1X_GPIO__TIO_HV_STATUS                                          0x0031
+#define VL53L1X_SYSTEM__INTERRUPT_CONFIG_GPIO                                0x0046
+#define VL53L1X_PHASECAL_CONFIG__TIMEOUT_MACROP                              0x004B
+#define VL53L1X_RANGE_CONFIG__TIMEOUT_MACROP_A_HI                            0x005E
+#define VL53L1X_RANGE_CONFIG__VCSEL_PERIOD_A                                 0x0060
+#define VL53L1X_RANGE_CONFIG__VCSEL_PERIOD_B                                 0x0063
+#define VL53L1X_RANGE_CONFIG__TIMEOUT_MACROP_B_HI                            0x0061
+#define VL53L1X_RANGE_CONFIG__TIMEOUT_MACROP_B_LO                            0x0062
+#define VL53L1X_RANGE_CONFIG__SIGMA_THRESH                                   0x0064
+#define VL53L1X_RANGE_CONFIG__MIN_COUNT_RATE_RTN_LIMIT_MCPS                  0x0066
+#define VL53L1X_RANGE_CONFIG__VALID_PHASE_HIGH                               0x0069
+#define VL53L1X_SYSTEM__INTERMEASUREMENT_PERIOD                              0x006C
+#define VL53L1X_SYSTEM__THRESH_HIGH                                          0x0072
+#define VL53L1X_SYSTEM__THRESH_LOW                                           0x0074
+#define VL53L1X_SD_CONFIG__WOI_SD0                                           0x0078
+#define VL53L1X_SD_CONFIG__INITIAL_PHASE_SD0                                 0x007A
+#define VL53L1X_ROI_CONFIG__USER_ROI_CENTRE_SPAD                             0x007F
+#define VL53L1X_ROI_CONFIG__USER_ROI_REQUESTED_GLOBAL_XY_SIZE                0x0080
+#define VL53L1X_SYSTEM__SEQUENCE_CONFIG                                      0x0081
+#define VL53L1X_SYSTEM__GROUPED_PARAMETER_HOLD                               0x0082
+#define VL53L1X_POWER_MANAGEMENT__GO1_POWER_FORCE                            0x0083
+#define VL53L1X_SYSTEM__INTERRUPT_CLEAR                                      0x0086
+#define VL53L1X_SYSTEM__MODE_START                                           0x0087
+#define VL53L1X_RESULT__RANGE_STATUS                                         0x0089
+#define VL53L1X_RESULT__DSS_ACTUAL_EFFECTIVE_SPADS_SD0                       0x008C
+#define VL53L1X_RESULT__AMBIENT_COUNT_RATE_MCPS_SD                           0x0090
+#define VL53L1X_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0               0x0096
+#define VL53L1X_RESULT__PEAK_SIGNAL_COUNT_RATE_CROSSTALK_CORRECTED_MCPS_SD0  0x0098
+#define VL53L1X_RESULT__OSC_CALIBRATE_VAL                                    0x00DE
+#define VL53L1X_ANA_CONFIG__POWERDOWN_GO1                                    0x00E0
+#define VL53L1X_FIRMWARE__SYSTEM_STATUS                                      0x00E5
+#define VL53L1X_INTERRUPT_MANAGER__ENABLES                                   0x00FD
+#define VL53L1X_IDENTIFICATION__MODEL_ID                                     0x010F // has the value 0xEACC
+#define VL53L1X_ROI_CONFIG__MODE_ROI_CENTRE_SPAD                             0x013E
+#define VL53L1X_DEFAULT_DEVICE_ADDRESS                                       0x52   //1010010
 
 
-const uint8_t DEFAULT_CONFIGURATION[] = {
+const uint8_t VL53L1X_DEFAULT_CONFIGURATION[] = {
 0x00,  // 0x2d : set bit 2 and 5 to 1 for fast plus mode (1MHz I2C), else don't touch  
 0x00,  // 0x2e : bit 0 if I2C pulled up at 1.8V, else set bit 0 to 1 (pull up at AVDD)  
 0x00,  // 0x2f : bit 0 if GPIO pulled up at 1.8V, else set bit 0 to 1 (pull up at AVDD)  
@@ -160,4 +160,4 @@ int I2CWriteDWord(TwoWire * i2c, uint8_t DeviceAddr, uint16_t RegisterAddr, uint
 int I2CReadByte(TwoWire * i2c, uint8_t DeviceAddr, uint16_t RegisterAddr, uint8_t* pBuffer, uint16_t NumByteToRead = 1);
 int I2CReadWord(TwoWire * i2c, uint8_t DeviceAddr, uint16_t RegisterAddr, uint16_t* data);
 int I2CReadDWord(TwoWire * i2c, uint8_t DeviceAddr, uint16_t RegisterAddr, uint32_t* data);
-uint8_t I2C_ID     = DEFAULT_DEVICE_ADDRESS;
+uint8_t I2C_ID     = VL53L1X_DEFAULT_DEVICE_ADDRESS;

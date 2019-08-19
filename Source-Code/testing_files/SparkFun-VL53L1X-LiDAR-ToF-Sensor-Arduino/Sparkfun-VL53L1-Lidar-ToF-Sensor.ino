@@ -60,7 +60,7 @@ int Init(void)
   //wait for firmware to indicate that it's ready to proceed
   result = WaitFirmwareStat();
 
-  result =  I2CReadWord(&Wire, I2C_ID, IDENTIFICATION__MODEL_ID, &deviceID);
+  result =  I2CReadWord(&Wire, I2C_ID, VL53L1X_IDENTIFICATION__MODEL_ID, &deviceID);
   Serial.print("Read chip ID: ");
   Serial.println(  deviceID, HEX);
   if(deviceID != 0xEACC) {
@@ -72,7 +72,7 @@ int Init(void)
   Serial.print("VL53L1X Begin setup, Write configuration to sensor I2C ID ");
   Serial.println(I2C_ID, HEX);
   for (Addr = 0x002D; Addr < (numElements + 0x002D); Addr++) {
-    result = I2CWriteByte(&Wire, I2C_ID, Addr, &DEFAULT_CONFIGURATION[Addr - 0x002D], (uint8_t)1);
+    result = I2CWriteByte(&Wire, I2C_ID, Addr, &VL53L1X_DEFAULT_CONFIGURATION[Addr - 0x002D], (uint8_t)1);
   }
 
 #if defined DEBUG_READ_BACK_STARTUP_REGS
@@ -121,7 +121,7 @@ int StartMeasure(void)
   Serial.println("Starting measurements");
 #endif
   while (!result) {
-    result = I2CWriteByte(&Wire, I2C_ID, SYSTEM__MODE_START,  &valueToWrite,  (uint8_t)1);
+    result = I2CWriteByte(&Wire, I2C_ID, VL53L1X_SYSTEM__MODE_START,  &valueToWrite,  (uint8_t)1);
   }
   return result;
 }
@@ -134,7 +134,7 @@ int StopMeasure(void)
   Serial.println("\nStopping measurements");
 #endif
   while (!result)
-    result = I2CWriteByte(&Wire, I2C_ID, SYSTEM__MODE_START,  &valueToWrite,  (uint8_t)1);
+    result = I2CWriteByte(&Wire, I2C_ID, VL53L1X_SYSTEM__MODE_START,  &valueToWrite,  (uint8_t)1);
   return result;
 }
 
@@ -149,7 +149,7 @@ int GetMeasurement(uint16_t * range)
 #ifdef PRINT_DEBUG
     Serial.println("Measurement read");
 #endif
-    result =  I2CReadWord(&Wire, I2C_ID, RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0, pBuffer);
+    result =  I2CReadWord(&Wire, I2C_ID, VL53L1X_RESULT__FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0, pBuffer);
     *range = pBuffer[0];
     //delay(1); //Wait one millisecond
   }
@@ -166,7 +166,7 @@ int PollReady(void)
 #endif
   while (!result || ((pBuffer[0] & 0x01) != 0x01)) {
     pBuffer[0] = 0;
-    result =  I2CReadByte(&Wire, I2C_ID, GPIO__TIO_HV_STATUS, pBuffer, (uint8_t)1);
+    result =  I2CReadByte(&Wire, I2C_ID, VL53L1X_GPIO__TIO_HV_STATUS, pBuffer, (uint8_t)1);
     pBuffer[0] = pBuffer[0] & 0x01;
 #ifdef PRINT_DATA_RDY_DEBUG
     Serial.print("Data ready poll=");
@@ -193,7 +193,7 @@ int ClearInt(void)
   Serial.println("Clearing interrrupts");
 #endif
   while (!result) {
-    result = I2CWriteByte(&Wire, I2C_ID, SYSTEM__INTERRUPT_CLEAR, &valueToWrite, (uint8_t)1);
+    result = I2CWriteByte(&Wire, I2C_ID, VL53L1X_SYSTEM__INTERRUPT_CLEAR, &valueToWrite, (uint8_t)1);
     //delay(1); //Wait one millisecond
   }
   return result;
@@ -208,13 +208,13 @@ int SetTemp(void)
 #endif
   while (!result) {
     valueToWrite = 0x09;
-    result = I2CWriteByte(&Wire, VHV_CONFIG__TIMEOUT_MACROP_LOOP_BOUND, &valueToWrite, (uint8_t)1);
+    result = I2CWriteByte(&Wire, VL53L1X_VHV_CONFIG__TIMEOUT_MACROP_LOOP_BOUND, &valueToWrite, (uint8_t)1);
     //delay(1); //Wait one millisecond
   }
   result = 0;
   while (!result) {
     valueToWrite = 0x00;
-    result = I2CWriteByte(&Wire, I2C_ID,  VHV_CONFIG__INIT, &valueToWrite, (uint8_t)1);
+    result = I2CWriteByte(&Wire, I2C_ID,  VL53L1X_VHV_CONFIG__INIT, &valueToWrite, (uint8_t)1);
     //delay(1); //Wait one millisecond
   }
   return result;
@@ -230,7 +230,7 @@ int SetMeasPeriod(void)
 #endif
   while (!result || !ClockPLL) {
     ClockPLL = 0;
-    result =  I2CReadWord(&Wire, I2C_ID, RESULT__OSC_CALIBRATE_VAL, &ClockPLL);
+    result =  I2CReadWord(&Wire, I2C_ID, VL53L1X_RESULT__OSC_CALIBRATE_VAL, &ClockPLL);
     //delay(1); //Wait one millisecond
   }
   result = 0;
@@ -239,7 +239,7 @@ int SetMeasPeriod(void)
   Serial.println(ClockPLL);
   while (!result) {
     valueToWrite = (ClockPLL * 100 * 1.075);
-    result = I2CWriteDWord(&Wire, I2C_ID, SYSTEM__INTERMEASUREMENT_PERIOD, valueToWrite);
+    result = I2CWriteDWord(&Wire, I2C_ID, VL53L1X_SYSTEM__INTERMEASUREMENT_PERIOD, valueToWrite);
     //delay(1); //Wait one millisecond
     Serial.print("Wrote intermeasurement period = ");
     Serial.println(valueToWrite);
@@ -258,7 +258,7 @@ int WaitFirmwareStat(void)
 #endif
   do {
     Serial.println("Polling firmware status");
-    result =  I2CReadByte(&Wire, I2C_ID, FIRMWARE__SYSTEM_STATUS, pBuffer, (uint8_t)1);
+    result =  I2CReadByte(&Wire, I2C_ID, VL53L1X_FIRMWARE__SYSTEM_STATUS, pBuffer, (uint8_t)1);
     status = pBuffer[0] & 0x01;
     Serial.print("Firmware system status reg value : 0x");
     Serial.println(pBuffer[0]);

@@ -106,6 +106,7 @@ module drone2 (
     wire imu_data_valid_monitor;
     wire imu_good;
     wire imu_data_valid;
+    wire [15:0] vl53l1x_chip_id;
     wire [7:0] i2c_debug;
     
     //--------- Auto Mode Controller Wires --------//
@@ -244,6 +245,7 @@ module drone2 (
         .linear_accel_x(x_linear_accel),
         .linear_accel_y(y_linear_accel),
         .linear_accel_z(z_linear_accel),
+        .vl53l1x_chip_id(vl53l1x_chip_id),
         // DEBUG WIRE
         .led_data_out(i2c_debug),
         // InOuts
@@ -434,7 +436,8 @@ module drone2 (
         .imu_x_rotation_rate(x_rotation_rate),
         .imu_y_rotation_rate(y_rotation_rate),
         .imu_z_rotation_rate(z_rotation_rate),
-        .imu_calibration_status(i2c_debug),
+        .imu_calibration_status({8'd0, i2c_debug}),
+        //.imu_calibration_status(vl53l1x_chip_id),
         .rec_throttle_val(throttle_val),
         .rec_yaw_val(yaw_val),
         .rec_roll_val(roll_val),

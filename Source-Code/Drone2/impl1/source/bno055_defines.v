@@ -438,5 +438,5 @@ Total: 46 bytes
 `define BNO055_DATA_RX_BYTE_REG_CNT         46           //  The number of byte registers used to receive all measurement data
 `define BNO055_CAL_DATA_REG_CNT             22           //  The number of byte registers needed for all calibration data
 `define BNO055_CHIP_ID_REG                  8'h00        //  Chip ID Register of BNO055 at 0x00
-`define BNO055_SLAVE_ADDRESS                7'b01010_00  //  BNO055 SLAVE address 0x28
+`define BNO055_SLAVE_ADDRESS                7'b010_1000  //  BNO055 SLAVE address 0x28
 

@@ -33,8 +33,8 @@ module uart_top
         imu_x_rotation_rate,
         imu_y_rotation_rate,
         imu_z_rotation_rate,
-    input wire [`REC_VAL_BIT_WIDTH-1:0]
         imu_calibration_status,
+    input wire [`REC_VAL_BIT_WIDTH-1:0]
         rec_throttle_val,
         rec_yaw_val,
         rec_roll_val,

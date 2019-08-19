@@ -29,29 +29,34 @@
 //
 
 
-`define I2C_STATE_BITS                          5             //  The number of bits used to represent the current state
+`define I2C_DRV_STATE_BITS                      5             //  The number of bits used to represent the current state
 // Initial default state of IMU FSM
-`define I2C_STATE_RESET                         0
+`define I2C_DRV_STATE_RESET                     'd0
 // The rest of the startup states
-`define I2C_STATE_BOOT                          1
-`define I2C_STATE_BOOT_WAIT                     2
+`define I2C_DRV_STATE_BOOT                      'd1
+`define I2C_DRV_STATE_BOOT_WAIT                 'd2
 
-// Setup BNO055 and begin reading
-`define I2C_BNO055_STATE_READ_CHIP_ID           3
-`define I2C_BNO055_STATE_SET_UNITS              4
-`define I2C_BNO055_STATE_SET_POWER_MODE         5
-`define I2C_BNO055_STATE_CAL_RESTORE_DATA       6
-`define I2C_BNO055_STATE_CAL_RESTORE_START      7
-`define I2C_BNO055_STATE_CAL_RESTORE_WAIT       8
-`define I2C_BNO055_STATE_CAL_RESTORE_STOP       9
-`define I2C_BNO055_STATE_CAL_RESTORE_AGAIN      10
-`define I2C_BNO055_STATE_SET_EXT_CRYSTAL        11
-`define I2C_BNO055_STATE_SET_RUN_MODE           12
-`define I2C_BNO055_STATE_WAIT_20MS              13
-`define I2C_BNO055_STATE_READ_IMU_DATA_BURST    14
-`define I2C_STATE_WAIT_IMU_POLL_TIME            15
+// Setup ST VL53L1X and begin reading
+`define I2C_VL53L1X_STATE_READ_CHIP_ID          'd3
+
+// Setup Bosch BNO055 and begin reading
+`define I2C_BNO055_STATE_READ_CHIP_ID           'd13
+`define I2C_BNO055_STATE_SET_UNITS              'd14
+`define I2C_BNO055_STATE_SET_POWER_MODE         'd15
+`define I2C_BNO055_STATE_CAL_RESTORE_DATA       'd16
+`define I2C_BNO055_STATE_CAL_RESTORE_START      'd17
+`define I2C_BNO055_STATE_CAL_RESTORE_WAIT       'd18
+`define I2C_BNO055_STATE_CAL_RESTORE_STOP       'd19
+`define I2C_BNO055_STATE_CAL_RESTORE_AGAIN      'd20
+`define I2C_BNO055_STATE_SET_EXT_CRYSTAL        'd21
+`define I2C_BNO055_STATE_SET_RUN_MODE           'd22
+`define I2C_BNO055_STATE_WAIT_20MS              'd23
+`define I2C_BNO055_STATE_READ_IMU_DATA_BURST    'd24
+
+// Wait here for next polling interval
+`define I2C_DRV_STATE_WAIT_IMU_POLL_TIME        'd25
 
 // Minor FSM states, repeated for every read or write
-`define I2C_SUB_STATE_START                     16
-`define I2C_SUB_STATE_WAIT_I2C                  17
-`define I2C_SUB_STATE_STOP                      18
+`define I2C_DRV_SUB_STATE_START                 'd26
+`define I2C_DRV_SUB_STATE_WAIT_I2C              'd27
+`define I2C_DRV_SUB_STATE_STOP                  'd28
