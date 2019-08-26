@@ -8,28 +8,56 @@
  * Ethan Grinnell, Brett Creeley, Daniel Christiansen, Kirk Hooper, Zachary Clark-Williams
  */
 
-module bno055_module_tb();
-    wire scl_1;
-    wire sda_1;
-    wire scl_2;
-    wire sda_2;
-    reg resetn;
+module i2c_device_driver_tb();
     reg purn;
-    wire resetn_imu;
-    wire [7:0] data_rx;
-    wire sys_clk;
     wire done;
     reg go;
     reg read_write_in = 1;
     reg [3:0] i2c_count;
     reg i2c_ack;
-    reg [7:0]sda_byte;
-    reg next_mod_active;
+    reg [7:0]sda_byte = 0;
     reg next_mod_active_cmd;
+    
+    
+    wire scl_1;
+    wire sda_1;
+    wire scl_2;
+    wire sda_2;
+    reg  resetn;
+    wire [7:0]led_data_out;
+    wire sys_clk;
+    reg  next_mod_active;
+    wire resetn_imu;
+    wire imu_good;
     wire valid_strobe;
+    wire [15:0]accel_rate_x;
+    wire [15:0]accel_rate_y;
+    wire [15:0]accel_rate_z;
+    wire [15:0]magneto_rate_x;
+    wire [15:0]magneto_rate_y;
+    wire [15:0]magneto_rate_z;
+    wire [15:0]gyro_rate_x;
+    wire [15:0]gyro_rate_y;
+    wire [15:0]gyro_rate_z;
+    wire [15:0]euler_angle_x;
+    wire [15:0]euler_angle_y;
+    wire [15:0]euler_angle_z;
+    wire [15:0]quaternion_data_w;
+    wire [15:0]quaternion_data_x;
+    wire [15:0]quaternion_data_y;
+    wire [15:0]quaternion_data_z;
+    wire [15:0]linear_accel_x;
+    wire [15:0]linear_accel_y;
+    wire [15:0]linear_accel_z;
+    wire [15:0]gravity_accel_x;
+    wire [15:0]gravity_accel_y;
+    wire [15:0]gravity_accel_z;
+    wire [7:0]temperature;
+    wire [7:0]calib_status;
+    wire [15:0]vl53l1x_chip_id; 
 
-    integer i;
-    integer j;
+    integer i = 0;
+    integer j = 0;
 
 
     GSR GSR_INST (.GSR (resetn));
@@ -41,17 +69,43 @@ module bno055_module_tb();
                     .SEDSTDBY());
 
 
-    bno055_driver #(30) bno055(
+    i2c_device_driver #(30) DUT(
         .scl_1(scl_1),
         .sda_1(sda_1),
         .scl_2(scl_2),
         .sda_2(sda_2),
-        .resetn( (resetn) ),
-        .resetn_imu(resetn_imu),
+        .resetn(resetn),
+        .led_data_out(led_data_out),
+        .sys_clk(sys_clk),
         .next_mod_active(next_mod_active),
+        .resetn_imu(resetn_imu),
+        .imu_good(imu_good),
         .valid_strobe(valid_strobe),
-        .led_data_out(data_rx),
-        .sys_clk(sys_clk)
+        .accel_rate_x(accel_rate_x),
+        .accel_rate_y(accel_rate_y),
+        .accel_rate_z(accel_rate_z),
+        .magneto_rate_x(magneto_rate_x),
+        .magneto_rate_y(magneto_rate_y),
+        .magneto_rate_z(magneto_rate_z),
+        .gyro_rate_x(gyro_rate_x),
+        .gyro_rate_y(gyro_rate_y),
+        .gyro_rate_z(gyro_rate_z),
+        .euler_angle_x(euler_angle_x),
+        .euler_angle_y(euler_angle_y),
+        .euler_angle_z(euler_angle_z),
+        .quaternion_data_w(quaternion_data_w),
+        .quaternion_data_x(quaternion_data_x),
+        .quaternion_data_y(quaternion_data_y),
+        .quaternion_data_z(quaternion_data_z),
+        .linear_accel_x(linear_accel_x),
+        .linear_accel_y(linear_accel_y),
+        .linear_accel_z(linear_accel_z),
+        .gravity_accel_x(gravity_accel_x),
+        .gravity_accel_y(gravity_accel_y),
+        .gravity_accel_z(gravity_accel_z),
+        .temperature(temperature),
+        .calib_status(calib_status),
+        .vl53l1x_chip_id(vl53l1x_chip_id)
         ); /* synthesis syn_hier=hard */;
 
 // Generate a slave ACK every 9 i2c SCL posedges, regardless of what data is on the bus

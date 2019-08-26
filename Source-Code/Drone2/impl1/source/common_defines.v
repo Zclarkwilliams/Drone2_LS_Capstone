@@ -65,8 +65,8 @@
 // Clock dividers and system clock frequency
 `define SYS_CLK_FREQ                        38_000_000                    // Frequency of system clock, in Hz
 `define I2C_CLK_FREQ                        400_000                       // Frequency of i2c scl clock, in Hz
-`define WAIT_MS_DIVIDER                     (`SYS_CLK_FREQ/1_000)         // Number of system clock ticks per ms
-`define WAIT_US_DIVIDER                     (`SYS_CLK_FREQ/1_000_000)     // Number of system clock ticks per us
+`define WAIT_MS_DIVIDER                     (`SYS_CLK_FREQ/1_000)       // Number of system clock ticks per ms
+`define WAIT_US_DIVIDER                     (`SYS_CLK_FREQ/1_000_000)   // Number of system clock ticks per us
 `define WAIT_I2C_DIVIDER                    (`I2C_CLK_FREQ/`SYS_CLK_FREQ) // Number of system clock ticks per i2c scl tick, at i2c rate
 
 // Bit widths
@@ -75,7 +75,7 @@
 `define MOTOR_RATE_BIT_WIDTH                8  
 `define REC_VAL_BIT_WIDTH                   8  // Sized to hold outputs of receiver
 `define PID_RATE_BIT_WIDTH                  16 // Sized to hold values from body frame controller
-`define    RATE_BIT_WIDTH                   16 // Sized to hold values from the angle controller
+`define RATE_BIT_WIDTH                      16 // Sized to hold values from the angle controller
 `define IMU_VAL_BIT_WIDTH                   16 // Sized to hold values from the bno055_driver
 `define DEBUG_WIRE_BIT_WIDTH                16 // DEBUG LED wire bit width to all modules
 

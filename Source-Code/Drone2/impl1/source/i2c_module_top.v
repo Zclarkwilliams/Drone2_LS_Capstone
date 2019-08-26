@@ -16,11 +16,11 @@ module i2c_module(
     inout  wire scl_1, scl_2,                       // I2C EFB #1 and #2 SCL wires
     inout  wire sda_1, sda_2,                       // I2C EFB #1 and #2 SDA wires
     input  wire resetn,                             // Async negative global reset signal 0 = reset, 1 = not reset
-    input  wire [5:0] target_read_count,            // The number of bytes to for the continuous read burst - Max value is 31 bytes
-    output reg  [7:0] module_data_out,              // Received data byte for i2c read cycles
-    input  wire [7:0] module_data_in,               // Byte input for i2c writes
-    input  wire [7:0] module_reg_in,                // Register address to access in i2c write cycles
-    input  wire [6:0] slave_address,                // Slave address to access
+    input  wire [5:0]  target_read_count,           // The number of bytes to for the continuous read burst - Max value is 31 bytes
+    output reg  [7:0]  module_data_out,             // Received data byte for i2c read cycles
+    input  wire [7:0]  module_data_in,              // Byte input for i2c writes
+    input  wire [15:0] module_reg_in,               // Register address to access in i2c write cycles
+    input  wire [6:0]  slave_address,               // Slave address to access
     input  wire read_write_in,                      // Input bit that indicates whether transaction is a read or a write, should be set before "go" is asserted
     input  wire go,                                 // Input signal to i2c module to begin transaction, needs to be asserted until busy output signal is returned
     output reg  one_byte_ready,                     // Strobed when a data byte is read, signals that data has been latched
@@ -483,7 +483,7 @@ module i2c_module(
                         next_we            = `I2C_WE_WRITE;
                         next_stb           = `I2C_CMD_START;
                         next_addr          = efb_registers[`I2C_TXDR_INDEX][i2c_number];
-                        next_data_tx       = module_reg_in;
+                        next_data_tx       = module_reg_in[7:0];
                         next_ack_flag      = `TRUE;
                         next_i2c_cmd_state = `I2C_STATE_W_SET_SLAVE_REG;
                     end
@@ -699,7 +699,7 @@ module i2c_module(
                         next_we            = `I2C_WE_WRITE;
                         next_stb           = `I2C_CMD_START;
                         next_addr          = efb_registers[`I2C_TXDR_INDEX][i2c_number];
-                        next_data_tx       = module_reg_in;
+                        next_data_tx       = module_reg_in[7:0];
                         next_ack_flag      = `TRUE;
                         next_i2c_cmd_state = `I2C_STATE_R_SET_SLAVE_REG;
                     end

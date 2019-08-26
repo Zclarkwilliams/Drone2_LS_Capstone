@@ -72,6 +72,7 @@ module i2c_device_driver #(
     inout  wire sda_1,
     inout  wire sda_2,
     input  wire resetn,
+    //output reg  [7:0]led_data_out,
     output wire [7:0]led_data_out,
     input  wire sys_clk,
     input  wire next_mod_active,
@@ -110,18 +111,18 @@ module i2c_device_driver #(
     reg  next_go_flag;                                //  Next value of the i2c module GO flag
     wire one_byte_ready;                              //  Flag from i2c module indicating that a byte has been received, data_rx is valid
     wire busy;                                        //  Flag from i2c module indicating that a transaction is in progress
+    reg  [6:0]slave_address;                          //  Slave address of device being accessed
+    reg  [6:0]next_slave_address;                     //  Next value of slave address of device being accessed
+    reg  [15:0]data_reg;                              //  Register address of device being accessed
+    reg  [15:0]next_data_reg;                         //  Next value of register address 
+    reg  [7:0]data_tx;                                //  Data written to register of device being accessed
+    reg  [7:0]next_data_tx;                           //  Next value of data written to register of device being accessed
     wire [7:0]data_rx;                                //  Receives an RX data byte from i2c module
-    reg  [7:0]data_reg;                               //  Wishbone address register
-    reg  [7:0]data_tx;                                //  Temp storage of data to be written
-    reg  [7:0]next_data_reg;                          //  Command register address
-    reg  [7:0]next_data_tx;                           //  Data written to registers for this command
-    reg  [6:0]slave_address;                          //  Slave address to access
-    reg  [6:0]next_slave_address;                     //  Next value of slave address
-    reg  [`I2C_DRV_STATE_BITS-1:0]i2c_state;              //  State for i2c command sequence FSM
-    reg  [`I2C_DRV_STATE_BITS-1:0]next_i2c_state;         //  Next FSM state
-    reg  [`I2C_DRV_STATE_BITS-1:0]return_state;           //  FSM return state from i2c sub state
-    reg  [`I2C_DRV_STATE_BITS-1:0]next_return_state;      //  Next value for FSM return state
-    reg  [15:0]count_ms;                              //  Count from 0 to value determined by clock rate, used to generate N ms delay trigger
+    reg  [`I2C_DRV_STATE_BITS-1:0]i2c_state;          //  State for i2c command sequence FSM
+    reg  [`I2C_DRV_STATE_BITS-1:0]next_i2c_state;     //  Next FSM state
+    reg  [`I2C_DRV_STATE_BITS-1:0]return_state;       //  FSM return state from i2c sub state
+    reg  [`I2C_DRV_STATE_BITS-1:0]next_return_state;  //  Next value for FSM return state
+    reg  [15:0]count_ms;                              //  Count number of milliseconds for delay timer, used to generate N ms delay trigger
     reg  clear_waiting_ms;                            //  Reset waiting X ms timer.
     reg  count_ms_init_time;                          //  Set count_ms timer to init time when set (Defaults to 650 ms) or regular polling interval (20 ms) when clear
     reg  [5:0]target_read_count;                      //  The number of bytes to access for a read command (Writes are always for a single byte)
@@ -146,10 +147,12 @@ module i2c_device_driver #(
     reg calibrated_once;                              //  Flag that specifies whether the calibration has been restored once yet or not, used to run calibration twice
     reg next_calibrated_once;                         //  The next value of the calibrated once flag
     reg valid_strobe_enable;                          //  Enables the valid_strobe for one or two clock cycles
-    reg next_valid_strobe_enable;                     //  The next value of the valid strobe enable
-    reg [15:0]master_trigger_count_ms;                //  Counter used to generate a periodic 20ms timer tick.
+    reg [20:0]master_trigger_count_ms;                //  Counter used to generate a periodic 20ms timer tick.
     reg [16:0]count_sys_clk_for_ms;                   //  Counts number of sys clock ticks and generate a pulse (1 sys_clk duration) every 38k (1ms)
-    reg pulse_every_1_ms;                             //  Pulse (1 sys_clk duration) every 38k sys_clk ticks (1ms)
+    reg delay_timer_done;                             //  Count down timer has reached final value, 0 = no, 1 = yes
+    reg delay_timer_started;                          //  Count down timer started, 0 = no, 1 = yes
+    reg delay_timer_at_init;                          //  Count down timer at init value, 0 = no, 1 = yes
+    reg delay_timer_at_poll;                          //  Count down timer at polling value, 0 = no, 1 = yes
 
     //
     //  Module body
@@ -157,6 +160,35 @@ module i2c_device_driver #(
     // Changed this from 81 to 41 since LED2 is burned out on the board I am testing with
     //assign led_data_out = (i2c_state    <= `I2C_DRV_STATE_BOOT_WAIT ) ? 8'h41 : data_rx_reg[led_view_index]; //  Output for calibration status LEDs OR indicates that the IMU is in reset
     assign led_data_out = i2c_state<<1;
+/*   
+    always@(*) begin
+        if(~resetn)
+            led_data_out <= 0;
+        else
+           case(i2c_state)
+               `I2C_DRV_STATE_BOOT                  : led_data_out = 8'd1 <<1;
+               `I2C_DRV_STATE_BOOT_WAIT             : led_data_out = 8'd2 <<1;
+               `I2C_VL53L1X_STATE_READ_CHIP_ID      : led_data_out = 8'd3 <<1;
+               `I2C_BNO055_STATE_READ_CHIP_ID       : led_data_out = 8'd13<<1;
+               `I2C_BNO055_STATE_SET_UNITS          : led_data_out = 8'd14<<1;
+               `I2C_BNO055_STATE_SET_POWER_MODE     : led_data_out = 8'd15<<1;
+               `I2C_BNO055_STATE_CAL_RESTORE_DATA   : led_data_out = 8'd16<<1;
+               `I2C_BNO055_STATE_CAL_RESTORE_START  : led_data_out = 8'd17<<1;
+               `I2C_BNO055_STATE_CAL_RESTORE_WAIT   : led_data_out = 8'd18<<1;
+               `I2C_BNO055_STATE_CAL_RESTORE_STOP   : led_data_out = 8'd19<<1;
+               `I2C_BNO055_STATE_CAL_RESTORE_AGAIN  : led_data_out = 8'd20<<1;
+               `I2C_BNO055_STATE_SET_EXT_CRYSTAL    : led_data_out = 8'd21<<1;
+               `I2C_BNO055_STATE_SET_RUN_MODE       : led_data_out = 8'd22<<1;
+               `I2C_BNO055_STATE_WAIT_20MS          : led_data_out = 8'd23<<1;
+               `I2C_BNO055_STATE_READ_IMU_DATA_BURST: led_data_out = 8'd24<<1;
+               `I2C_DRV_STATE_WAIT_IMU_POLL_TIME    : led_data_out = 8'd25<<1;
+               `I2C_DRV_SUB_STATE_START             : led_data_out = 8'd26<<1;
+               `I2C_DRV_SUB_STATE_WAIT_I2C          : led_data_out = 8'd27<<1;
+               `I2C_DRV_SUB_STATE_STOP              : led_data_out = 8'd28<<1;
+               default                              : led_data_out = 8'hFF;
+           endcase
+    end
+*/    
 
     //  Instantiate i2c driver
     i2c_module i2c( .scl_1(scl_1),
@@ -177,44 +209,67 @@ module i2c_device_driver #(
                     .i2c_number(i2c_number),
                     .sys_clk(sys_clk)
     );
-
-    // Generates a sys_clk duration tick every 1 ms (38k sys_clk ticks)
-    always@(posedge sys_clk, negedge resetn) begin
-        if(~resetn) begin
-            count_sys_clk_for_ms <= (17'd38_000 - 1)/2; //Make the first tick only a half ms delay
-            pulse_every_1_ms     <= 1'b0;
-        end
-        else begin
-            if (~count_sys_clk_for_ms[16]) begin
-                count_sys_clk_for_ms <= (count_sys_clk_for_ms - 16'd1);
-                pulse_every_1_ms     <= 1'b0;
-            end
-            else begin
-                count_sys_clk_for_ms <= (76'd38_000 - 1);
-                pulse_every_1_ms     <= 1'b1;
-            end
-        end
-    end
-
+    
+    
     //  Generates a multiple of 1ms length duration delay trigger - Defaulted to 650 ms for BNO055 reset and boot time
     //  When the count down counter wraps around the timer is triggered and stops counting
-    always@(negedge sys_clk, negedge clear_waiting_ms, negedge resetn) begin
-        if(~resetn)
-            count_ms <= INIT_INTERVAL;
-        else if( clear_waiting_ms == `CLEAR_MS_TIMER ) begin
-            if (count_ms_init_time)
-                count_ms <= INIT_INTERVAL;         // Set delay to 650 ms for BNO055 to initialize  
-            else
-                count_ms <= POLL_INTERVAL;         // Normal 20 ms interval between data polls
+    always@(negedge sys_clk, negedge resetn) begin
+        if(~resetn) begin
+            count_ms             <= INIT_INTERVAL;
+            count_sys_clk_for_ms <= `WAIT_MS_DIVIDER - 16'd1;
+            delay_timer_done     <= `FALSE;
+            delay_timer_started  <= `FALSE;
+            delay_timer_at_init  <= `FALSE;
+            delay_timer_at_poll  <= `FALSE;
         end
-        else if( ~count_ms[15] && pulse_every_1_ms)// Only count down if not wrapped around yet and at 1ms tick
-            count_ms <= (count_ms - 16'd1);     
-        else
-            count_ms <= count_ms;
+        else if( clear_waiting_ms == `CLEAR_MS_TIMER ) begin //Timer clear asserted, set initial values
+            count_sys_clk_for_ms <= `WAIT_MS_DIVIDER - 16'd1;
+            delay_timer_started  <= `FALSE;
+            delay_timer_done     <= `FALSE;
+            delay_timer_at_init  <= `FALSE;
+            if (count_ms_init_time) begin
+                count_ms            <= INIT_INTERVAL;         // Set delay to startup time (650 ms for BNO055 to initialize)  
+                delay_timer_at_init <= `TRUE;
+                delay_timer_at_poll <= `FALSE;
+            end
+            else begin
+                count_ms            <= POLL_INTERVAL;         // Normal 20 ms interval between data polls
+                delay_timer_at_init <= `FALSE;
+                delay_timer_at_poll <= `TRUE;
+            end
+        end
+        else if(count_sys_clk_for_ms[16]) begin    //sys_clk tick counter wrapped around, trigger 1 ms update
+            delay_timer_started      <= `TRUE;
+            delay_timer_at_init      <= `FALSE;
+            delay_timer_at_poll      <= `FALSE;
+            if( ~count_ms[15]) begin               // Only count down if ms timer not wrapped around yet and at 1ms tick
+                count_sys_clk_for_ms <= `WAIT_MS_DIVIDER - 16'd1;
+                count_ms             <= count_ms - 16'd1;     
+                delay_timer_done     <= `FALSE;
+            end
+            else begin                             //Both counters wrapped around, we're done!
+                count_sys_clk_for_ms <= count_sys_clk_for_ms;
+                count_ms             <= count_ms;     
+                delay_timer_done     <= `TRUE;
+            end
+        end
+        else begin
+            count_sys_clk_for_ms <= count_sys_clk_for_ms - 16'd1;
+            delay_timer_done     <= `FALSE;
+            delay_timer_at_init  <= `FALSE;
+            delay_timer_at_poll  <= `FALSE;
+            delay_timer_started  <= `TRUE;
+            if(count_ms[15])
+                count_ms         <= count_ms;
+            else
+                count_ms         <= count_ms - 16'd1;
+        end
     end
 
-    //  During a read cycle decrement the data_rx_reg_index until it reaches 0 if one_byte_ready is asserted
-    //  If a byte has been read assign it to the data_rx_reg byte array at the location specified by data_rx_reg_index
+    
+    
+    //  During a read cycle increment the data_rx_reg_index until it reaches the end of  data_rx_reg
+    //  If a byte has been read (one_byte_ready is asserted) assign it to the data_rx_reg byte array at the location specified by data_rx_reg_index
     always@(posedge sys_clk, negedge resetn_buffer, negedge resetn) begin
         if(~resetn) begin
             // Initialize data rx register to all 0s on reset
@@ -265,12 +320,12 @@ module i2c_device_driver #(
     //  Otherwise it will be asserted the next clock tick
     always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin  // Reset, set starting values
-            master_trigger_count_ms <= 16'd20;
+            master_trigger_count_ms <= `WAIT_MS_DIVIDER*'d20;
             valid_strobe_enable     <= `FALSE;
         end 
         //  Timer wrapped around and rx_data_latch_strobe not asserted, reset timer and assert enable
         else if( master_trigger_count_ms[15] == `TRUE && ~rx_data_latch_strobe) begin
-            master_trigger_count_ms <= 16'd20;
+            master_trigger_count_ms <= `WAIT_MS_DIVIDER*'d20;
             valid_strobe_enable     <= `TRUE;
         end 
         //  Timer wrapped around and rx_data_latch_strobe is asserted, leave timer and do not assert enable
@@ -280,10 +335,7 @@ module i2c_device_driver #(
         end
         //  Timer has not wrapped around, just decrement by 1 every 1ms, otherwise don't decrement timer
         else begin
-            if(pulse_every_1_ms)
-                master_trigger_count_ms <= (master_trigger_count_ms - 1'b1);
-            else
-                master_trigger_count_ms <= master_trigger_count_ms;
+            master_trigger_count_ms <= (master_trigger_count_ms - 1'b1);
             valid_strobe_enable     <= `FALSE;
         end
     end
@@ -470,7 +522,7 @@ module i2c_device_driver #(
                     next_imu_good      = `FALSE;
                     clear_waiting_ms   = `RUN_MS_TIMER;
                     count_ms_init_time = `TRUE;
-                    if(count_ms[15] || (count_ms == 16'd0)) //Timer not yet set to starting value
+                    if(~delay_timer_started) //Timer not yet set to starting value
                         next_i2c_state      = `I2C_DRV_STATE_RESET;
                     else
                         next_i2c_state      = `I2C_DRV_STATE_BOOT;
@@ -485,7 +537,7 @@ module i2c_device_driver #(
                     count_ms_init_time = `TRUE;
                     // Wait for I2C to boot then start wait for IMU
                     // Also wait for timer to initialize to INIT_INTERVAL
-                    if(~busy &&(count_ms == INIT_INTERVAL))
+                    if(~busy && delay_timer_at_init)
                         next_i2c_state = `I2C_DRV_STATE_BOOT_WAIT;
                     else 
                         next_i2c_state = `I2C_DRV_STATE_BOOT;
@@ -497,8 +549,8 @@ module i2c_device_driver #(
                     count_ms_init_time = `FALSE;  
                     next_i2c_state     = `I2C_DRV_STATE_BOOT_WAIT;
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
-                    // Wait for I2C to be not busy and timer to be set (not maximum)
-                    if(~busy && count_ms[15])
+                    // Wait for I2C to be not busy and delay timer done
+                    if(~busy && delay_timer_done)
                         next_i2c_state     = `I2C_VL53L1X_STATE_READ_CHIP_ID;
                     else
                         next_i2c_state     = `I2C_DRV_STATE_BOOT_WAIT;
@@ -550,10 +602,11 @@ module i2c_device_driver #(
                     clear_waiting_ms   = `RUN_MS_TIMER;
                     next_go_flag       = `NOT_GO;
                     next_i2c_state     = `I2C_DRV_SUB_STATE_START;
-                    if(`BNO055_CAL_RESTORE_ENABLE)
-                        next_return_state  = `I2C_BNO055_STATE_CAL_RESTORE_DATA;
-                    else
-                        next_return_state  = `I2C_BNO055_STATE_SET_EXT_CRYSTAL;
+`ifdef BNO055_CAL_RESTORE_ENABLE
+                    next_return_state  = `I2C_BNO055_STATE_CAL_RESTORE_DATA;
+`else
+                    next_return_state  = `I2C_BNO055_STATE_SET_EXT_CRYSTAL;
+`endif
                     next_data_reg      = `BNO055_PWR_MODE_ADDR;
                     next_data_tx       = `BNO055_POWER_MODE_NORMAL;
                     next_read_write_in = `I2C_WRITE;
@@ -677,7 +730,7 @@ module i2c_device_driver #(
                     next_data_tx       = `BNO055_OPERATION_MODE_NDOF;
                     next_read_write_in = `I2C_WRITE;
                     // Wait for I2C to be not busy and timer to be set to polling time interval (20 ms)
-                    if(~busy && (count_ms == POLL_INTERVAL) )
+                    if(~busy && delay_timer_at_poll)
                         next_i2c_state = `I2C_DRV_SUB_STATE_START;
                     else
                         next_i2c_state = `I2C_BNO055_STATE_SET_RUN_MODE;
@@ -690,8 +743,8 @@ module i2c_device_driver #(
                     next_data_tx       = `BYTE_ALL_ZERO;
                     next_go_flag       = `NOT_GO;
                     resetn_buffer      = `LOW; // Clear RX data buffer index before starting next state's read burst
-                    // Wait for I2C to be not busy and timer to be at maximum
-                    if(~busy && count_ms[15])
+                    // Wait for I2C to be not busy and delay timer done
+                    if(~busy && delay_timer_done)
                         next_i2c_state = `I2C_BNO055_STATE_READ_IMU_DATA_BURST;
                     else
                         next_i2c_state = `I2C_BNO055_STATE_WAIT_20MS;
@@ -709,7 +762,7 @@ module i2c_device_driver #(
                     next_target_read_count = `BNO055_DATA_RX_BYTE_REG_CNT;
                     next_led_view_index    = (`BNO055_DATA_RX_BYTE_REG_CNT-1); // Calibration status will be in the last byte buffer, index 45
                     // Wait for I2C to be not busy and timer to be set to polling time interval (20 ms)
-                    if(~busy && (count_ms == POLL_INTERVAL) )
+                    if(~busy && delay_timer_at_poll)
                         next_i2c_state     = `I2C_DRV_SUB_STATE_START;
                     else
                         next_i2c_state     = `I2C_BNO055_STATE_READ_IMU_DATA_BURST;
@@ -725,7 +778,8 @@ module i2c_device_driver #(
                     next_data_tx           = `BYTE_ALL_ZERO;
                     next_go_flag           = `NOT_GO;
                     resetn_buffer          = `LOW; // Clear the RX data buffer index starting next state's read burst
-                    if(~busy && count_ms[15])  // Wait for count_ms wrap around
+                    // Wait for I2C to be not busy and delay timer done
+                    if(~busy && delay_timer_done)
                         next_i2c_state     = `I2C_BNO055_STATE_READ_IMU_DATA_BURST;
                     else
                         next_i2c_state     = `I2C_DRV_STATE_WAIT_IMU_POLL_TIME;
