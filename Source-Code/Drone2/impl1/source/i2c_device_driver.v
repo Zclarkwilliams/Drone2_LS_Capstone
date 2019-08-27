@@ -215,25 +215,30 @@ module i2c_device_driver #(
     //  When the count down counter wraps around the timer is triggered and stops counting
     always@(negedge sys_clk, negedge resetn) begin
         if(~resetn) begin
+            //$display("nMs timer reset");
             count_ms             <= INIT_INTERVAL;
-            count_sys_clk_for_ms <= `WAIT_MS_DIVIDER - 16'd1;
+            count_sys_clk_for_ms <= `WAIT_MS_DIVIDER - 17'd1;
             delay_timer_done     <= `FALSE;
             delay_timer_started  <= `FALSE;
             delay_timer_at_init  <= `FALSE;
             delay_timer_at_poll  <= `FALSE;
         end
-        else if( clear_waiting_ms == `CLEAR_MS_TIMER ) begin //Timer clear asserted, set initial values
-            count_sys_clk_for_ms <= `WAIT_MS_DIVIDER - 16'd1;
+        else if( clear_waiting_ms == `CLEAR_MS_TIMER ) begin  //Timer clear asserted, set initial values
+            //$display("nMs timer cleared");
+            // Set to value minus 2 because we count down to 0 and wrap around, which takes 2 additional ticks
+            count_sys_clk_for_ms <= `WAIT_MS_DIVIDER - 17'd2;
             delay_timer_started  <= `FALSE;
             delay_timer_done     <= `FALSE;
             delay_timer_at_init  <= `FALSE;
             if (count_ms_init_time) begin
-                count_ms            <= INIT_INTERVAL;         // Set delay to startup time (650 ms for BNO055 to initialize)  
+                //$display("nMs timer set to init interval");
+                count_ms            <= INIT_INTERVAL - 16'd2; // Set delay to startup time (650 ms for BNO055 to initialize)  
                 delay_timer_at_init <= `TRUE;
                 delay_timer_at_poll <= `FALSE;
             end
             else begin
-                count_ms            <= POLL_INTERVAL;         // Normal 20 ms interval between data polls
+                //$display("nMs timer set to poll interval");
+                count_ms            <= POLL_INTERVAL - 16'd2; // Normal 20 ms interval between data polls
                 delay_timer_at_init <= `FALSE;
                 delay_timer_at_poll <= `TRUE;
             end
@@ -242,27 +247,27 @@ module i2c_device_driver #(
             delay_timer_started      <= `TRUE;
             delay_timer_at_init      <= `FALSE;
             delay_timer_at_poll      <= `FALSE;
-            if( ~count_ms[15]) begin               // Only count down if ms timer not wrapped around yet and at 1ms tick
+            if( ~count_ms[15]) begin               // Only count down ms timer if not wrapped around yet
+                //$display("nMs timer wrapped on sys_clk but not ms timer");
                 count_sys_clk_for_ms <= `WAIT_MS_DIVIDER - 16'd1;
                 count_ms             <= count_ms - 16'd1;     
                 delay_timer_done     <= `FALSE;
             end
             else begin                             //Both counters wrapped around, we're done!
+                //$display("nMs timer wrapped on sys_clk AND ms timer");
                 count_sys_clk_for_ms <= count_sys_clk_for_ms;
                 count_ms             <= count_ms;     
                 delay_timer_done     <= `TRUE;
             end
         end
         else begin
-            count_sys_clk_for_ms <= count_sys_clk_for_ms - 16'd1;
-            delay_timer_done     <= `FALSE;
-            delay_timer_at_init  <= `FALSE;
-            delay_timer_at_poll  <= `FALSE;
-            delay_timer_started  <= `TRUE;
-            if(count_ms[15])
-                count_ms         <= count_ms;
-            else
-                count_ms         <= count_ms - 16'd1;
+            //$display("nMs timer decrement sys_clk counter");
+            count_sys_clk_for_ms     <= count_sys_clk_for_ms - 16'd1;
+            delay_timer_done         <= `FALSE;
+            delay_timer_at_init      <= `FALSE;
+            delay_timer_at_poll      <= `FALSE;
+            delay_timer_started      <= `TRUE;
+            count_ms                 <= count_ms;
         end
     end
 
@@ -320,16 +325,16 @@ module i2c_device_driver #(
     //  Otherwise it will be asserted the next clock tick
     always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin  // Reset, set starting values
-            master_trigger_count_ms <= `WAIT_MS_DIVIDER*'d20;
+            master_trigger_count_ms <= `WAIT_MS_DIVIDER * POLL_INTERVAL;
             valid_strobe_enable     <= `FALSE;
         end 
         //  Timer wrapped around and rx_data_latch_strobe not asserted, reset timer and assert enable
-        else if( master_trigger_count_ms[15] == `TRUE && ~rx_data_latch_strobe) begin
-            master_trigger_count_ms <= `WAIT_MS_DIVIDER*'d20;
+        else if( master_trigger_count_ms[20] == `TRUE && ~rx_data_latch_strobe) begin
+            master_trigger_count_ms <= `WAIT_MS_DIVIDER * POLL_INTERVAL;
             valid_strobe_enable     <= `TRUE;
         end 
         //  Timer wrapped around and rx_data_latch_strobe is asserted, leave timer and do not assert enable
-        else if( master_trigger_count_ms[15] == `TRUE && rx_data_latch_strobe) begin
+        else if( master_trigger_count_ms[20] == `TRUE && rx_data_latch_strobe) begin
             master_trigger_count_ms <= master_trigger_count_ms;
             valid_strobe_enable     <= `FALSE;
         end
@@ -551,7 +556,8 @@ module i2c_device_driver #(
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
                     // Wait for I2C to be not busy and delay timer done
                     if(~busy && delay_timer_done)
-                        next_i2c_state     = `I2C_VL53L1X_STATE_READ_CHIP_ID;
+                        //next_i2c_state     = `I2C_VL53L1X_STATE_READ_CHIP_ID;
+                        next_i2c_state     = `I2C_BNO055_STATE_READ_CHIP_ID;
                     else
                         next_i2c_state     = `I2C_DRV_STATE_BOOT_WAIT;
                 end
