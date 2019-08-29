@@ -72,8 +72,8 @@ module i2c_device_driver #(
     inout  wire sda_1,
     inout  wire sda_2,
     input  wire resetn,
-    //output reg  [7:0]led_data_out,
-    output wire [7:0]led_data_out,
+    output reg  [7:0]led_data_out,
+//    output wire [7:0]led_data_out,
     input  wire sys_clk,
     input  wire next_mod_active,
     output wire resetn_imu,
@@ -153,14 +153,17 @@ module i2c_device_driver #(
     reg delay_timer_started;                          //  Count down timer started, 0 = no, 1 = yes
     reg delay_timer_at_init;                          //  Count down timer at init value, 0 = no, 1 = yes
     reg delay_timer_at_poll;                          //  Count down timer at polling value, 0 = no, 1 = yes
+    reg is_2_byte_reg;                                //  This I2C device uses 2 byte registers, boolean 1 = true, 0 = false - If yes, then MSB transmitted first, then LSB
+    reg next_is_2_byte_reg;                           //  Nexst value of I2C 2 byte register bool
+
 
     //
     //  Module body
     //
     // Changed this from 81 to 41 since LED2 is burned out on the board I am testing with
     //assign led_data_out = (i2c_state    <= `I2C_DRV_STATE_BOOT_WAIT ) ? 8'h41 : data_rx_reg[led_view_index]; //  Output for calibration status LEDs OR indicates that the IMU is in reset
-    assign led_data_out = i2c_state<<1;
-/*   
+//    assign led_data_out = i2c_state<<1;
+///*   
     always@(*) begin
         if(~resetn)
             led_data_out <= 0;
@@ -188,7 +191,7 @@ module i2c_device_driver #(
                default                              : led_data_out = 8'hFF;
            endcase
     end
-*/    
+//*/    
 
     //  Instantiate i2c driver
     i2c_module i2c( .scl_1(scl_1),
@@ -203,6 +206,7 @@ module i2c_device_driver #(
                     .module_data_in(data_tx),
                     .module_reg_in(data_reg),
                     .read_write_in(read_write_in),
+                    .is_2_byte_reg(is_2_byte_reg),
                     .go(go),
                     .busy(busy),
                     .one_byte_ready(one_byte_ready),
@@ -460,6 +464,7 @@ module i2c_device_driver #(
             calibrated_once     <= `FALSE;
             rx_data_latch_tmp   <= `LOW;
             rx_from_vl53l1x     <= `FALSE;
+            is_2_byte_reg       <= `FALSE;
         end
         else begin
             data_reg            <= next_data_reg;
@@ -475,6 +480,7 @@ module i2c_device_driver #(
             calibrated_once     <= next_calibrated_once;
             rx_data_latch_tmp   <= rx_data_latch_strobe;
             rx_from_vl53l1x     <= next_rx_from_vl53l1x;
+            is_2_byte_reg       <= next_is_2_byte_reg;
         end
     end
 
@@ -493,6 +499,7 @@ module i2c_device_driver #(
             next_read_write_in        = `I2C_READ;
             next_led_view_index       = `FALSE;
             next_rx_from_vl53l1x      = `FALSE;
+            next_is_2_byte_reg        = `FALSE;
             resetn_buffer             = `LOW;
             next_target_read_count    = 1'b1;
             rx_data_latch_strobe      = `LOW;
@@ -514,6 +521,7 @@ module i2c_device_driver #(
             next_read_write_in        = read_write_in;
             next_led_view_index       = led_view_index;
             next_rx_from_vl53l1x      = rx_from_vl53l1x;
+            next_is_2_byte_reg        = is_2_byte_reg;
             resetn_buffer             = `HIGH;
             next_target_read_count    = target_read_count;
             rx_data_latch_strobe      = `LOW;
@@ -571,6 +579,7 @@ module i2c_device_driver #(
                     next_data_tx           = `BYTE_ALL_ZERO;
                     next_read_write_in     = `I2C_READ;
                     next_rx_from_vl53l1x   = `TRUE;
+                    next_is_2_byte_reg     = `TRUE;
                     next_target_read_count = 5'd2;
                     next_led_view_index    = 1'b0;
                 end
@@ -829,6 +838,8 @@ module i2c_device_driver #(
                     next_data_tx           = `BYTE_ALL_ZERO;
                     next_read_write_in     = `I2C_READ;
                     next_led_view_index    = `FALSE;
+                    next_rx_from_vl53l1x   = `FALSE;
+                    next_is_2_byte_reg     = `FALSE;
                     resetn_buffer          = `LOW;
                     next_target_read_count = 1'b1;
                     rx_data_latch_strobe   = `LOW;

@@ -21,6 +21,7 @@ module i2c_module(
     input  wire [7:0]  module_data_in,              // Byte input for i2c writes
     input  wire [15:0] module_reg_in,               // Register address to access in i2c write cycles
     input  wire [6:0]  slave_address,               // Slave address to access
+    input  wire is_2_byte_reg,                      // This I2C device uses 2 byte registers, boolean 1 = true, 0 = false - If yes, then MSB transmitted first, then LSB
     input  wire read_write_in,                      // Input bit that indicates whether transaction is a read or a write, should be set before "go" is asserted
     input  wire go,                                 // Input signal to i2c module to begin transaction, needs to be asserted until busy output signal is returned
     output reg  one_byte_ready,                     // Strobed when a data byte is read, signals that data has been latched
@@ -42,8 +43,8 @@ module i2c_module(
     reg  write_action;                              // Write flag for calling this function, will be used to determine whether to follow read or write sequence.
     reg  [7:0]next_addr;                            // Command register address
     reg  [7:0]next_data_tx;                         // Data written to registers for this command
-    reg  [(`I2C_STATE_BITS-1):0]i2c_cmd_state;      // Module FSM state
-    reg  [(`I2C_STATE_BITS-1):0]next_i2c_cmd_state; // Module FSM NEXT state
+    reg  [`I2C_STATE_BITS-1:0]i2c_cmd_state;      // Module FSM state
+    reg  [`I2C_STATE_BITS-1:0]next_i2c_cmd_state; // Module FSM NEXT state
     reg  [11:0]count_us;                            // Count from 0 to value determined by clock rate, used to generate 1us delay trigger
     reg  clear_waiting_us;                          // Start multi-us counter from pre-set start value
     reg  [31:0]count_wd_delay ;                     // Countdown watchdog timer for hardware reset
@@ -390,9 +391,9 @@ module i2c_module(
                         next_i2c_cmd_state = `I2C_STATE_WAIT_NOT_BUSY;
                         if( (data_rx && ( data_rx[`I2C_SR_TRRDY] == `I2C_BUS_TRRDY_READY) && (data_rx[`I2C_SR_BUSY] == `I2C_BUS_BUSY) ) || (data_rx[`I2C_SR_BUSY] == `I2C_BUS_NOT_BUSY) ) begin
                             if(read_action)
-                                next_i2c_cmd_state = `I2C_STATE_R_SET_SLAVE_WRITE;
+                                next_i2c_cmd_state = `I2C_STATE_R_SET_WRITE0;
                             else if(write_action)
-                                next_i2c_cmd_state = `I2C_STATE_W_SET_SLAVE_WRITE;
+                                next_i2c_cmd_state = `I2C_STATE_W_SET_WRITE0;
                             // If Neither of these then it will default to wait more, one of them should have been asserted by this point
                         end
                     end
@@ -410,7 +411,7 @@ module i2c_module(
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
                 // Start of WRITE sequence
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-                `I2C_STATE_W_SET_SLAVE_WRITE: begin // Set target slave address with write bit appended
+                `I2C_STATE_W_SET_WRITE0: begin // Set target slave address with write bit appended
                     clear_watchdog         = `RUN_WD_TIMER; // Start watchdog timer
                     if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
                         next_we            = `I2C_WE_READ;
@@ -419,7 +420,7 @@ module i2c_module(
                         next_data_tx       = `BYTE_ALL_ZERO;
                         next_ack_flag      = `FALSE;
                         busy               = `HIGH;
-                        next_i2c_cmd_state = `I2C_STATE_W_SET_WRITE;
+                        next_i2c_cmd_state = `I2C_STATE_W_SET_WRITE1;
                     end
                     else begin
                         next_we            = `I2C_WE_WRITE;
@@ -428,10 +429,10 @@ module i2c_module(
                         next_data_tx       = {slave_address,`I2C_BUS_WR_BIT};
                         next_ack_flag      = `TRUE;
                         busy               = `HIGH;
-                        next_i2c_cmd_state = `I2C_STATE_W_SET_SLAVE_WRITE;
+                        next_i2c_cmd_state = `I2C_STATE_W_SET_WRITE0;
                     end
                 end
-                `I2C_STATE_W_SET_WRITE: begin // Send I2C command STA and WR
+                `I2C_STATE_W_SET_WRITE1: begin // Send I2C command STA and WR
                     if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
                         next_we            = `I2C_WE_READ;
                         next_stb           = `I2C_CMD_STOP;
@@ -446,7 +447,7 @@ module i2c_module(
                         next_addr          = efb_registers[`I2C_CMDR_INDEX][i2c_number];
                         next_data_tx       = (`I2C_CMDR_STA | `I2C_CMDR_WR );
                         next_ack_flag      = `TRUE;
-                        next_i2c_cmd_state = `I2C_STATE_W_SET_WRITE;
+                        next_i2c_cmd_state = `I2C_STATE_W_SET_WRITE1;
                     end
                 end
                 `I2C_STATE_W_READ_CHK_SR1: begin // Check Transmit/Receive Ready bit
@@ -458,7 +459,10 @@ module i2c_module(
                         next_ack_flag      = `FALSE;
                         next_i2c_cmd_state = `I2C_STATE_W_READ_CHK_SR1;
                         if(data_rx && (data_rx[`I2C_SR_TRRDY] == `I2C_BUS_TRRDY_READY) ) begin
-                                next_i2c_cmd_state = `I2C_STATE_W_SET_SLAVE_REG;
+                            if(is_2_byte_reg)
+                                next_i2c_cmd_state = `I2C_STATE_W_SET_REG_MSB;
+                            else
+                                next_i2c_cmd_state = `I2C_STATE_W_SET_REG_LSB;
                         end
                     end
                     else begin
@@ -470,14 +474,50 @@ module i2c_module(
                         next_i2c_cmd_state = `I2C_STATE_W_READ_CHK_SR1;
                     end
                 end
-                `I2C_STATE_W_SET_SLAVE_REG: begin // Store the slave's register/memory address to access
+                `I2C_STATE_W_SET_REG_MSB: begin // Store the slave's register/memory address to access
                     if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
                         next_we            = `I2C_WE_READ;
                         next_stb           = `I2C_CMD_STOP;
                         next_addr          = `BYTE_ALL_ZERO;
                         next_data_tx       = `BYTE_ALL_ZERO;
                         next_ack_flag      = `FALSE;
-                        next_i2c_cmd_state = `I2C_STATE_W_WRITE_SLAVE_REG;
+                        next_i2c_cmd_state = `I2C_STATE_W_WRITE_REG_MSB;
+                    end
+                    else begin
+                        next_we            = `I2C_WE_WRITE;
+                        next_stb           = `I2C_CMD_START;
+                        next_addr          = efb_registers[`I2C_TXDR_INDEX][i2c_number];
+                        next_data_tx       = module_reg_in[15:8];
+                        next_ack_flag      = `TRUE;
+                        next_i2c_cmd_state = `I2C_STATE_W_SET_REG_MSB;
+                    end
+                end
+                `I2C_STATE_W_WRITE_REG_MSB: begin // Send I2C command WR to write the register address to the slave
+                    if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
+                        next_we            = `I2C_WE_READ;
+                        next_stb           = `I2C_CMD_STOP;
+                        next_addr          = `BYTE_ALL_ZERO;
+                        next_data_tx       = `BYTE_ALL_ZERO;
+                        next_ack_flag      = `FALSE;
+                        next_i2c_cmd_state = `I2C_STATE_W_SET_REG_LSB;
+                    end
+                    else begin
+                        next_we            = `I2C_WE_WRITE;
+                        next_stb           = `I2C_CMD_START;
+                        next_addr          = efb_registers[`I2C_CMDR_INDEX][i2c_number];
+                        next_data_tx       = (`I2C_CMDR_WR );
+                        next_ack_flag      = `TRUE;
+                        next_i2c_cmd_state = `I2C_STATE_W_WRITE_REG_MSB;
+                    end
+                end
+                `I2C_STATE_W_SET_REG_LSB: begin // Store the slave's register/memory address to access
+                    if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
+                        next_we            = `I2C_WE_READ;
+                        next_stb           = `I2C_CMD_STOP;
+                        next_addr          = `BYTE_ALL_ZERO;
+                        next_data_tx       = `BYTE_ALL_ZERO;
+                        next_ack_flag      = `FALSE;
+                        next_i2c_cmd_state = `I2C_STATE_W_WRITE_REG_LSB;
                     end
                     else begin
                         next_we            = `I2C_WE_WRITE;
@@ -485,10 +525,10 @@ module i2c_module(
                         next_addr          = efb_registers[`I2C_TXDR_INDEX][i2c_number];
                         next_data_tx       = module_reg_in[7:0];
                         next_ack_flag      = `TRUE;
-                        next_i2c_cmd_state = `I2C_STATE_W_SET_SLAVE_REG;
+                        next_i2c_cmd_state = `I2C_STATE_W_SET_REG_LSB;
                     end
                 end
-                `I2C_STATE_W_WRITE_SLAVE_REG: begin // Send I2C command WR to write the register address to the slave
+                `I2C_STATE_W_WRITE_REG_LSB: begin // Send I2C command WR to write the register address to the slave
                     if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
                         next_we            = `I2C_WE_READ;
                         next_stb           = `I2C_CMD_STOP;
@@ -503,7 +543,7 @@ module i2c_module(
                         next_addr          = efb_registers[`I2C_CMDR_INDEX][i2c_number];
                         next_data_tx       = (`I2C_CMDR_WR );
                         next_ack_flag      = `TRUE;
-                        next_i2c_cmd_state = `I2C_STATE_W_WRITE_SLAVE_REG;
+                        next_i2c_cmd_state = `I2C_STATE_W_WRITE_REG_LSB;
                     end
                 end
                 `I2C_STATE_W_READ_CHK_SR2: begin // Check Transmit/Receive Ready is Ready
@@ -626,7 +666,7 @@ module i2c_module(
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
                 // Start of READ sequence
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
-                `I2C_STATE_R_SET_SLAVE_WRITE: begin // Set target slave address with write bit appended
+                `I2C_STATE_R_SET_WRITE0: begin // Set target slave address with write bit appended
                     clear_read_count       = `LOW; // Clear the previous bytes read counter
                     clear_watchdog         = `RUN_WD_TIMER; // Start watchdog timer
                     if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
@@ -643,7 +683,7 @@ module i2c_module(
                         next_addr          = efb_registers[`I2C_TXDR_INDEX][i2c_number];
                         next_data_tx       = {slave_address,`I2C_BUS_WR_BIT};
                         next_ack_flag      = `TRUE;
-                        next_i2c_cmd_state = `I2C_STATE_R_SET_SLAVE_WRITE;
+                        next_i2c_cmd_state = `I2C_STATE_R_SET_WRITE0;
                     end
                 end
                 `I2C_STATE_R_SET_WRITE1: begin // Send I2C command STA and WR
@@ -674,7 +714,10 @@ module i2c_module(
                         next_ack_flag      = `FALSE;
                         next_i2c_cmd_state = `I2C_STATE_R_READ_CHK_SR1;
                         if(data_rx && (data_rx[`I2C_SR_TRRDY] == `I2C_BUS_TRRDY_READY) ) begin
-                            next_i2c_cmd_state = `I2C_STATE_R_SET_SLAVE_REG;
+                            if(is_2_byte_reg)
+                                next_i2c_cmd_state = `I2C_STATE_R_SET_REG_MSB;
+                            else
+                                next_i2c_cmd_state = `I2C_STATE_R_SET_REG_LSB;
                         end
                     end
                     else begin
@@ -686,14 +729,14 @@ module i2c_module(
                         next_i2c_cmd_state = `I2C_STATE_R_READ_CHK_SR1;
                     end
                 end
-                `I2C_STATE_R_SET_SLAVE_REG: begin // Store the slave's register/memory address to access
+                `I2C_STATE_R_SET_REG_MSB: begin // Store the slave's register/memory address to access
                     if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
                         next_we            = `I2C_WE_READ;
                         next_stb           = `I2C_CMD_STOP;
                         next_addr          = `BYTE_ALL_ZERO;
                         next_data_tx       = `BYTE_ALL_ZERO;
                         next_ack_flag      = `FALSE;
-                        next_i2c_cmd_state = `I2C_STATE_R_WRITE_REG;
+                        next_i2c_cmd_state = `I2C_STATE_R_WRITE_REG_MSB;
                     end
                     else begin
                         next_we            = `I2C_WE_WRITE;
@@ -701,10 +744,46 @@ module i2c_module(
                         next_addr          = efb_registers[`I2C_TXDR_INDEX][i2c_number];
                         next_data_tx       = module_reg_in[7:0];
                         next_ack_flag      = `TRUE;
-                        next_i2c_cmd_state = `I2C_STATE_R_SET_SLAVE_REG;
+                        next_i2c_cmd_state = `I2C_STATE_R_SET_REG_MSB;
                     end
                 end
-                `I2C_STATE_R_WRITE_REG: begin // Send I2C command WR to send the register address to the slave
+                `I2C_STATE_R_WRITE_REG_MSB: begin // Send I2C command WR to send the register address to the slave
+                    if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
+                        next_we            = `I2C_WE_READ;
+                        next_stb           = `I2C_CMD_STOP;
+                        next_addr          = `BYTE_ALL_ZERO;
+                        next_data_tx       = `BYTE_ALL_ZERO;
+                        next_ack_flag      = `FALSE;
+                        next_i2c_cmd_state = `I2C_STATE_R_SET_REG_LSB;
+                    end
+                    else begin
+                        next_we            = `I2C_WE_WRITE;
+                        next_stb           = `I2C_CMD_START;
+                        next_addr          = efb_registers[`I2C_CMDR_INDEX][i2c_number];
+                        next_data_tx       = (`I2C_CMDR_WR );
+                        next_ack_flag      = `TRUE;
+                        next_i2c_cmd_state = `I2C_STATE_R_WRITE_REG_MSB;
+                    end
+                end
+                `I2C_STATE_R_SET_REG_LSB: begin // Store the slave's register/memory address to access
+                    if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
+                        next_we            = `I2C_WE_READ;
+                        next_stb           = `I2C_CMD_STOP;
+                        next_addr          = `BYTE_ALL_ZERO;
+                        next_data_tx       = `BYTE_ALL_ZERO;
+                        next_ack_flag      = `FALSE;
+                        next_i2c_cmd_state = `I2C_STATE_R_WRITE_REG_LSB;
+                    end
+                    else begin
+                        next_we            = `I2C_WE_WRITE;
+                        next_stb           = `I2C_CMD_START;
+                        next_addr          = efb_registers[`I2C_TXDR_INDEX][i2c_number];
+                        next_data_tx       = module_reg_in[7:0];
+                        next_ack_flag      = `TRUE;
+                        next_i2c_cmd_state = `I2C_STATE_R_SET_REG_LSB;
+                    end
+                end
+                `I2C_STATE_R_WRITE_REG_LSB: begin // Send I2C command WR to send the register address to the slave
                     if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
                         next_we            = `I2C_WE_READ;
                         next_stb           = `I2C_CMD_STOP;
@@ -719,7 +798,7 @@ module i2c_module(
                         next_addr          = efb_registers[`I2C_CMDR_INDEX][i2c_number];
                         next_data_tx       = (`I2C_CMDR_WR );
                         next_ack_flag      = `TRUE;
-                        next_i2c_cmd_state = `I2C_STATE_R_WRITE_REG;
+                        next_i2c_cmd_state = `I2C_STATE_R_WRITE_REG_LSB;
                     end
                 end
                 `I2C_STATE_R_READ_CHK_SR2: begin // Check Transmit/Receive Ready is Ready and that ACK is received
@@ -731,7 +810,7 @@ module i2c_module(
                         next_ack_flag      = `FALSE;
                         next_i2c_cmd_state = `I2C_STATE_R_READ_CHK_SR2;
                         if(data_rx && (data_rx[`I2C_SR_RARC] == `I2C_BUS_RARC ) && (data_rx[`I2C_SR_TRRDY] == `I2C_BUS_TRRDY_READY)) begin
-                                next_i2c_cmd_state = `I2C_STATE_R_SET_SLAVE_READ;
+                                next_i2c_cmd_state = `I2C_STATE_R_SET_READ;
                         end
                     end
                     else begin
@@ -743,7 +822,7 @@ module i2c_module(
                         next_i2c_cmd_state = `I2C_STATE_R_READ_CHK_SR2;
                     end
                 end
-                `I2C_STATE_R_SET_SLAVE_READ: begin // Set target slave address again, but with READ bit appended
+                `I2C_STATE_R_SET_READ: begin // Set target slave address again, but with READ bit appended
                     if( (ack == `TRUE) && (ack_flag == `TRUE) ) begin
                         next_we            = `I2C_WE_READ;
                         next_stb           = `I2C_CMD_STOP;
@@ -758,7 +837,7 @@ module i2c_module(
                         next_addr          = efb_registers[`I2C_TXDR_INDEX][i2c_number];
                         next_data_tx       = {slave_address,`I2C_BUS_RD_BIT};
                         next_ack_flag      = `TRUE;
-                        next_i2c_cmd_state = `I2C_STATE_R_SET_SLAVE_READ;
+                        next_i2c_cmd_state = `I2C_STATE_R_SET_READ;
                     end
                 end
                 `I2C_STATE_R_SET_WRITE2: begin // Send I2C commands WR and STA (Second STA), this restarts I2C in read mode
