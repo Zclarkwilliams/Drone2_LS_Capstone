@@ -60,7 +60,7 @@
 `include "common_defines.v"
 `include "bno055_defines.v"
 `include "vl53l1x_defines.v"
-`include "i2c_defines.v"
+`include "i2c_driver_defines.v"
 
 module i2c_device_driver #(
     parameter INIT_INTERVAL = 16'd10_000, // 10 seconds (in ms) start-up time
@@ -72,8 +72,8 @@ module i2c_device_driver #(
     inout  wire sda_1,
     inout  wire sda_2,
     input  wire resetn,
-    output reg  [7:0]led_data_out,
-//    output wire [7:0]led_data_out,
+//    output reg  [7:0]led_data_out,
+    output wire [7:0]led_data_out,
     input  wire sys_clk,
     input  wire next_mod_active,
     output wire resetn_imu,
@@ -138,8 +138,8 @@ module i2c_device_driver #(
     reg  rx_data_latch_tmp;                           //  Synchronously latched value of the data latch strobe
     reg  next_imu_good;                               //  Next value of module imu_good bit
     reg  i2c_number;                                  //  The i2c module to call, 0 = i2c EFB #1, 1 = i2c EFB #2
-    reg  rx_from_vl53l1x;                             //  Receiveing from VL53L1X = 1, from BNO055 = 0
-    reg  next_rx_from_vl53l1x;                        //  Receiveing from VL53L1X = 1, from BNO055 = 0
+    reg  rx_from_vl53l1x;                             //  Receiving from VL53L1X = 1, from BNO055 = 0
+    reg  next_rx_from_vl53l1x;                        //  Receiving from VL53L1X = 1, from BNO055 = 0
     reg [5:0]cal_restore_index;                       //  Current calibration value that is being written
     reg [7:0]cal_reg_addr;                            //  Current IMU register address that this calibration data is destined for
     reg clear_cal_restore_index;                      //  Reset calibration restore index and register addresses back to starting value
@@ -154,7 +154,7 @@ module i2c_device_driver #(
     reg delay_timer_at_init;                          //  Count down timer at init value, 0 = no, 1 = yes
     reg delay_timer_at_poll;                          //  Count down timer at polling value, 0 = no, 1 = yes
     reg is_2_byte_reg;                                //  This I2C device uses 2 byte registers, boolean 1 = true, 0 = false - If yes, then MSB transmitted first, then LSB
-    reg next_is_2_byte_reg;                           //  Nexst value of I2C 2 byte register bool
+    reg next_is_2_byte_reg;                           //  Next value of I2C 2 byte register bool
 
 
     //
@@ -162,36 +162,9 @@ module i2c_device_driver #(
     //
     // Changed this from 81 to 41 since LED2 is burned out on the board I am testing with
     //assign led_data_out = (i2c_state    <= `I2C_DRV_STATE_BOOT_WAIT ) ? 8'h41 : data_rx_reg[led_view_index]; //  Output for calibration status LEDs OR indicates that the IMU is in reset
-//    assign led_data_out = i2c_state<<1;
-///*   
-    always@(*) begin
-        if(~resetn)
-            led_data_out <= 0;
-        else
-           case(i2c_state)
-               `I2C_DRV_STATE_BOOT                  : led_data_out = 8'd1 <<1;
-               `I2C_DRV_STATE_BOOT_WAIT             : led_data_out = 8'd2 <<1;
-               `I2C_VL53L1X_STATE_READ_CHIP_ID      : led_data_out = 8'd3 <<1;
-               `I2C_BNO055_STATE_READ_CHIP_ID       : led_data_out = 8'd13<<1;
-               `I2C_BNO055_STATE_SET_UNITS          : led_data_out = 8'd14<<1;
-               `I2C_BNO055_STATE_SET_POWER_MODE     : led_data_out = 8'd15<<1;
-               `I2C_BNO055_STATE_CAL_RESTORE_DATA   : led_data_out = 8'd16<<1;
-               `I2C_BNO055_STATE_CAL_RESTORE_START  : led_data_out = 8'd17<<1;
-               `I2C_BNO055_STATE_CAL_RESTORE_WAIT   : led_data_out = 8'd18<<1;
-               `I2C_BNO055_STATE_CAL_RESTORE_STOP   : led_data_out = 8'd19<<1;
-               `I2C_BNO055_STATE_CAL_RESTORE_AGAIN  : led_data_out = 8'd20<<1;
-               `I2C_BNO055_STATE_SET_EXT_CRYSTAL    : led_data_out = 8'd21<<1;
-               `I2C_BNO055_STATE_SET_RUN_MODE       : led_data_out = 8'd22<<1;
-               `I2C_BNO055_STATE_WAIT_20MS          : led_data_out = 8'd23<<1;
-               `I2C_BNO055_STATE_READ_IMU_DATA_BURST: led_data_out = 8'd24<<1;
-               `I2C_DRV_STATE_WAIT_IMU_POLL_TIME    : led_data_out = 8'd25<<1;
-               `I2C_DRV_SUB_STATE_START             : led_data_out = 8'd26<<1;
-               `I2C_DRV_SUB_STATE_WAIT_I2C          : led_data_out = 8'd27<<1;
-               `I2C_DRV_SUB_STATE_STOP              : led_data_out = 8'd28<<1;
-               default                              : led_data_out = 8'hFF;
-           endcase
-    end
-//*/    
+    assign led_data_out = return_state;
+    //assign led_data_out = i2c_state;
+
 
     //  Instantiate i2c driver
     i2c_module i2c( .scl_1(scl_1),
@@ -451,7 +424,7 @@ module i2c_device_driver #(
     // Advance state and registered data at each positive clock edge
     always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin
-            data_reg            <= `BYTE_ALL_ZERO;
+            data_reg            <= `ALL_ZERO_2BYTE;
             data_tx             <= `BYTE_ALL_ZERO;
             read_write_in       <= `I2C_READ;
             go                  <= `NOT_GO;
@@ -459,7 +432,7 @@ module i2c_device_driver #(
             return_state        <= `FALSE;
             target_read_count   <= `FALSE;
             led_view_index      <= `FALSE;
-            slave_address       <= next_slave_address;
+            slave_address       <= `BNO055_SLAVE_ADDRESS;
             imu_good            <= `FALSE;
             calibrated_once     <= `FALSE;
             rx_data_latch_tmp   <= `LOW;
@@ -494,7 +467,7 @@ module i2c_device_driver #(
             next_i2c_state            = `I2C_DRV_STATE_RESET;
             next_return_state         = `I2C_DRV_STATE_RESET;
             next_go_flag              = `NOT_GO;
-            next_data_reg             = `BYTE_ALL_ZERO;
+            next_data_reg             = `ALL_ZERO_2BYTE;
             next_data_tx              = `BYTE_ALL_ZERO;
             next_read_write_in        = `I2C_READ;
             next_led_view_index       = `FALSE;
@@ -564,12 +537,12 @@ module i2c_device_driver #(
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
                     // Wait for I2C to be not busy and delay timer done
                     if(~busy && delay_timer_done)
-                        //next_i2c_state     = `I2C_VL53L1X_STATE_READ_CHIP_ID;
-                        next_i2c_state     = `I2C_BNO055_STATE_READ_CHIP_ID;
+                        next_i2c_state     = `I2C_VL53L1X_STATE_READ_CHIP_ID;
+                        //next_i2c_state     = `I2C_BNO055_STATE_READ_CHIP_ID;
                     else
                         next_i2c_state     = `I2C_DRV_STATE_BOOT_WAIT;
                 end
-                `I2C_VL53L1X_STATE_READ_CHIP_ID: begin // Page 0
+                `I2C_VL53L1X_STATE_READ_CHIP_ID: begin
                     next_imu_good          = `FALSE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
@@ -592,9 +565,10 @@ module i2c_device_driver #(
                     next_data_reg          = `BNO055_CHIP_ID_ADDR;
                     next_data_tx           = `BYTE_ALL_ZERO;
                     next_read_write_in     = `I2C_READ;
+                    next_rx_from_vl53l1x   = `FALSE;
+                    next_is_2_byte_reg     = `FALSE;
                     next_target_read_count = 1'b1;
                     next_led_view_index    = 1'b0;
-                    next_rx_from_vl53l1x   = `FALSE;
                 end
                 `I2C_BNO055_STATE_SET_UNITS: begin // Page 0
                     next_imu_good      = `FALSE;
@@ -754,7 +728,7 @@ module i2c_device_driver #(
                     next_imu_good      = `FALSE;
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
                     clear_waiting_ms   = `RUN_MS_TIMER;
-                    next_data_reg      = `BYTE_ALL_ZERO;
+                    next_data_reg      = `ALL_ZERO_2BYTE;
                     next_data_tx       = `BYTE_ALL_ZERO;
                     next_go_flag       = `NOT_GO;
                     resetn_buffer      = `LOW; // Clear RX data buffer index before starting next state's read burst
@@ -789,7 +763,7 @@ module i2c_device_driver #(
                     next_imu_good          = `TRUE;
                     next_slave_address     = `BNO055_SLAVE_ADDRESS;
                     clear_waiting_ms       = `RUN_MS_TIMER;
-                    next_data_reg          = `BYTE_ALL_ZERO;
+                    next_data_reg          = `ALL_ZERO_2BYTE;
                     next_data_tx           = `BYTE_ALL_ZERO;
                     next_go_flag           = `NOT_GO;
                     resetn_buffer          = `LOW; // Clear the RX data buffer index starting next state's read burst
@@ -817,7 +791,7 @@ module i2c_device_driver #(
                 end // Set output data latch strobe and return to major FSM state
                 `I2C_DRV_SUB_STATE_STOP: begin
                     next_go_flag           = `NOT_GO;
-                    next_data_reg          = `BYTE_ALL_ZERO;
+                    next_data_reg          = `ALL_ZERO_2BYTE;
                     next_data_tx           = `BYTE_ALL_ZERO;
                     if(read_write_in == `I2C_READ) // Only latch data if this was a read
                         rx_data_latch_strobe = `HIGH;
@@ -834,7 +808,7 @@ module i2c_device_driver #(
                     next_i2c_state         = `I2C_DRV_STATE_RESET;
                     next_return_state      = `I2C_DRV_STATE_RESET;
                     next_go_flag           = `NOT_GO;
-                    next_data_reg          = `BYTE_ALL_ZERO;
+                    next_data_reg          = `ALL_ZERO_2BYTE;
                     next_data_tx           = `BYTE_ALL_ZERO;
                     next_read_write_in     = `I2C_READ;
                     next_led_view_index    = `FALSE;

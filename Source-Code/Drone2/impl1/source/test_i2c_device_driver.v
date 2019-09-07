@@ -18,6 +18,13 @@ module i2c_device_driver_tb();
     reg [7:0]sda_byte = 0;
     reg next_mod_active_cmd;
     
+    reg prev_scl  = 0;
+    reg prev_sda  = 0;
+    reg i2c_start = 0;
+    reg i2c_stop  = 0;
+    reg prev_i2c_start = 0;
+    reg prev_i2c_stop  = 0;
+    
     
     wire scl_1;
     wire sda_1;
@@ -69,7 +76,7 @@ module i2c_device_driver_tb();
                     .SEDSTDBY());
 
 
-    i2c_device_driver #(30) DUT(
+    i2c_device_driver #(2) DUT(
         .scl_1(scl_1),
         .sda_1(sda_1),
         .scl_2(scl_2),
@@ -107,29 +114,72 @@ module i2c_device_driver_tb();
         .calib_status(calib_status),
         .vl53l1x_chip_id(vl53l1x_chip_id)
         ); /* synthesis syn_hier=hard */;
-
-// Generate a slave ACK every 9 i2c SCL posedges, regardless of what data is on the bus
-    always@(posedge scl_1, negedge resetn) begin
-        if(~resetn) begin
-            i2c_count = 1'b0;
-            i2c_ack = 1'b0;
+        
+        
+    //always@(posedge sys_clk, negedge resetn) begin
+    always@(posedge sys_clk, negedge resetn, negedge resetn_imu) begin
+        if(~resetn || ~resetn_imu || (DUT.i2c_state <= 4)) begin
+            prev_scl  <= 0;
+            prev_sda  <= 0;
+            i2c_start <= 0;
+            i2c_stop  <= 0;
         end
         else begin
-            i2c_count = i2c_count + 1'b1;
-            if(i2c_count == 4'd9) begin
-                i2c_ack = 1'b1;
-                #100
-                i2c_ack = 1'b0;
-                i2c_count = 1'b0;
-                sda_byte = 8'b0;
+            if((~i2c_ack)&& (scl_1 == 1'b1) && ((prev_sda == 1'b1) && (sda_1 == 1'b0)) ) begin
+                i2c_start <= 1;
+                i2c_stop  <= 0;
+            end
+            else if ((~i2c_ack) && i2c_start && (scl_1 == 1'b1) && ((prev_sda == 1'b0) && (sda_1 == 1'b1)) ) begin
+                i2c_start <= 0;
+                i2c_stop  <= 1;
+            end
+            prev_scl       <= scl_1;
+            prev_sda       <= sda_1;
+            prev_i2c_start <= i2c_start;
+            prev_i2c_stop  <= i2c_stop;
+        end
+    end
+
+    always@(posedge i2c_start)
+        $display("%t: I2C start asserted", $time);
+        
+    always@(posedge i2c_stop)
+        $display("%t: I2C stop asserted", $time);
+        
+    always@(i2c_count)
+        $display("%t: I2C i2c_count=%d", $time, i2c_count);
+
+    always@(i2c_ack)
+        $display("%t: I2C i2c_ack=%b", $time, i2c_ack);
+
+// Generate a slave ACK every 9 i2c SCL posedges, regardless of what data is on the bus
+    always@(posedge scl_1, posedge i2c_stop, posedge i2c_start, negedge resetn) begin
+        if((~resetn) || (i2c_stop && (prev_i2c_stop != i2c_stop))|| (i2c_start&& (prev_i2c_start != i2c_start))) begin
+            i2c_count <= 1'b0;
+            i2c_ack   <= 1'b0;
+            sda_byte  <= 8'b0;
+        end
+        else begin
+            if(i2c_count >= 4'd8) begin
+                i2c_ack   <= 1'b1;
+                #(2_500*10); // hold low for one I2C clock tick, 2.5 us
+                i2c_ack   <= 1'b0;
+                i2c_count <= 1'b0;
+                sda_byte  <= 8'b0;
             end
             else begin
-                i2c_ack = 1'b0;
-                sda_byte = {sda_byte[6:0], sda_1};
+                i2c_count <= i2c_count + 1'b1;
+                i2c_ack   <= 1'b0;
+                sda_byte  <= {sda_byte[6:0], sda_1};
             end
         end
     end
 
+
+    // Respond to active cmd on posedge of next_mod_active_cmd
+    // next_mode ative is loq for #1000, (make sure previous module plauses until this goes high)
+    //           high for #100,  (Stay high for a while)
+    //           then low again
     always@(posedge next_mod_active_cmd, negedge resetn) begin
         if (~resetn)
             next_mod_active <= `LOW;
@@ -143,6 +193,7 @@ module i2c_device_driver_tb();
         end
     end
 
+    // trigger next_mod_active_cmd for only one clk cycle - posedge detection of valid_strobe
     always@(posedge sys_clk, negedge resetn) begin
         if (~resetn)
             next_mod_active_cmd <= `LOW;
@@ -156,8 +207,11 @@ module i2c_device_driver_tb();
 
     end
 
+    // I2C pullups
     assign ( pull1, strong0 ) scl_1 = 1'b1;
     assign ( pull1, strong0 ) sda_1 = i2c_ack ? 1'b0: 1'b1;
+    
+    // Test cases
     initial begin
         resetn = 1;
         #10 resetn = 0;

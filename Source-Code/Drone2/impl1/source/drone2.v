@@ -436,8 +436,8 @@ module drone2 (
         .imu_x_rotation_rate(x_rotation_rate),
         .imu_y_rotation_rate(y_rotation_rate),
         .imu_z_rotation_rate(z_rotation_rate),
-        .imu_calibration_status({8'd0, i2c_debug}),
-        //.imu_calibration_status(vl53l1x_chip_id),
+        //.imu_calibration_status({8'd0, i2c_debug}),
+        .imu_calibration_status(vl53l1x_chip_id),
         .rec_throttle_val(throttle_val),
         .rec_yaw_val(yaw_val),
         .rec_roll_val(roll_val),
@@ -446,7 +446,8 @@ module drone2 (
         .rec_aux2_val(aux2_val),
         .rec_swa_swb_val(swa_swb_val),
         //.yaac_yaw_angle_error(yaac_yaw_angle_error),
-        .yaac_yaw_angle_error(amc_debug),
+        //.yaac_yaw_angle_error(amc_debug),
+        .yaac_yaw_angle_error({8'd0, i2c_debug}),
         //.yaac_yaw_angle_target(yaac_yaw_angle_target),
         .yaac_yaw_angle_target({11'd0, switch_b, switch_a}),
         .z_linear_velocity(z_linear_velocity),
@@ -471,7 +472,7 @@ module drone2 (
             led_data_out <= 8'hFF;
         end
         else begin
-            led_data_out <= ~i2c_debug;
+            led_data_out <= ~(i2c_debug<<1); // Shifted one bit left because D2 is burned out on my board
         end
     end
 endmodule

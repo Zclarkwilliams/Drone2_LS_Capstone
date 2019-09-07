@@ -49,9 +49,6 @@
 `define I2C_RXDR_INDEX              4'd7 //  Receive data
 `define I2C_IRQ_INDEX               4'd8 //  IRQ
 `define I2C_IRQEN_INDEX             4'd9 //  IRQ Enable
-// WE bits
-`define I2C_WE_WRITE                1
-`define I2C_WE_READ                 0
 
 // Control register bits
 `define I2C_CR_I2CEN                (8'b1000_0000) //(1'b1<<7)  // Enable I2C module
@@ -97,8 +94,10 @@
 `define CLEAR_US_TIMER              1'b0         // Flag that stops/clears multi us timer
 `define RUN_WD_TIMER                1'b1         // Flag that runs the watchdog timer - Default
 `define CLEAR_WD_TIMER              1'b0         // Flag that clears watchdog timer and sets to max value
-`define I2C_CMD_START               1'b1         // Start bit for both stb and cyc
-`define I2C_CMD_STOP                1'b0         // Stop  bit for both stb and cyc
+`define WB_CMD_START                1'b1         // Start bit for both stb and cyc
+`define WB_CMD_STOP                 1'b0         // Stop  bit for both stb and cyc
+`define WB_WE_WRITE                 1'b1         // Start wishbone bust write command
+`define WB_WE_READ                  1'b0         // Start wishbone bust read command
 `define I2C_BUS_RD_BIT              1'b1         // Set Read/Write to READ, appended to SLAVE_ADDRESS as SDA transmits to bus
 `define I2C_BUS_WR_BIT              1'b0         // Set Read/Write to WRITE, appended to SLAVE_ADDRESS as SDA transmits to bus
 `define I2C_BUS_XFER_IN_PROG        1'b1         // Bus transfer in progress
@@ -139,37 +138,33 @@
 `define I2C_STATE_WAIT_NOT_BUSY    7
 
 // Write states
-`define I2C_STATE_W_SET_WRITE0     8
-`define I2C_STATE_W_SET_WRITE1     9
+`define I2C_STATE_W_SET_SLAVE_ADDR 8
+`define I2C_STATE_W_SET_WR_MODE    9
 `define I2C_STATE_W_READ_CHK_SR1   10
-`define I2C_STATE_W_SET_REG_MSB    11
-`define I2C_STATE_W_WRITE_REG_MSB  12
-`define I2C_STATE_W_SET_REG_LSB    13
-`define I2C_STATE_W_WRITE_REG_LSB  14
-`define I2C_STATE_W_READ_CHK_SR2   15
-`define I2C_STATE_W_SET_REG_VAL    16
-`define I2C_STATE_W_WRITE_REG_VAL  17
-`define I2C_STATE_W_READ_CHK_SR3   18
-`define I2C_STATE_W_WRITE_STOP     19
-`define I2C_STATE_W_READ_CHK_SR4   20
+`define I2C_STATE_W_SET_REG_ADDR   11
+`define I2C_STATE_W_WRITE_REG_ADDR 12
+`define I2C_STATE_W_READ_CHK_SR2   13
+`define I2C_STATE_W_SET_REG_VAL    14
+`define I2C_STATE_W_WRITE_REG_VAL  15
+`define I2C_STATE_W_READ_CHK_SR3   16
+`define I2C_STATE_W_WRITE_STOP     17
+`define I2C_STATE_W_READ_CHK_SR4   18
 
 // Read states
-`define I2C_STATE_R_SET_WRITE0     21
-`define I2C_STATE_R_SET_WRITE1     22
-`define I2C_STATE_R_READ_CHK_SR1   23
-`define I2C_STATE_R_SET_REG_MSB    24
-`define I2C_STATE_R_WRITE_REG_MSB  25
-`define I2C_STATE_R_SET_REG_LSB    24
-`define I2C_STATE_R_WRITE_REG_LSB  25
-`define I2C_STATE_R_READ_CHK_SR2   28
-`define I2C_STATE_R_SET_SLAVE_READ 29
-`define I2C_STATE_R_SET_WRITE2     30
-`define I2C_STATE_R_WAIT_SRW       31
-`define I2C_STATE_R_SET_READ       32
-`define I2C_STATE_R_READ_CHK_SR3   33
-`define I2C_STATE_R_READ_DATA1     34
-`define I2C_STATE_R_SET_READ_STOP  35
-`define I2C_STATE_R_READ_CHK_SR4   36
-`define I2C_STATE_R_READ_DATA2     37
-`define I2C_STATE_R_READ_CHK_SR5   38
+`define I2C_STATE_R_SET_SLAVE_ADDR 19
+`define I2C_STATE_R_SET_WR_MODE    20
+`define I2C_STATE_R_READ_CHK_SR1   21
+`define I2C_STATE_R_SET_REG_ADDR   22
+`define I2C_STATE_R_WRITE_REG_ADDR 23
+`define I2C_STATE_R_READ_CHK_SR2   24
+`define I2C_STATE_R_SET_RD_MODE    25
+`define I2C_STATE_R_START_RD_MODE  26
+`define I2C_STATE_R_WAIT_SRW       27
+`define I2C_STATE_R_START_READ     28
+`define I2C_STATE_R_READ_CHK_SR3   29
+`define I2C_STATE_R_READ_DATA1     30
+`define I2C_STATE_R_STOP_READ      31
+`define I2C_STATE_R_READ_CHK_SR4   32
+`define I2C_STATE_R_READ_DATA2     33
+`define I2C_STATE_R_READ_CHK_SR5   34
 
