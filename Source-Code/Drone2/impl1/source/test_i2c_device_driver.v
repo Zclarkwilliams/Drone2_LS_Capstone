@@ -14,14 +14,20 @@ module i2c_device_driver_tb();
     reg go;
     reg read_write_in = 1;
     reg [3:0] i2c_count;
+    reg [9:0] sys_clk_cnt;
     reg i2c_ack;
-    reg [7:0]sda_byte = 0;
+    reg [6:0]slave_addr = 0;
+    reg rw_bit          = 0;
+    reg [7:0]reg_addr   = 0;
+    reg [7:0]reg_value  = 0;
     reg next_mod_active_cmd;
     
     reg prev_scl  = 0;
     reg prev_sda  = 0;
     reg i2c_start = 0;
     reg i2c_stop  = 0;
+    
+    reg [5:0]i2c_state = 0;
     reg prev_i2c_start = 0;
     reg prev_i2c_stop  = 0;
     
@@ -33,6 +39,7 @@ module i2c_device_driver_tb();
     reg  resetn;
     wire [7:0]led_data_out;
     wire sys_clk;
+    reg  i2c_clk;
     reg  next_mod_active;
     wire resetn_imu;
     wire imu_good;
@@ -65,6 +72,60 @@ module i2c_device_driver_tb();
 
     integer i = 0;
     integer j = 0;
+    
+    //Common states
+    localparam I2C_INIT         = 6'd0;      
+    localparam I2C_STA       = 6'd1; 
+    localparam WR_SLV_ADDR_B6   = 6'd2; 
+    localparam WR_SLV_ADDR_B5   = 6'd3; 
+    localparam WR_SLV_ADDR_B4   = 6'd4; 
+    localparam WR_SLV_ADDR_B3   = 6'd5; 
+    localparam WR_SLV_ADDR_B2   = 6'd6; 
+    localparam WR_SLV_ADDR_B1   = 6'd7; 
+    localparam WR_SLV_ADDR_B0   = 6'd8; 
+    localparam WR_RW_BIT        = 6'd9; 
+    localparam WR_SLV_ACK1      = 6'd10; 
+    localparam WR_REG_ADDR_B7   = 6'd11; 
+    localparam WR_REG_ADDR_B6   = 6'd12; 
+    localparam WR_REG_ADDR_B5   = 6'd13; 
+    localparam WR_REG_ADDR_B4   = 6'd14; 
+    localparam WR_REG_ADDR_B3   = 6'd15; 
+    localparam WR_REG_ADDR_B2   = 6'd16; 
+    localparam WR_REG_ADDR_B1   = 6'd17; 
+    localparam WR_REG_ADDR_B0   = 6'd18; 
+    localparam WR_SLV_ACK2      = 6'd19; 
+    
+    //Only for write
+    localparam WR_REG_VAL_B7    = 6'd20; 
+    localparam WR_REG_VAL_B6    = 6'd21; 
+    localparam WR_REG_VAL_B5    = 6'd22; 
+    localparam WR_REG_VAL_B4    = 6'd23; 
+    localparam WR_REG_VAL_B3    = 6'd24; 
+    localparam WR_REG_VAL_B2    = 6'd25; 
+    localparam WR_REG_VAL_B1    = 6'd26; 
+    localparam WR_REG_VAL_B0    = 6'd27; 
+    localparam WR_SLV_ACK3      = 6'd28; 
+    
+    //Only for read
+    localparam RD_SLV_ADDR_B6   = 6'd29; 
+    localparam RD_SLV_ADDR_B5   = 6'd30; 
+    localparam RD_SLV_ADDR_B4   = 6'd31; 
+    localparam RD_SLV_ADDR_B3   = 6'd32; 
+    localparam RD_SLV_ADDR_B2   = 6'd33; 
+    localparam RD_SLV_ADDR_B1   = 6'd34; 
+    localparam RD_SLV_ADDR_B0   = 6'd35; 
+    localparam RD_RW_BIT        = 6'd36; 
+    localparam RD_SLV_ACK1      = 6'd37; 
+    localparam RD_REG_VAL_B7    = 6'd38; 
+    localparam RD_REG_VAL_B6    = 6'd39; 
+    localparam RD_REG_VAL_B5    = 6'd40; 
+    localparam RD_REG_VAL_B4    = 6'd41; 
+    localparam RD_REG_VAL_B3    = 6'd42; 
+    localparam RD_REG_VAL_B2    = 6'd43; 
+    localparam RD_REG_VAL_B1    = 6'd44; 
+    localparam RD_REG_VAL_B0    = 6'd45; 
+    localparam RD_MAST_ACK_NACK = 6'd46;
+    localparam RD_STO           = 6'd47;
 
 
     GSR GSR_INST (.GSR (resetn));
@@ -116,8 +177,341 @@ module i2c_device_driver_tb();
         ); /* synthesis syn_hier=hard */;
         
         
-    //always@(posedge sys_clk, negedge resetn) begin
-    always@(posedge sys_clk, negedge resetn, negedge resetn_imu) begin
+     
+    // Generate a 50kHz I2C clock for simulation (Even thugh 400kHz is configured?)   
+    always@(posedge sys_clk, negedge resetn) begin
+        if(~resetn ) begin
+            i2c_clk     <= 1'b0;
+            sys_clk_cnt <= 10'd380;
+        end
+        else begin
+            if (sys_clk_cnt > 10'd760)
+                sys_clk_cnt <= 10'b0;
+            else
+                sys_clk_cnt <= (sys_clk_cnt + 10'd1);
+            if(sys_clk_cnt>10'd380)
+                i2c_clk <= 1'b1;
+            else
+                i2c_clk <= 1'b0;
+        end
+    end
+
+    
+    
+    always@(posedge i2c_clk, negedge resetn) begin
+        if(~resetn) begin
+            i2c_state  <= I2C_INIT;
+            i2c_start  <= 1'b0;
+            i2c_stop   <= 1'b0;
+            rw_bit     <= 1'b0;
+            slave_addr <= 7'd0;
+            reg_addr   <= 8'd0;
+            reg_value  <= 8'd0;
+            i2c_ack    <= 1'b0;
+        end
+        else begin
+            i2c_ack  <= 1'b0;
+            prev_sda <= sda_1;
+            case(i2c_state)
+                I2C_INIT         : begin
+                    i2c_state  <= I2C_STA;
+                    i2c_start  <= 1'b0;
+                    i2c_stop   <= 1'b0;
+                    rw_bit     <= 1'b0;
+                    slave_addr <= 7'd0;
+                    reg_addr   <= 8'd0;
+                    reg_value  <= 8'd0;
+                    i2c_ack    <= 1'b0;
+                end
+                I2C_STA          : begin
+                    if((scl_1 == 1'b1) && ((prev_sda == 1'b1) && (sda_1 == 1'b0))) begin
+                        i2c_state  <= WR_SLV_ADDR_B6;
+                        i2c_start  <= 1'b1;
+                        i2c_stop   <= 1'b0;
+                        rw_bit     <= 1'b0;
+                        slave_addr <= 7'd0;
+                        reg_addr   <= 8'd0;
+                        reg_value  <= 8'd0;
+                        i2c_ack    <= 1'b0;
+                    end
+                end
+                WR_SLV_ADDR_B6   : begin
+                    i2c_state     <= WR_SLV_ADDR_B5;
+                    slave_addr[6] <= sda_1;
+                end
+                WR_SLV_ADDR_B5   : begin
+                    i2c_state     <= WR_SLV_ADDR_B4;
+                    slave_addr[5] <= sda_1;
+                end
+                WR_SLV_ADDR_B4   : begin
+                    i2c_state     <= WR_SLV_ADDR_B3;
+                    slave_addr[4] <= sda_1;
+                end
+                WR_SLV_ADDR_B3   : begin
+                    i2c_state     <= WR_SLV_ADDR_B2;
+                    slave_addr[3] <= sda_1;
+                end
+                WR_SLV_ADDR_B2   : begin
+                    i2c_state     <= WR_SLV_ADDR_B1;
+                    slave_addr[2] <= sda_1;
+                end
+                WR_SLV_ADDR_B1   : begin
+                    i2c_state     <= WR_SLV_ADDR_B0;
+                    slave_addr[1] <= sda_1;
+                end
+                WR_SLV_ADDR_B0   : begin
+                    i2c_state     <= WR_RW_BIT;
+                    $display("%t: Access slave address = %h", $time, {slave_addr[6:1], sda_1});
+                    slave_addr[0] <= sda_1;
+                end
+                WR_RW_BIT        : begin
+                    i2c_state   <= WR_SLV_ACK1;
+                    rw_bit      <= sda_1;
+                    if(sda_1 == 1'b0) begin
+                        $display("%t: I2C access is a write", $time);
+                        i2c_ack <= 1'b1;
+                    end
+                    else begin
+                        $display("%t: I2C access is a read", $time);
+                        $display("%t: ERROR, must start with write to write slave address to access", $time);
+                        $stop;
+                    end
+                end
+                WR_SLV_ACK1      : begin
+                    i2c_ack       <= 1'b0;
+                    if(sda_1 == 1'b0)
+                        i2c_state <= WR_REG_ADDR_B7;
+                    else begin
+                        $display("%t: ERROR, slave didn't ack the slave address", $time);
+                        $stop;
+                    end
+                end
+                WR_REG_ADDR_B7   : begin
+                    i2c_state   <= WR_REG_ADDR_B6;
+                    reg_addr[7] <= sda_1;
+                end
+                WR_REG_ADDR_B6   : begin
+                    i2c_state   <= WR_REG_ADDR_B5;
+                    reg_addr[6] <= sda_1;
+                end
+                WR_REG_ADDR_B5   : begin
+                    i2c_state   <= WR_REG_ADDR_B4;
+                    reg_addr[5] <= sda_1;
+                end
+                WR_REG_ADDR_B4   : begin
+                    i2c_state   <= WR_REG_ADDR_B3;
+                    reg_addr[4] <= sda_1;
+                end
+                WR_REG_ADDR_B3   : begin
+                    i2c_state   <= WR_REG_ADDR_B2;
+                    reg_addr[3] <= sda_1;
+                end
+                WR_REG_ADDR_B2   : begin
+                    i2c_state   <= WR_REG_ADDR_B1;
+                    reg_addr[2] <= sda_1;
+                end
+                WR_REG_ADDR_B1   : begin
+                    i2c_state   <= WR_REG_ADDR_B0;
+                    reg_addr[1] <= sda_1;
+                end
+                WR_REG_ADDR_B0   : begin
+                    i2c_state   <= WR_SLV_ACK2;
+                    reg_addr[0] <= sda_1;
+                    i2c_ack     <= 1'b1;
+                    $display("%t: Register address = %h", $time, {reg_addr[7:1], sda_1});
+                end
+                WR_SLV_ACK2      : begin
+                    i2c_ack       <= 1'b0;
+                    if(sda_1 == 1'b0)
+                        i2c_state <= WR_REG_VAL_B7;
+                    else begin
+                        $display("%t: ERROR, slave didn't ack the register address", $time);
+                        $stop;
+                    end
+                end
+                WR_REG_VAL_B7    : begin
+                    if((scl_1 == 1'b1) && ((prev_sda == 1'b1) && (sda_1 == 1'b0))) begin // Restart - begin read cycle
+                        $display("%t: Repeated start, begin I2C read", $time);
+                        i2c_state    <= WR_REG_VAL_B6;
+                    end
+                    else if ((scl_1 == 1'b1) && ((prev_sda == 1'b0) && (sda_1 == 1'b1)) ) begin // Stop - no more to write
+                        $display("%t: Stop Asserted! Terminate I2C write", $time);
+                        i2c_state    <= I2C_STA;
+                    end
+                    else begin //Continue write
+                        i2c_state    <= WR_REG_VAL_B6;
+                        reg_value[7] <= sda_1;
+                    end
+                end
+                WR_REG_VAL_B6    : begin
+                    i2c_state    <= WR_REG_VAL_B5;
+                    reg_value[6] <= sda_1;
+                end
+                WR_REG_VAL_B5    : begin
+                    i2c_state    <= WR_REG_VAL_B4;
+                    reg_value[5] <= sda_1;
+                end
+                WR_REG_VAL_B4    : begin
+                    i2c_state    <= WR_REG_VAL_B3;
+                    reg_value[4] <= sda_1;
+                end
+                WR_REG_VAL_B3    : begin
+                    i2c_state    <= WR_REG_VAL_B2;
+                    reg_value[3] <= sda_1;
+                end
+                WR_REG_VAL_B2    : begin
+                    i2c_state    <= WR_REG_VAL_B1;
+                    reg_value[2] <= sda_1;
+                end
+                WR_REG_VAL_B1    : begin
+                    i2c_state    <= WR_REG_VAL_B0;
+                    reg_value[1] <= sda_1;
+                end
+                WR_REG_VAL_B0    : begin
+                    i2c_state    <= WR_REG_VAL_B6;
+                    reg_value[0] <= sda_1;
+                    i2c_ack      <= 1'b1;
+                    $display("%t: Write register value = %h", $time, {reg_value[7:1], sda_1});
+                end
+                WR_SLV_ACK3      : begin
+                    i2c_ack       <= 1'b0;
+                    if(sda_1 == 1'b0)
+                        i2c_state <= WR_REG_VAL_B7;
+                    else begin
+                        $display("%t: ERROR, slave didn't ack the register value", $time);
+                        $stop;
+                    end
+                end
+                RD_SLV_ADDR_B6   : begin
+                    i2c_state     <= RD_SLV_ADDR_B5;
+                    slave_addr[6] <= sda_1;
+                end
+                RD_SLV_ADDR_B5   : begin
+                    i2c_state     <= RD_SLV_ADDR_B4;
+                    slave_addr[5] <= sda_1;
+                end
+                RD_SLV_ADDR_B4   : begin
+                    i2c_state     <= RD_SLV_ADDR_B3;
+                    slave_addr[4] <= sda_1;
+                end
+                RD_SLV_ADDR_B3   : begin
+                    i2c_state     <= RD_SLV_ADDR_B2;
+                    slave_addr[3] <= sda_1;
+                end
+                RD_SLV_ADDR_B2   : begin
+                    i2c_state     <= RD_SLV_ADDR_B1;
+                    slave_addr[2] <= sda_1;
+                end
+                RD_SLV_ADDR_B1   : begin
+                    i2c_state     <= RD_SLV_ADDR_B0;
+                    slave_addr[1] <= sda_1;
+                end
+                RD_SLV_ADDR_B0   : begin
+                    i2c_state     <= RD_RW_BIT;
+                    slave_addr[0] <= sda_1;
+                    $display("%t: Read from slave address = %h", $time, {slave_addr[6:1], sda_1});
+                end
+                RD_RW_BIT        : begin
+                    rw_bit      <= sda_1;
+                    if(sda_1 == 1'b1) begin
+                        $display("%t: I2C access is a read", $time);
+                        i2c_ack <= 1'b1;
+                    end
+                    else begin
+                        $display("%t: I2C access is a write", $time);
+                        $display("%t: ERROR, must start read cycle with rw bit set", $time);
+                        $stop;
+                    end
+                end
+                RD_SLV_ACK1      : begin
+                    i2c_ack       <= 1'b0;
+                    if(sda_1 == 1'b0)
+                        i2c_state <= RD_REG_VAL_B7;
+                    else begin
+                        $display("%t: ERROR, slave didn't ack the slave address", $time);
+                        $stop;
+                    end
+                end
+                RD_REG_VAL_B7    : begin
+                    if((scl_1 == 1'b1) && ((prev_sda == 1'b1) && (sda_1 == 1'b0))) begin // Restart - error
+                        $display("%t: ERROR: Repeated start during read", $time);
+                        $stop;
+                    end
+                    else if ((scl_1 == 1'b1) && ((prev_sda == 1'b0) && (sda_1 == 1'b1)) ) begin // Stop - no more to read
+                        $display("%t: ERROR: Stop asserted during read with out NACK from master", $time);
+                        $stop;
+                    end
+                    else begin //Continue read
+                        i2c_state    <= RD_REG_VAL_B6;
+                        reg_value[7] <= sda_1;
+                    end
+                end
+                RD_REG_VAL_B6    : begin
+                    i2c_state    <= RD_REG_VAL_B5;
+                    reg_value[6] <= sda_1;
+                end
+                RD_REG_VAL_B5    : begin
+                    i2c_state    <= RD_REG_VAL_B4;
+                    reg_value[5] <= sda_1;
+                end
+                RD_REG_VAL_B4    : begin
+                    i2c_state    <= RD_REG_VAL_B3;
+                    reg_value[4] <= sda_1;
+                end
+                RD_REG_VAL_B3    : begin
+                    i2c_state    <= RD_REG_VAL_B2;
+                    reg_value[3] <= sda_1;
+                end
+                RD_REG_VAL_B2    : begin
+                    i2c_state    <= RD_REG_VAL_B1;
+                    reg_value[2] <= sda_1;
+                end
+                RD_REG_VAL_B1    : begin
+                    i2c_state    <= RD_REG_VAL_B0;
+                    reg_value[1] <= sda_1;
+                end
+                RD_REG_VAL_B0    : begin
+                    i2c_state    <= RD_MAST_ACK_NACK;
+                    reg_value[0] <= sda_1;
+                    i2c_ack      <= 1'b0;
+                    $display("%t: Read register value = %h", $time, {reg_value[6:1], sda_1});
+                end
+                RD_MAST_ACK_NACK : begin
+                    i2c_ack       <= 1'b0;
+                    if(sda_1 == 1'b0)
+                        i2c_state <= RD_REG_VAL_B7;
+                    else begin
+                        i2c_state <= RD_STO;
+                    end
+                end
+                RD_STO           : begin
+                    if((scl_1 == 1'b1) && ((prev_sda == 1'b1) && (sda_1 == 1'b0))) begin // Restart - error
+                        $display("%t: ERROR: Repeated start during read", $time);
+                        $stop;
+                    end
+                    else if ((scl_1 == 1'b1) && ((prev_sda == 1'b0) && (sda_1 == 1'b1)) ) begin // Stop - no more to read
+                        $display("%t: Stop asserted, terminating I2C read cycle", $time);
+                        i2c_state <= I2C_STA;
+                    end
+                    else begin
+                        $display("%t: ERROR: Master didn't STO following NACK from master", $time);
+                        $stop;
+                    end
+                end
+                default : begin
+                    i2c_state  <= I2C_INIT;
+                    i2c_start  <= 1'b0;
+                    i2c_stop   <= 1'b0;
+                    rw_bit     <= 1'b0;
+                    slave_addr <= 7'd0;
+                    reg_addr   <= 8'd0;
+                    reg_value  <= 8'd0;
+                end
+            endcase
+        end
+    end
+/*    
+    always@(posedge i2c_clk, negedge resetn, negedge resetn_imu) begin
         if(~resetn || ~resetn_imu || (DUT.i2c_state <= 4)) begin
             prev_scl  <= 0;
             prev_sda  <= 0;
@@ -162,7 +556,7 @@ module i2c_device_driver_tb();
         else begin
             if(i2c_count >= 4'd8) begin
                 i2c_ack   <= 1'b1;
-                #(2_500*10); // hold low for one I2C clock tick, 2.5 us
+                @(negedge scl_1);
                 i2c_ack   <= 1'b0;
                 i2c_count <= 1'b0;
                 sda_byte  <= 8'b0;
@@ -174,7 +568,7 @@ module i2c_device_driver_tb();
             end
         end
     end
-
+*/
 
     // Respond to active cmd on posedge of next_mod_active_cmd
     // next_mode ative is loq for #1000, (make sure previous module plauses until this goes high)
