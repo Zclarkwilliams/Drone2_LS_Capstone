@@ -26,10 +26,11 @@ module i2c_device_driver_tb();
     reg [7:0]reg_value  = 0;
     reg next_mod_active_cmd;
     
-    reg [5:0]sda_buff  = 7'd0;
-    reg [2:0]sda_buff_cnt = 3'd0;
-    reg scl_buff_fast  = 1'b0; // Buffer scl value for one clock cycle at sys_clk rate
-    reg scl_buff_slow  = 1'b0; // Buffer scl value for one clock cycle at i2c_clk_8x_async rate
+    reg [6:0]sda_buff       = 7'd0;
+    reg [2:0]sda_buff_cnt   = 3'd0;
+    reg scl_buff_fast       = 1'b0; // Buffer scl value for one clock cycle at sys_clk rate
+    reg [1:0]scl_buff_slow  = 1'b0; // Buffer scl value for one clock cycle at i2c_clk_8x_async rate
+
     reg rd_i2c_start   = 0;
     reg rd_i2c_stop    = 0;
     reg rd_i2c_ack     = 0;
@@ -197,6 +198,10 @@ module i2c_device_driver_tb();
  
     
     // Generate a clock at 8x the I2C clock rate, asynchronous (NOT synced to posedge of SCL)   
+    
+    
+    // This block is pending deletion as of Sept-26-2019 - Was previously used in scl_buff_slow capture block //
+    
     always@(posedge sys_clk, negedge resetn) begin
         if(~resetn ) begin
             i2c_clk_8x_async             <= 1'b1;
@@ -214,7 +219,8 @@ module i2c_device_driver_tb();
         end
     end
 
-    // Latch previous SCL value at sys_clk rate
+    // Latch previous SCL value at sys_clk rate, done at negedge since i2c_clk_8x generator uses this value at posedge
+
     always@(negedge sys_clk, negedge resetn) begin
         if(~resetn ) begin
             scl_buff_fast <= 0;
@@ -249,19 +255,21 @@ module i2c_device_driver_tb();
         end
     end
     
-    // Latch previous SCL value at i2c_clk_8x_async rate
-    always@(negedge i2c_clk_8x_async, negedge resetn) begin
+    // Latch previous SCL value at i2c_clk_8x rate
+    always@(negedge i2c_clk_8x, negedge resetn) begin
         if(~resetn ) begin
-            scl_buff_slow <= 0;
+            scl_buff_slow[0] <= 0;
+            scl_buff_slow[1] <= 0;
         end
         else begin
-            scl_buff_slow <= scl_1;
+            scl_buff_slow[0] <= scl_1;
+            scl_buff_slow[1] <= scl_buff_slow[0];
         end
     end 
 
 
     
-    // I2C bit detector logic - Next states
+    // I2C bit detector logic - Next states - At negedge since FSM that uses it is at posedge
     always@(negedge i2c_clk_8x, negedge resetn, negedge resetn_imu) begin
         if(~resetn)
             read_i2c_state <= I2C_BIT_INIT;
@@ -271,14 +279,14 @@ module i2c_device_driver_tb();
                     read_i2c_state <= I2C_BIT_READ1;
                 end
                 I2C_BIT_WAIT : begin
-                    if ((scl_buff_slow == 1'b0) && (scl_1 == 1'b1)) // Positive edge of scl
+                    if ((scl_buff_slow[0] == 1'b0) && (scl_1 == 1'b1)) // Positive edge of scl
                         read_i2c_state <= I2C_BIT_READ1;
                 end
                 I2C_BIT_READ1 : begin
                     read_i2c_state <= I2C_BIT_READn;
                 end
                 I2C_BIT_READn : begin
-                    if((scl_buff_slow == 1'b1) && (scl_1 == 1'b0)) // Negative edge of scl
+                    if((scl_buff_slow[0] == 1'b1) && (scl_1 == 1'b0)) // Negative edge of scl
                         read_i2c_state <= I2C_BIT_WAIT;
                 end
             endcase
@@ -286,9 +294,6 @@ module i2c_device_driver_tb();
     end
     
     // I2C bit detector logic    
-    //always@(posedge i2c_clk_8x, negedge scl_buff_fast, negedge scl_buff_slow, negedge resetn, negedge resetn_imu) begin
-    //always@(posedge i2c_clk_8x, negedge scl_1, negedge scl_buff_fast, negedge scl_buff_slow, negedge resetn, negedge resetn_imu) begin
-    //always@(posedge i2c_clk_8x, negedge scl_buff_slow, negedge resetn, negedge resetn_imu) begin
     always@(posedge i2c_clk_8x, negedge resetn, negedge resetn_imu) begin
         if(~resetn || ~resetn_imu) begin
             sda_buff       <= 7'd0;
@@ -318,18 +323,24 @@ module i2c_device_driver_tb();
                 end
                 I2C_BIT_READ1 : begin
                     sda_buff_cnt   <= 3'd1;
-                    sda_buff       <= {sda_buff[4:0], sda_1};
-                    rd_i2c_start   <= 1'b0;
-                    rd_i2c_stop    <= 1'b0;
-                    rd_i2c_ack     <= 1'b0;
-                    rd_i2c_nack    <= 1'b0;
-                    rd_i2c_bit     <= 1'b0;
-                    rd_i2c_bit_err <= 1'b0;
+                    sda_buff       <= {sda_buff[5:0], sda_1};
+                    //rd_i2c_start   <= 1'b0;
+                    //rd_i2c_stop    <= 1'b0;
+                    //rd_i2c_ack     <= 1'b0;
+                    //rd_i2c_nack    <= 1'b0;
+                    //rd_i2c_bit     <= 1'b0;
+                    //rd_i2c_bit_err <= 1'b0;
                 end
                 I2C_BIT_READn : begin
                     sda_buff_cnt   <= sda_buff_cnt + 3'd1;
-                    sda_buff       <= {sda_buff[4:0], sda_1};
-                    if((sda_buff_cnt >= 7)||((scl_buff_fast == 1'b1) && (scl_1 == 1'b0))) begin //Negative edge of scl
+                    sda_buff       <= {sda_buff[5:0], sda_1};
+                    if( (sda_buff_cnt >= 7) || ((scl_buff_slow[0] == 1'b1)&&(scl_1 == 1'b0)) ) begin //Negative edge of scl
+                        rd_i2c_start   <= 1'b0;
+                        rd_i2c_stop    <= 1'b0;
+                        rd_i2c_ack     <= 1'b0;
+                        rd_i2c_nack    <= 1'b0;
+                        rd_i2c_bit     <= 1'b0;
+                        rd_i2c_bit_err <= 1'b0;
                         case({sda_buff, sda_1})
                             7'b1111110,
                             7'b1111100,
@@ -375,7 +386,7 @@ module i2c_device_driver_tb();
     end
 
 
-     always@(posedge scl_buff_slow, negedge resetn) begin
+     always@(posedge scl_buff_slow[1], negedge resetn) begin
         if(~resetn)
             i2c_tbstate   <= I2C_INIT;
         else begin
