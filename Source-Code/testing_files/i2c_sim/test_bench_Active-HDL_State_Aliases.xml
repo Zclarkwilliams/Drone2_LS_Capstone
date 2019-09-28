@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<HdlAlias>
+	<Aliases>
+		<Alias name="i2c_state">
+			<Mapping value="0" mnemonic="RESET"/>
+			<Mapping value="1" mnemonic="BOOT"/>
+			<Mapping value="2" mnemonic="BOOT_WAIT"/>
+			<Mapping value="3" mnemonic="VL53L1X_ID"/>
+			<Mapping value="13" mnemonic="BNO055_ID"/>
+			<Mapping value="14" mnemonic="SET_UNITS"/>
+			<Mapping value="15" mnemonic="SET_POWER"/>
+			<Mapping value="16" mnemonic="CAL_DATA"/>
+			<Mapping value="17" mnemonic="CAL_START"/>
+			<Mapping value="18" mnemonic="CAL_WAIT"/>
+			<Mapping value="19" mnemonic="CAL_STOP"/>
+			<Mapping value="20" mnemonic="CAL_AGAIN"/>
+			<Mapping value="21" mnemonic="SET_EXT_XTL"/>
+			<Mapping value="22" mnemonic="SET_RUN"/>
+			<Mapping value="23" mnemonic="WAIT_20MS"/>
+			<Mapping value="24" mnemonic="DATA_BURST"/>
+			<Mapping value="25" mnemonic="WAIT_POLL"/>
+			<Mapping value="26" mnemonic="START"/>
+			<Mapping value="27" mnemonic="WAIT_I2C"/>
+			<Mapping value="28" mnemonic="STOP"/>
+		</Alias>
+		<Alias name="i2c_state_cmd">
+			<Mapping value="0" mnemonic="RESET"/>
+			<Mapping value="1" mnemonic="PRE_LOW"/>
+			<Mapping value="2" mnemonic="PRE_HI"/>
+			<Mapping value="3" mnemonic="BT_WAIT1"/>
+			<Mapping value="4" mnemonic="BT_WAIT2"/>
+			<Mapping value="5" mnemonic="INIT_ENA"/>
+			<Mapping value="6" mnemonic="WAIT"/>
+			<Mapping value="7" mnemonic="WAIT_NOT_BUSY"/>
+			<Mapping value="8" mnemonic="W_SET_SLAVE_ADDR"/>
+			<Mapping value="9" mnemonic="W_SET_WR_MODE"/>
+			<Mapping value="10" mnemonic="W_READ_CHK_SR1"/>
+			<Mapping value="11" mnemonic="W_SET_REG_ADDR"/>
+			<Mapping value="12" mnemonic="W_WRITE_REG_ADDR"/>
+			<Mapping value="13" mnemonic="W_READ_CHK_SR2"/>
+			<Mapping value="14" mnemonic="W_SET_REG_VAL"/>
+			<Mapping value="15" mnemonic="W_WRITE_REG_VAL"/>
+			<Mapping value="16" mnemonic="W_READ_CHK_SR3"/>
+			<Mapping value="17" mnemonic="W_WRITE_STOP"/>
+			<Mapping value="18" mnemonic="W_READ_CHK_SR4"/>
+			<Mapping value="19" mnemonic="R_SET_SLAVE_ADDR"/>
+			<Mapping value="20" mnemonic="R_SET_WR_MODE"/>
+			<Mapping value="21" mnemonic="R_READ_CHK_SR1"/>
+			<Mapping value="22" mnemonic="R_SET_REG_ADDR"/>
+			<Mapping value="23" mnemonic="R_WRITE_REG_ADDR"/>
+			<Mapping value="24" mnemonic="R_READ_CHK_SR2"/>
+			<Mapping value="25" mnemonic="R_SET_RD_MODE"/>
+			<Mapping value="26" mnemonic="R_START_RD_MODE"/>
+			<Mapping value="27" mnemonic="R_WAIT_SRW"/>
+			<Mapping value="28" mnemonic="R_START_READ"/>
+			<Mapping value="29" mnemonic="R_READ_CHK_SR3"/>
+			<Mapping value="30" mnemonic="R_READ_DATA1"/>
+			<Mapping value="31" mnemonic="R_STOP_READ"/>
+			<Mapping value="32" mnemonic="R_READ_CHK_SR4"/>
+			<Mapping value="33" mnemonic="R_READ_DATA2"/>
+			<Mapping value="34" mnemonic="R_READ_CHK_SR5"/>
+		</Alias>
+	</Aliases>
+</HdlAlias>

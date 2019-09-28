@@ -162,7 +162,7 @@ module i2c_device_driver #(
     //
     // Changed this from 81 to 41 since LED2 is burned out on the board I am testing with
     //assign led_data_out = (i2c_state    <= `I2C_DRV_STATE_BOOT_WAIT ) ? 8'h41 : data_rx_reg[led_view_index]; //  Output for calibration status LEDs OR indicates that the IMU is in reset
-    assign led_data_out = return_state;
+    //assign led_data_out = return_state;
     //assign led_data_out = i2c_state;
 
 
@@ -184,7 +184,9 @@ module i2c_device_driver #(
                     .busy(busy),
                     .one_byte_ready(one_byte_ready),
                     .i2c_number(i2c_number),
-                    .sys_clk(sys_clk)
+                    .sys_clk(sys_clk),
+                    //.i2c_top_debug(i2c_top_debug)
+                    .i2c_top_debug(led_data_out)
     );
     
     

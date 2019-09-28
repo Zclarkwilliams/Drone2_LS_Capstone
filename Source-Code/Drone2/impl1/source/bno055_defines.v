@@ -36,8 +36,8 @@ MIT license, all text above must be included in any redistribution
 
  ***************************************************************************/
 
-`define BNO055_ADDRESS_A                    8'h28
-`define BNO055_ADDRESS_B                    8'h29
+`define BNO055_ADDRESS_A                    7'h28
+`define BNO055_ADDRESS_B                    7'h29
 `define BNO055_ID                           8'hA0
 
 // PAGE0 REGISTER DEFINITION START
