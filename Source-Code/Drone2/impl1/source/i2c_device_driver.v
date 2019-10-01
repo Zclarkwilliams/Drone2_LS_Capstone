@@ -74,9 +74,11 @@ module i2c_device_driver #(
     input  wire resetn,
 //    output reg  [7:0]led_data_out,
     output wire [7:0]led_data_out,
+    output wire [7:0]i2c_top_debug,                         //  Debug signals for I2C top
     input  wire sys_clk,
     input  wire next_mod_active,
     output wire resetn_imu,
+    output wire resetn_lidar,
     output reg  imu_good,
     output reg  valid_strobe,
     output reg [15:0]accel_rate_x,
@@ -162,8 +164,14 @@ module i2c_device_driver #(
     //
     // Changed this from 81 to 41 since LED2 is burned out on the board I am testing with
     //assign led_data_out = (i2c_state    <= `I2C_DRV_STATE_BOOT_WAIT ) ? 8'h41 : data_rx_reg[led_view_index]; //  Output for calibration status LEDs OR indicates that the IMU is in reset
-    //assign led_data_out = return_state;
+    assign led_data_out = return_state;
     //assign led_data_out = i2c_state;
+    
+    
+    
+    
+    // resetn_lidar follows resetn_imu - The ST Microelectronics VL53L1X has a low active reset 0 = shutdown, 1 = run, same as Bosch BNO055
+    assign resetn_lidar = resetn_imu;
 
 
     //  Instantiate i2c driver
@@ -185,8 +193,7 @@ module i2c_device_driver #(
                     .one_byte_ready(one_byte_ready),
                     .i2c_number(i2c_number),
                     .sys_clk(sys_clk),
-                    //.i2c_top_debug(i2c_top_debug)
-                    .i2c_top_debug(led_data_out)
+                    .i2c_top_debug(i2c_top_debug)
     );
     
     
@@ -402,7 +409,7 @@ module i2c_device_driver #(
             gravity_accel_z   <= {data_rx_reg[`GRA_DATA_Z_MSB_INDEX],data_rx_reg[`GRA_DATA_Z_LSB_INDEX]};
             temperature       <= data_rx_reg[`TEMPERATURE_DATA_INDEX];
             calib_status      <= data_rx_reg[`CALIBRATION_DATA_INDEX];
-            vl53l1x_chip_id   <= {vl53l1x_data_rx_reg[1],vl53l1x_data_rx_reg[0]};
+            vl53l1x_chip_id   <= {vl53l1x_data_rx_reg[0],vl53l1x_data_rx_reg[1]};
         end
     end
 
@@ -546,7 +553,9 @@ module i2c_device_driver #(
                 end
                 `I2C_VL53L1X_STATE_READ_CHIP_ID: begin
                     next_imu_good          = `FALSE;
+                    // Set the wrong slave address to make sure that the issue isn't something with the VL53L1X and not the code
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
+                    //next_slave_address     = `BNO055_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
                     next_i2c_state         = `I2C_DRV_SUB_STATE_START;
                     next_return_state      = `I2C_BNO055_STATE_READ_CHIP_ID;

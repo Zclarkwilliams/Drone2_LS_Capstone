@@ -46,8 +46,8 @@ module drone2 (
     output wire motor_3_pwm,
     output wire motor_4_pwm,
     output wire resetn_imu,
+    output wire resetn_lidar,
     output reg  [7:0] led_data_out,
-    output wire urf_trigger_out,
     // Inputs
     input wire throttle_pwm,
     input wire yaw_pwm,
@@ -57,7 +57,6 @@ module drone2 (
     input wire aux2_pwm,
     input wire swa_swb_pwm,
     input wire machxo3_switch_reset_n,
-    input wire urf_echo_in,
     // Serial IO
     inout wire sda_1,
     inout wire sda_2,
@@ -68,7 +67,12 @@ module drone2 (
     input  wire sin,
     output wire rxrdy_n,
     output wire sout,
-    output wire txrdy_n
+    output wire txrdy_n,
+    
+    
+    // I2C debug wire inputs
+    input wire i2c_scl_debug /* synthesis syn_force_pads = 1*/,
+    input wire i2c_sda_debug /* synthesis syn_force_pads = 1*/
     );
 
     //--------------- Receiver Wires --------------//
@@ -107,7 +111,8 @@ module drone2 (
     wire imu_good;
     wire imu_data_valid;
     wire [15:0] vl53l1x_chip_id;
-    wire [7:0] i2c_debug;
+    wire [7:0] i2c_driver_debug;
+    wire [7:0] i2c_top_debug;
     
     //--------- Auto Mode Controller Wires --------//
     wire  [`REC_VAL_BIT_WIDTH-1:0] amc_throttle_val;
@@ -158,6 +163,7 @@ module drone2 (
     //assign resetn = (machxo3_switch_reset_n & soft_reset_n);
     assign resetn = (machxo3_switch_reset_n);
     
+    
 
     //---------------- Mode Selector Wires ----------------//
     wire [2:0] switch_a;
@@ -165,12 +171,9 @@ module drone2 (
     //wire switch_a;
     //assign switch_a = swa_swb_val[6];
     
-    //--------- Ultrasonic Range Finder Wires --------//
-    wire  urf_active_signal;
-    wire [15:0] urf_debug;
-    wire [9:0]  urf_range;
     wire [15:0] z_linear_velocity;
 
+    assign z_linear_velocity = 0;
 
     /**
      * Generate System Clock
@@ -231,7 +234,7 @@ module drone2 (
      *        file - bno055_driver.v
      */
     i2c_device_driver #(.INIT_INTERVAL(16'd10_000),
-                    .POLL_INTERVAL(16'd20))
+                        .POLL_INTERVAL(16'd20))
         I2C_Devices(
         // Outputs
         .imu_good(imu_good),
@@ -247,7 +250,8 @@ module drone2 (
         .linear_accel_z(z_linear_accel),
         .vl53l1x_chip_id(vl53l1x_chip_id),
         // DEBUG WIRE
-        .led_data_out(i2c_debug),
+        .led_data_out(i2c_driver_debug),
+        .i2c_top_debug(i2c_top_debug),
         // InOuts
         .scl_1(scl_1),
         .sda_1(sda_1),
@@ -257,6 +261,7 @@ module drone2 (
         .resetn(resetn),
         .sys_clk(sys_clk),
         .resetn_imu(resetn_imu),
+        .resetn_lidar(resetn_lidar),
         .next_mod_active(throttle_controller_active)
     );
 
@@ -407,54 +412,58 @@ module drone2 (
         .motor_4_rate(motor_4_rate),
         .us_clk(us_clk),
         .resetn(resetn));
-        
-    ultrasonic_range_finder URF (
-        .urf_range(urf_range),
-        .z_linear_velocity(z_linear_velocity),
-        .active_signal(urf_active_signal),
-        .urf_trigger_out(urf_trigger_out),
-        .urf_debug(urf_debug),
-        .urf_echo_in(urf_echo_in),
-        .resetn(resetn),
-        .us_clk(us_clk)
-    );
-        
-        
-    uart_top uart
+    
+/*
+    // 2 word debug instead of the whole bunch    
+    uart_top #(.NUM_DEBUG_ELEMENTS(8'd2), .FIXED_INTERVAL(760)) uart
     (
         .resetn(resetn),
         .clk(sys_clk),
-        .start(imu_data_valid),
+        .trigger_start(imu_data_valid),  // Only used if FIXED_INTERVAL is 0
         .sin(sin),
         .rxrdy_n(rxrdy_n),
         .sout(sout),
         .txrdy_n(txrdy_n),
 
-        .imu_x_rotation_angle(x_rotation),
-        .imu_y_rotation_angle(y_rotation),
-        .imu_z_rotation_angle(z_rotation),
-        .imu_x_rotation_rate(x_rotation_rate),
-        .imu_y_rotation_rate(y_rotation_rate),
-        .imu_z_rotation_rate(z_rotation_rate),
-        //.imu_calibration_status({8'd0, i2c_debug}),
-        .imu_calibration_status(vl53l1x_chip_id),
-        .rec_throttle_val(throttle_val),
-        .rec_yaw_val(yaw_val),
-        .rec_roll_val(roll_val),
-        .rec_pitch_val(pitch_val),
-        .rec_aux1_val(aux1_val),
-        .rec_aux2_val(aux2_val),
-        .rec_swa_swb_val(swa_swb_val),
-        //.yaac_yaw_angle_error(yaac_yaw_angle_error),
-        //.yaac_yaw_angle_error(amc_debug),
-        .yaac_yaw_angle_error({8'd0, i2c_debug}),
-        //.yaac_yaw_angle_target(yaac_yaw_angle_target),
-        .yaac_yaw_angle_target({11'd0, switch_b, switch_a}),
-        .z_linear_velocity(z_linear_velocity),
-        .debug_17_in_16_bits(urf_debug[15:0]),
-        .debug_18_in_16_bits({6'd0,urf_range})
+        .debug_1_in_16_bits({8'd0, i2c_driver_debug}),
+        .debug_2_in_16_bits({8'd0, i2c_top_debug})
 
     );
+*/        
+//*
+//   Disabled to use 2 word debug instead        
+    uart_top #(.NUM_DEBUG_ELEMENTS(8'd18), .FIXED_INTERVAL(0)) uart
+    (
+        .resetn(resetn),
+        .clk(sys_clk),
+        .trigger_start(imu_data_valid),   // Only used if FIXED_INTERVAL is 0
+        .sin(sin),
+        .rxrdy_n(rxrdy_n),
+        .sout(sout),
+        .txrdy_n(txrdy_n),
+
+        .debug_1_in_16_bits(x_rotation),
+        .debug_2_in_16_bits(y_rotation),
+        .debug_3_in_16_bits(z_rotation),
+        .debug_4_in_16_bits(x_rotation_rate),
+        .debug_5_in_16_bits(y_rotation_rate),
+        .debug_6_in_16_bits(z_rotation_rate),
+        .debug_7_in_16_bits({8'd0, throttle_val}),
+        .debug_8_in_16_bits({8'd0, yaw_val}),
+        .debug_9_in_16_bits({8'd0, roll_val}),
+        .debug_10_in_16_bits({8'd0, pitch_val}),
+        .debug_11_in_16_bits({8'd0, aux1_val}),
+        .debug_12_in_16_bits({8'd0, aux2_val}),
+        .debug_13_in_16_bits({8'd0, swa_swb_val}),
+        .debug_14_in_16_bits({11'd0, switch_b, switch_a}),
+        .debug_15_in_16_bits(yaac_yaw_angle_target),
+        .debug_16_in_16_bits(vl53l1x_chip_id),
+        .debug_17_in_16_bits({8'd0, i2c_driver_debug}),
+        .debug_18_in_16_bits({8'd0, i2c_top_debug}),
+        .debug_19_in_16_bits({8'd0, 8'd0})
+
+    );
+//*/
     // Enable bits
     assign yaac_enable_n = `LOW_ACTIVE_ENABLE;  // Enable YAAC
     assign tc_enable_n   = `LOW_ACTIVE_ENABLE;  // Enable TC
@@ -472,7 +481,7 @@ module drone2 (
             led_data_out <= 8'hFF;
         end
         else begin
-            led_data_out <= ~(i2c_debug<<1); // Shifted one bit left because D2 is burned out on my board
+            led_data_out <= ~(i2c_driver_debug<<1); // Shifted one bit left because D2 is burned out on my board
         end
     end
 endmodule

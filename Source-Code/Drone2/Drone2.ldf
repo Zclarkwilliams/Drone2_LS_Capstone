@@ -2,7 +2,7 @@
 <BaliProject version="3.2" title="Drone2" device="LCMXO3LF-6900C-5BG256C" default_implementation="impl1">
     <Options/>
     <Implementation title="impl1" dir="impl1" description="impl1" synthesis="lse" default_strategy="Strategy1">
-        <Options top="drone2"/>
+        <Options def_top="drone2" top="drone2"/>
         <Source name="impl1/source/I2C_EFB_WB.ipx" type="IPX_Module" type_short="IPX">
             <Options/>
         </Source>
@@ -84,9 +84,6 @@
         <Source name="impl1/source/auto_mode_controller.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
-        <Source name="impl1/source/ultrasonic_range_finder.v" type="Verilog" type_short="Verilog">
-            <Options/>
-        </Source>
         <Source name="impl1/source/i2c_device_driver.v" type="Verilog" type_short="Verilog">
             <Options/>
         </Source>
@@ -103,9 +100,6 @@
             <Options/>
         </Source>
         <Source name="test/test.spf" type="Simulation Project File" type_short="SPF">
-            <Options/>
-        </Source>
-        <Source name="test_func/test_func.spf" type="Simulation Project File" type_short="SPF">
             <Options/>
         </Source>
     </Implementation>

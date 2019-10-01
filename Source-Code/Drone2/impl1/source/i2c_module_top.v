@@ -538,7 +538,7 @@ module i2c_module(
                         next_data_tx       = `BYTE_ALL_ZERO;
                         next_ack_flag      = `FALSE;
                         next_i2c_cmd_state = `I2C_STATE_W_READ_SR2;
-                        if(data_rx && (data_rx[`I2C_SR_TRRDY] == `I2C_BUS_TRRDY_READY) ) begin
+                        if(data_rx && (data_rx[`I2C_SR_BUSY] == `I2C_BUS_BUSY) && (data_rx[`I2C_SR_TRRDY] == `I2C_BUS_TRRDY_READY) ) begin
                             if(byte_wr_left == 2'd0)
                                 next_i2c_cmd_state = `I2C_STATE_W_SET_REG_VAL;
                             else
@@ -636,7 +636,7 @@ module i2c_module(
                         next_addr          = `BYTE_ALL_ZERO;
                         next_data_tx       = `BYTE_ALL_ZERO;
                         next_ack_flag      = `FALSE;
-                        if(data_rx && (data_rx[`I2C_SR_BUSY] == `I2C_BUS_NOT_BUSY) )
+                        if(data_rx[`I2C_SR_BUSY] == `I2C_BUS_NOT_BUSY) // Don't include data_rx && here, when BUSY is deasserted none of the other bits are certain to be set to anything, so 0x00 CAN mean not busy
                             next_i2c_cmd_state = `I2C_STATE_WAIT;
                         else
                             next_i2c_cmd_state = `I2C_STATE_W_READ_SR4;
@@ -829,7 +829,7 @@ module i2c_module(
                         next_data_tx       = `BYTE_ALL_ZERO;
                         next_ack_flag      = `FALSE;
                         next_i2c_cmd_state = `I2C_STATE_R_WAIT_SRW;
-                        if(data_rx && (data_rx[`I2C_SR_SRW] == `I2C_BUS_SRW_MASTER_RX) ) begin
+                        if(data_rx && (data_rx[`I2C_SR_TRRDY] == `I2C_BUS_TRRDY_NOT_READY) && (data_rx[`I2C_SR_SRW] == `I2C_BUS_SRW_MASTER_RX) ) begin
                             next_i2c_cmd_state = `I2C_STATE_R_START_READ;
                         end
                     end
@@ -869,8 +869,9 @@ module i2c_module(
                         next_ack_flag      = `FALSE;
                         next_data_latch    = `FALSE;
                         next_i2c_cmd_state = `I2C_STATE_R_READ_SR3;
-                        if(data_rx && (data_rx[`I2C_SR_TRRDY] == `I2C_BUS_TRRDY_READY))
+                        if(data_rx && (data_rx[`I2C_SR_RARC] == `I2C_BUS_RARC ) && (data_rx[`I2C_SR_TRRDY] == `I2C_BUS_TRRDY_READY)) begin
                             next_i2c_cmd_state = `I2C_STATE_R_READ_DATA1;
+                        end
                     end
                     else begin
                         next_we            = `WB_WE_READ;
@@ -939,7 +940,6 @@ module i2c_module(
                         next_we            = `WB_WE_WRITE;
                         next_stb           = `WB_CMD_START;
                         next_addr          = efb_registers[`I2C_CMDR_INDEX][i2c_number];
-                        next_data_tx       = ( `I2C_CMDR_RD );
                         next_data_tx       = ( `I2C_CMDR_STO | `I2C_CMDR_RD | `I2C_CMDR_ACK  );
                         next_ack_flag      = `TRUE;
                         next_i2c_cmd_state = `I2C_STATE_R_STOP_READ;
@@ -1010,7 +1010,7 @@ module i2c_module(
                         next_data_tx       = `BYTE_ALL_ZERO;
                         next_ack_flag      = `FALSE;
                         next_i2c_cmd_state = `I2C_STATE_R_READ_SR5;
-                        if(data_rx[`I2C_SR_BUSY] == `I2C_BUS_NOT_BUSY) begin // Don't include data_rx && here, when BUSY is deasserted none of the other bits are certain to be set to anything, so 0x00 means not busy
+                        if(data_rx[`I2C_SR_BUSY] == `I2C_BUS_NOT_BUSY) begin // Don't include data_rx && here, when BUSY is deasserted none of the other bits are certain to be set to anything, so 0x00 CAN mean not busy
                             next_i2c_cmd_state = `I2C_STATE_WAIT;
                         end
                     end

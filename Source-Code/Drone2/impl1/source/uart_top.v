@@ -16,38 +16,39 @@
 `timescale 1ns / 1ns
 `include "common_defines.v"
 
-module uart_top
+module uart_top #(
+    parameter [7:0]NUM_DEBUG_ELEMENTS = 8'd19,
+    parameter      FIXED_INTERVAL     = 16'd0
+)
 (
     input  wire resetn,
     input  wire clk,
-    input  wire start,
+    input  wire trigger_start,
     input  wire sin,
     output wire rxrdy_n,
     output wire sout,
     output wire txrdy_n,
 
-    input wire [`IMU_VAL_BIT_WIDTH-1:0]
-        imu_x_rotation_angle,
-        imu_y_rotation_angle,
-        imu_z_rotation_angle,
-        imu_x_rotation_rate,
-        imu_y_rotation_rate,
-        imu_z_rotation_rate,
-        imu_calibration_status,
-    input wire [`REC_VAL_BIT_WIDTH-1:0]
-        rec_throttle_val,
-        rec_yaw_val,
-        rec_roll_val,
-        rec_pitch_val,
-        rec_aux1_val,
-        rec_aux2_val,
-        rec_swa_swb_val,
-    input wire [`RATE_BIT_WIDTH-1:0]
-        yaac_yaw_angle_error,
-        yaac_yaw_angle_target,
-        z_linear_velocity,
+    input wire [15:0]
+        debug_1_in_16_bits,
+        debug_2_in_16_bits,
+        debug_3_in_16_bits,
+        debug_4_in_16_bits,
+        debug_5_in_16_bits,
+        debug_6_in_16_bits,
+        debug_7_in_16_bits,
+        debug_8_in_16_bits,
+        debug_9_in_16_bits,
+        debug_10_in_16_bits,
+        debug_11_in_16_bits,
+        debug_12_in_16_bits,
+        debug_13_in_16_bits,
+        debug_14_in_16_bits,
+        debug_15_in_16_bits,
+        debug_16_in_16_bits,
         debug_17_in_16_bits,
-        debug_18_in_16_bits
+        debug_18_in_16_bits,
+        debug_19_in_16_bits
 );
 
     localparam CLK_IN_MHZ = 38;
@@ -79,7 +80,6 @@ module uart_top
 
     
     localparam [3:0]TX_BYTE_INDEX_MAX = 4'd8;
-    localparam [7:0]TX_WORD_INDEX_MAX = 8'd19;
 
     reg         stb_i;
     reg         next_cyc_i, cyc_i;
@@ -97,6 +97,9 @@ module uart_top
     reg [7:0]   tx_word_index, next_tx_word_index;
     wire rts_bypass;
     wire dtr_bypass;
+    reg  interval_start;
+    reg  [15:0]clk_cnt;
+    wire local_start;
     
     
     uart_core
@@ -155,6 +158,27 @@ module uart_top
        .TXRDY_N  (txrdy_n)
       
     );
+    
+    
+    always@(posedge clk, negedge resetn) begin
+        if(~resetn) begin
+            interval_start <= 1'b0;
+            clk_cnt        <= 16'd0;
+        end
+        else begin
+            if (clk_cnt == FIXED_INTERVAL) begin
+                interval_start <= 1'b1;
+                clk_cnt        <= 16'd0;
+            end
+            else begin
+                interval_start <= 1'b0;
+                clk_cnt        <= clk_cnt + 16'd1;
+            end
+        end
+    end
+    
+    
+    assign local_start = (FIXED_INTERVAL == 0) ? trigger_start : interval_start;
 
      // Advance state and registered data at each positive clock edge
     always@(posedge clk, negedge resetn) begin
@@ -195,12 +219,12 @@ module uart_top
                 INIT0:          next_state = INIT_IER;                                                                              //0x001
                 INIT_IER:       next_state = (ack_o)    ? INIT_LCR : INIT_IER;                                                      //0x002
                 INIT_LCR:       next_state = (ack_o)    ? WAIT     : INIT_LCR;                                                      //0x004
-                WAIT:           next_state = (start  && ~txrdy_n)  ? TX_SET   : WAIT;                                               //0x008
+                WAIT:           next_state = (local_start && ~txrdy_n)  ? TX_SET   : WAIT;                                          //0x008
                 TX_INC:         next_state = TX_SET;                                                                                //0x010
                 TX_SET:         next_state = (ack_o)    ? TX_ACK   : TX_SET;                                                        //0x020
                 TX_ACK:         next_state = (txrdy_n)  ? TX_WAIT  : TX_ACK;                                                        //0x040
                 TX_WAIT:        next_state = (~txrdy_n) ? ((tx_byte_index == TX_BYTE_INDEX_MAX) ? TX_NEXT_WORD : TX_INC) : TX_WAIT; //0x080
-                TX_NEXT_WORD:   next_state = (tx_word_index == TX_WORD_INDEX_MAX) ? TX_STOP : TX_SET;                               //0x100
+                TX_NEXT_WORD:   next_state = (tx_word_index == (NUM_DEBUG_ELEMENTS + 1)) ? TX_STOP : TX_SET;                        //0x100
                 TX_STOP:        next_state = WAIT;                                                                                  //0x200
                 default:        next_state = INIT0;
             endcase
@@ -307,25 +331,25 @@ module uart_top
                     next_adr_i = THR;
                     next_we_i  = 1'h1;
                     case(tx_word_index)
-                        8'd0:  transmit_word(tx_word_index, tx_byte_index, imu_x_rotation_angle);
-                        8'd1:  transmit_word(tx_word_index, tx_byte_index, imu_y_rotation_angle);
-                        8'd2:  transmit_word(tx_word_index, tx_byte_index, imu_z_rotation_angle);
-                        8'd3:  transmit_word(tx_word_index, tx_byte_index, imu_x_rotation_rate);
-                        8'd4:  transmit_word(tx_word_index, tx_byte_index, imu_y_rotation_rate);
-                        8'd5:  transmit_word(tx_word_index, tx_byte_index, imu_z_rotation_rate);
-                        8'd6:  transmit_word(tx_word_index, tx_byte_index, imu_calibration_status);
-                        8'd7:  transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_throttle_val});
-                        8'd8:  transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_yaw_val});
-                        8'd9:  transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_roll_val});
-                        8'd10: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_pitch_val});
-                        8'd11: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_aux1_val});
-                        8'd12: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_aux2_val});
-                        8'd13: transmit_word(tx_word_index, tx_byte_index, {8'd0, rec_swa_swb_val});
-                        8'd14: transmit_word(tx_word_index, tx_byte_index, yaac_yaw_angle_error);
-                        8'd15: transmit_word(tx_word_index, tx_byte_index, yaac_yaw_angle_target);
-                        8'd16: transmit_word(tx_word_index, tx_byte_index, z_linear_velocity);
-                        8'd17: transmit_word(tx_word_index, tx_byte_index, debug_17_in_16_bits);
-                        8'd18: transmit_word(tx_word_index, tx_byte_index, debug_18_in_16_bits);
+                        8'd0:  transmit_word(tx_word_index, tx_byte_index, debug_1_in_16_bits);
+                        8'd1:  transmit_word(tx_word_index, tx_byte_index, debug_2_in_16_bits);
+                        8'd2:  transmit_word(tx_word_index, tx_byte_index, debug_3_in_16_bits);
+                        8'd3:  transmit_word(tx_word_index, tx_byte_index, debug_4_in_16_bits);
+                        8'd4:  transmit_word(tx_word_index, tx_byte_index, debug_5_in_16_bits);
+                        8'd5:  transmit_word(tx_word_index, tx_byte_index, debug_6_in_16_bits);
+                        8'd6:  transmit_word(tx_word_index, tx_byte_index, debug_7_in_16_bits);
+                        8'd7:  transmit_word(tx_word_index, tx_byte_index, debug_8_in_16_bits);
+                        8'd8:  transmit_word(tx_word_index, tx_byte_index, debug_9_in_16_bits);
+                        8'd9:  transmit_word(tx_word_index, tx_byte_index, debug_10_in_16_bits);
+                        8'd10: transmit_word(tx_word_index, tx_byte_index, debug_11_in_16_bits);
+                        8'd11: transmit_word(tx_word_index, tx_byte_index, debug_12_in_16_bits);
+                        8'd12: transmit_word(tx_word_index, tx_byte_index, debug_13_in_16_bits);
+                        8'd13: transmit_word(tx_word_index, tx_byte_index, debug_14_in_16_bits);
+                        8'd14: transmit_word(tx_word_index, tx_byte_index, debug_15_in_16_bits);
+                        8'd15: transmit_word(tx_word_index, tx_byte_index, debug_16_in_16_bits);
+                        8'd16: transmit_word(tx_word_index, tx_byte_index, debug_17_in_16_bits);
+                        8'd17: transmit_word(tx_word_index, tx_byte_index, debug_18_in_16_bits);
+                        8'd18: transmit_word(tx_word_index, tx_byte_index, debug_19_in_16_bits);
                         default:  next_dat_i = 16'd0;
                     endcase
                 end
