@@ -444,7 +444,6 @@ module i2c_module(
                         next_ack_flag      = `TRUE;
                         busy               = `HIGH;
                         next_i2c_cmd_state = `I2C_STATE_W_SET_SLAVE_ADDR;
-                        $display("%t: Slave address set to %h in I2C top module", $time, slave_address);
                     end
                 end
                 `I2C_STATE_W_SET_WR_MODE: begin // Send I2C command STA and WR
@@ -673,7 +672,6 @@ module i2c_module(
                         next_data_tx       = {slave_address,`I2C_BUS_WR_BIT};
                         next_ack_flag      = `TRUE;
                         next_i2c_cmd_state = `I2C_STATE_R_SET_SLAVE_ADDR;
-                        $display("%t: Slave address set to %h in I2C top module", $time, slave_address);
                     end
                 end
                 `I2C_STATE_R_SET_WR_MODE: begin // Send I2C command STA and WR
@@ -800,7 +798,6 @@ module i2c_module(
                         next_data_tx       = {slave_address,`I2C_BUS_RD_BIT};
                         next_ack_flag      = `TRUE;
                         next_i2c_cmd_state = `I2C_STATE_R_SET_RD_MODE;
-                        $display("%t: Slave address set to %h in I2C top module", $time, slave_address);
                     end
                 end
                 `I2C_STATE_R_START_RD_MODE: begin // Send I2C commands WR and STA (Second STA), this restarts I2C in read mode
