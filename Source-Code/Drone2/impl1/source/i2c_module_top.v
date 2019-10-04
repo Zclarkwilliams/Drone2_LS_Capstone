@@ -44,8 +44,8 @@ module i2c_module(
     reg  write_action;                              // Write flag for calling this function, will be used to determine whether to follow read or write sequence.
     reg  [7:0]next_addr;                            // Command register address
     reg  [7:0]next_data_tx;                         // Data written to registers for this command
-    reg  [`I2C_STATE_BITS-1:0]i2c_cmd_state;      // Module FSM state
-    reg  [`I2C_STATE_BITS-1:0]next_i2c_cmd_state; // Module FSM NEXT state
+    reg  [`I2C_STATE_BITS-1:0]i2c_cmd_state;        // Module FSM state
+    reg  [`I2C_STATE_BITS-1:0]next_i2c_cmd_state;   // Module FSM NEXT state
     reg  [11:0]count_us;                            // Count from 0 to value determined by clock rate, used to generate 1us delay trigger
     reg  clear_waiting_us;                          // Start multi-us counter from pre-set start value
     reg  [31:0]count_wd_delay ;                     // Countdown watchdog timer for hardware reset
