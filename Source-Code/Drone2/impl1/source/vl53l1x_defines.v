@@ -48,7 +48,7 @@
 
 
 `define VL53L1X_IDENTIFICATION__MODEL_ID_VAL                                 16'hEACC     //  Chip ID of VL53L1X
-`define VL53L1X_SLAVE_ADDRESS                                                7'h52        //  VL53L1X SLAVE address 0x52
+`define VL53L1X_SLAVE_ADDRESS                                                7'b101001    //  VL53L1X SLAVE address 0x29
 
 `define VL53L1X_DATA_RX_BYTE_REG_CNT                                         8            //  The number of byte registers used to receive all measurement data
 `define VL53L1X_CAL_DATA_REG_CNT                                             22           //  The number of byte registers needed for all calibration data
