@@ -31,32 +31,45 @@
 
 `define I2C_DRV_STATE_BITS                      5             //  The number of bits used to represent the current state
 // Initial default state of IMU FSM
-`define I2C_DRV_STATE_RESET                     'd0
+`define I2C_DRV_STATE_RESET                                 'd0
 // The rest of the startup states
-`define I2C_DRV_STATE_BOOT                      'd1
-`define I2C_DRV_STATE_BOOT_WAIT                 'd2
-
-// Setup ST VL53L1X and begin reading
-`define I2C_VL53L1X_STATE_READ_CHIP_ID          'd3
-
-// Setup Bosch BNO055 and begin reading
-`define I2C_BNO055_STATE_READ_CHIP_ID           'd13
-`define I2C_BNO055_STATE_SET_UNITS              'd14
-`define I2C_BNO055_STATE_SET_POWER_MODE         'd15
-`define I2C_BNO055_STATE_CAL_RESTORE_DATA       'd16
-`define I2C_BNO055_STATE_CAL_RESTORE_START      'd17
-`define I2C_BNO055_STATE_CAL_RESTORE_WAIT       'd18
-`define I2C_BNO055_STATE_CAL_RESTORE_STOP       'd19
-`define I2C_BNO055_STATE_CAL_RESTORE_AGAIN      'd20
-`define I2C_BNO055_STATE_SET_EXT_CRYSTAL        'd21
-`define I2C_BNO055_STATE_SET_RUN_MODE           'd22
-`define I2C_BNO055_STATE_WAIT_20MS              'd23
-`define I2C_BNO055_STATE_READ_IMU_DATA_BURST    'd24
-
+`define I2C_DRV_STATE_BOOT                                  'd1
+`define I2C_DRV_STATE_BOOT_WAIT                             'd2
+// Read ST VL53L1X chip ID and poll firmware ready
+`define I2C_VL53L1X_STATE_READ_CHIP_ID                      'd3
+`define I2C_VL53L1X_STATE_READ_FIRMWARE_READY               'd4
+// Read Bosch BNO055 chip ID and begin setup
+`define I2C_BNO055_STATE_READ_CHIP_ID                       'd5
+`define I2C_BNO055_STATE_SET_UNITS                          'd6
+`define I2C_BNO055_STATE_SET_POWER_MODE                     'd7
+// Restore calibrations to VL53L1X and BNO055
+`define I2C_STATE_CAL_RESTORE_DATA                          'd8
+`define I2C_STATE_CAL_RESTORE_NEXT                          'd9
+`define I2C_STATE_CAL_RESTORE_AGAIN                         'd10
+// Continue Bosch BNO055 setup
+`define I2C_BNO055_STATE_SET_EXT_CRYSTAL                    'd11
+`define I2C_BNO055_STATE_SET_RUN_MODE                       'd12
+`define I2C_STATE_WAIT_20MS                                 'd13
+// Continue Configuration of VL53L1X
+`define I2C_VL53L1X_STATE_INIT_START_MEASURE                'd14
+`define I2C_VL53L1X_STATE_INIT_POLL_DATA_READY              'd15
+`define I2C_VL53L1X_STATE_INIT_CLEAR_INTERRUPT              'd16
+`define I2C_VL53L1X_STATE_INIT_STOP_MEASURE                 'd17
+`define I2C_VL53L1X_STATE_SET_TEMPERATURE_MACRO_LOOP_BOUND  'd18
+`define I2C_VL53L1X_STATE_SET_TEMPERATURE_VHV_CONFIG_INIT   'd19
+`define I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_RX_OSC_VAL 'd20
+`define I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_CALCULATE  'd21
+`define I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_TX_PERIOD  'd22
+`define I2C_VL53L1X_STATE_START_MEASURE                     'd23
+// Begin reading from slaves
+`define I2C_BNO055_STATE_READ_DATA_BURST                    'd24
+`define I2C_VL53L1X_STATE_POLL_READY                        'd25
+`define I2C_VL53L1X_STATE_GET_MEASUREMENT                   'd26
+`define I2C_VL53L1X_STATE_CLEAR_INTERRUPT                   'd27
 // Wait here for next polling interval
-`define I2C_DRV_STATE_WAIT_IMU_POLL_TIME        'd25
+`define I2C_DRV_STATE_WAIT_IMU_POLL_TIME                    'd28
 
 // Minor FSM states, repeated for every read or write
-`define I2C_DRV_SUB_STATE_START                 'd26
-`define I2C_DRV_SUB_STATE_WAIT_I2C              'd27
-`define I2C_DRV_SUB_STATE_STOP                  'd28
+`define I2C_DRV_SUB_STATE_START                             'd29
+`define I2C_DRV_SUB_STATE_WAIT_I2C                          'd30
+`define I2C_DRV_SUB_STATE_STOP                              'd31

@@ -18,7 +18,7 @@ module i2c_device_driver_tb();
     reg next_mod_active_cmd;
     
     
-    parameter SLAVE_ADDR_VL53l1X = 7'h52;
+    parameter SLAVE_ADDR_VL53l1X = 7'h29;
     parameter SLAVE_ADDR_BNO055  = 7'h28;
 
     
@@ -57,7 +57,8 @@ module i2c_device_driver_tb();
     wire [15:0]gravity_accel_z;
     wire [7:0]temperature;
     wire [7:0]calib_status;
-    wire [15:0]vl53l1x_chip_id; 
+    wire [15:0]VL53L1X_chip_id; 
+    wire [15:0]VL53L1X_range_mm;
 
     integer i = 0;
     integer j = 0;
@@ -106,7 +107,8 @@ module i2c_device_driver_tb();
         .gravity_accel_z(gravity_accel_z),
         .temperature(temperature),
         .calib_status(calib_status),
-        .vl53l1x_chip_id(vl53l1x_chip_id)
+        .VL53L1X_chip_id(VL53L1X_chip_id),
+        .VL53L1X_range_mm(VL53L1X_range_mm)
         ); /* synthesis syn_hier=hard */;
 
 	// Connect i2c slaves

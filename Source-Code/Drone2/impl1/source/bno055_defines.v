@@ -278,55 +278,55 @@ MIT license, all text above must be included in any redistribution
 
 
 // Indices of measurement data in rx_data_reg
-`define ACC_DATA_X_LSB_INDEX                0
-`define ACC_DATA_X_MSB_INDEX                1
-`define ACC_DATA_Y_LSB_INDEX                2
-`define ACC_DATA_Y_MSB_INDEX                3
-`define ACC_DATA_Z_LSB_INDEX                4
-`define ACC_DATA_Z_MSB_INDEX                5
-`define MAG_DATA_X_LSB_INDEX                6
-`define MAG_DATA_X_MSB_INDEX                7
-`define MAG_DATA_Y_LSB_INDEX                8
-`define MAG_DATA_Y_MSB_INDEX                9
-`define MAG_DATA_Z_LSB_INDEX                10
-`define MAG_DATA_Z_MSB_INDEX                11
-`define GYR_DATA_X_LSB_INDEX                12
-`define GYR_DATA_X_MSB_INDEX                13
-`define GYR_DATA_Y_LSB_INDEX                14
-`define GYR_DATA_Y_MSB_INDEX                15
-`define GYR_DATA_Z_LSB_INDEX                16
-`define GYR_DATA_Z_MSB_INDEX                17
+`define BNO055_ACC_DATA_X_LSB_INDEX                0
+`define BNO055_ACC_DATA_X_MSB_INDEX                1
+`define BNO055_ACC_DATA_Y_LSB_INDEX                2
+`define BNO055_ACC_DATA_Y_MSB_INDEX                3
+`define BNO055_ACC_DATA_Z_LSB_INDEX                4
+`define BNO055_ACC_DATA_Z_MSB_INDEX                5
+`define BNO055_MAG_DATA_X_LSB_INDEX                6
+`define BNO055_MAG_DATA_X_MSB_INDEX                7
+`define BNO055_MAG_DATA_Y_LSB_INDEX                8
+`define BNO055_MAG_DATA_Y_MSB_INDEX                9
+`define BNO055_MAG_DATA_Z_LSB_INDEX                10
+`define BNO055_MAG_DATA_Z_MSB_INDEX                11
+`define BNO055_GYR_DATA_X_LSB_INDEX                12
+`define BNO055_GYR_DATA_X_MSB_INDEX                13
+`define BNO055_GYR_DATA_Y_LSB_INDEX                14
+`define BNO055_GYR_DATA_Y_MSB_INDEX                15
+`define BNO055_GYR_DATA_Z_LSB_INDEX                16
+`define BNO055_GYR_DATA_Z_MSB_INDEX                17
 //  **** NOTE ****
 // These do not follow the same sequence as other registers, instead of X, Y, Z, these are sequenced, Z, X, Y
-`define EUL_DATA_Z_LSB_INDEX                18 //  Yaw/Heading, Z-Axis
-`define EUL_DATA_Z_MSB_INDEX                19
-`define EUL_DATA_X_LSB_INDEX                20 //  Roll, X-Axis
-`define EUL_DATA_X_MSB_INDEX                21
-`define EUL_DATA_Y_LSB_INDEX                22 //  Pitch, Y-Axis
-`define EUL_DATA_Y_MSB_INDEX                23
+`define BNO055_EUL_DATA_Z_LSB_INDEX                18 //  Yaw/Heading, Z-Axis
+`define BNO055_EUL_DATA_Z_MSB_INDEX                19
+`define BNO055_EUL_DATA_X_LSB_INDEX                20 //  Roll, X-Axis
+`define BNO055_EUL_DATA_X_MSB_INDEX                21
+`define BNO055_EUL_DATA_Y_LSB_INDEX                22 //  Pitch, Y-Axis
+`define BNO055_EUL_DATA_Y_MSB_INDEX                23
 //  **** /END NOTE ****
-`define QUA_DATA_W_LSB_INDEX                24
-`define QUA_DATA_W_MSB_INDEX                25
-`define QUA_DATA_X_LSB_INDEX                26
-`define QUA_DATA_X_MSB_INDEX                27
-`define QUA_DATA_Y_LSB_INDEX                28
-`define QUA_DATA_Y_MSB_INDEX                29
-`define QUA_DATA_Z_LSB_INDEX                30
-`define QUA_DATA_Z_MSB_INDEX                31
-`define LIN_DATA_X_LSB_INDEX                32
-`define LIN_DATA_X_MSB_INDEX                33
-`define LIN_DATA_Y_LSB_INDEX                34
-`define LIN_DATA_Y_MSB_INDEX                35
-`define LIN_DATA_Z_LSB_INDEX                36
-`define LIN_DATA_Z_MSB_INDEX                37
-`define GRA_DATA_X_LSB_INDEX                38
-`define GRA_DATA_X_MSB_INDEX                39
-`define GRA_DATA_Y_LSB_INDEX                40
-`define GRA_DATA_Y_MSB_INDEX                41
-`define GRA_DATA_Z_LSB_INDEX                42
-`define GRA_DATA_Z_MSB_INDEX                43
-`define TEMPERATURE_DATA_INDEX              44
-`define CALIBRATION_DATA_INDEX              45
+`define BNO055_QUA_DATA_W_LSB_INDEX                24
+`define BNO055_QUA_DATA_W_MSB_INDEX                25
+`define BNO055_QUA_DATA_X_LSB_INDEX                26
+`define BNO055_QUA_DATA_X_MSB_INDEX                27
+`define BNO055_QUA_DATA_Y_LSB_INDEX                28
+`define BNO055_QUA_DATA_Y_MSB_INDEX                29
+`define BNO055_QUA_DATA_Z_LSB_INDEX                30
+`define BNO055_QUA_DATA_Z_MSB_INDEX                31
+`define BNO055_LIN_DATA_X_LSB_INDEX                32
+`define BNO055_LIN_DATA_X_MSB_INDEX                33
+`define BNO055_LIN_DATA_Y_LSB_INDEX                34
+`define BNO055_LIN_DATA_Y_MSB_INDEX                35
+`define BNO055_LIN_DATA_Z_LSB_INDEX                36
+`define BNO055_LIN_DATA_Z_MSB_INDEX                37
+`define BNO055_GRA_DATA_X_LSB_INDEX                38
+`define BNO055_GRA_DATA_X_MSB_INDEX                39
+`define BNO055_GRA_DATA_Y_LSB_INDEX                40
+`define BNO055_GRA_DATA_Y_MSB_INDEX                41
+`define BNO055_GRA_DATA_Z_LSB_INDEX                42
+`define BNO055_GRA_DATA_Z_MSB_INDEX                43
+`define BNO055_TEMPERATURE_DATA_INDEX              44
+`define BNO055_CALIBRATION_DATA_INDEX              45
 /*
 
 Registers accessed for data collection polling:
@@ -412,28 +412,28 @@ Total: 46 bytes
 */
 
 // Indices of calibration data in cal_data_reg
-`define ACCEL_OFFSET_X_LSB_INDEX            0
-`define ACCEL_OFFSET_X_MSB_INDEX            1
-`define ACCEL_OFFSET_Y_LSB_INDEX            2
-`define ACCEL_OFFSET_Y_MSB_INDEX            3
-`define ACCEL_OFFSET_Z_LSB_INDEX            4
-`define ACCEL_OFFSET_Z_MSB_INDEX            5
-`define MAG_OFFSET_X_LSB_INDEX              6
-`define MAG_OFFSET_X_MSB_INDEX              7
-`define MAG_OFFSET_Y_LSB_INDEX              8
-`define MAG_OFFSET_Y_MSB_INDEX              9
-`define MAG_OFFSET_Z_LSB_INDEX              10
-`define MAG_OFFSET_Z_MSB_INDEX              11
-`define GYRO_OFFSET_X_LSB_INDEX             12
-`define GYRO_OFFSET_X_MSB_INDEX             13
-`define GYRO_OFFSET_Y_LSB_INDEX             14
-`define GYRO_OFFSET_Y_MSB_INDEX             15
-`define GYRO_OFFSET_Z_LSB_INDEX             16
-`define GYRO_OFFSET_Z_MSB_INDEX             17
-`define ACCEL_RADIUS_LSB_INDEX              18
-`define ACCEL_RADIUS_MSB_INDEX              19
-`define MAG_RADIUS_LSB_INDEX                20
-`define MAG_RADIUS_MSB_INDEX                21
+`define BNO055_CAL_ACCEL_OFFSET_X_LSB_INDEX            0
+`define BNO055_CAL_ACCEL_OFFSET_X_MSB_INDEX            1
+`define BNO055_CAL_ACCEL_OFFSET_Y_LSB_INDEX            2
+`define BNO055_CAL_ACCEL_OFFSET_Y_MSB_INDEX            3
+`define BNO055_CAL_ACCEL_OFFSET_Z_LSB_INDEX            4
+`define BNO055_CAL_ACCEL_OFFSET_Z_MSB_INDEX            5
+`define BNO055_CAL_MAG_OFFSET_X_LSB_INDEX              6
+`define BNO055_CAL_MAG_OFFSET_X_MSB_INDEX              7
+`define BNO055_CAL_MAG_OFFSET_Y_LSB_INDEX              8
+`define BNO055_CAL_MAG_OFFSET_Y_MSB_INDEX              9
+`define BNO055_CAL_MAG_OFFSET_Z_LSB_INDEX              10
+`define BNO055_CAL_MAG_OFFSET_Z_MSB_INDEX              11
+`define BNO055_CAL_GYRO_OFFSET_X_LSB_INDEX             12
+`define BNO055_CAL_GYRO_OFFSET_X_MSB_INDEX             13
+`define BNO055_CAL_GYRO_OFFSET_Y_LSB_INDEX             14
+`define BNO055_CAL_GYRO_OFFSET_Y_MSB_INDEX             15
+`define BNO055_CAL_GYRO_OFFSET_Z_LSB_INDEX             16
+`define BNO055_CAL_GYRO_OFFSET_Z_MSB_INDEX             17
+`define BNO055_CAL_ACCEL_RADIUS_LSB_INDEX              18
+`define BNO055_CAL_ACCEL_RADIUS_MSB_INDEX              19
+`define BNO055_CAL_MAG_RADIUS_LSB_INDEX                20
+`define BNO055_CAL_MAG_RADIUS_MSB_INDEX                21
 
 `define BNO055_DATA_RX_BYTE_REG_CNT         46           //  The number of byte registers used to receive all measurement data
 `define BNO055_CAL_DATA_REG_CNT             22           //  The number of byte registers needed for all calibration data
