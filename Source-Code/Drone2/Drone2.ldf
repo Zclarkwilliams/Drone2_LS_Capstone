@@ -96,6 +96,9 @@
         <Source name="../testing_files/i2c_sim/i2c_slave_model.v" type="Verilog" type_short="Verilog" syn_sim="SimOnly">
             <Options/>
         </Source>
+        <Source name="../testing_files/i2c_sim/i2c_slave_model_2B_reg.v" type="Verilog" type_short="Verilog" syn_sim="SimOnly">
+            <Options/>
+        </Source>
         <Source name="Drone2.lpf" type="Logic Preference" type_short="LPF">
             <Options/>
         </Source>

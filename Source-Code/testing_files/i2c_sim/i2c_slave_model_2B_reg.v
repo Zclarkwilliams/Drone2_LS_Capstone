@@ -58,7 +58,7 @@
 
 `timescale 1ns / 1ns
 
-module i2c_slave_model (scl, sda);
+module i2c_slave_model_2B_reg (scl, sda);
 
 	//
 	// parameters
@@ -66,7 +66,7 @@ module i2c_slave_model (scl, sda);
 	parameter I2C_ADR = 7'b001_0000;
 
 	//
-	// input && outpus
+	// input && outputs
 	//
 	input wire scl;
 	inout wire sda;
@@ -76,9 +76,9 @@ module i2c_slave_model (scl, sda);
 	//
 	wire debug = 1'b1;
 
-	reg [7:0] mem [254:0]; // initiate memory
-	reg [7:0] mem_adr;     // memory address
-	reg [7:0] mem_do;      // memory data output
+	reg [7:0]  mem [65534:0]; // initiate memory 2 byte address (16 bit)
+	reg [15:0] mem_adr;       // memory address
+	reg [7:0]  mem_do;        // memory data output
 
 	reg sta, d_sta;
 	reg sto, d_sto;
@@ -94,15 +94,18 @@ module i2c_slave_model (scl, sda);
 
 	reg       sda_o;     // sda-drive level
 	wire      sda_dly;   // delayed version of sda
+    reg       is_2nd_reg_addr_byte;
 	
 
 	// statemachine declaration
-	parameter idle        = 3'b000;
-	parameter slave_ack   = 3'b001;
-	parameter get_mem_adr = 3'b010;
-	parameter gma_ack     = 3'b011;
-	parameter data        = 3'b100;
-	parameter data_ack    = 3'b101;
+	parameter idle         = 3'b000;
+	parameter slave_ack    = 3'b001;
+	parameter get_mem_adr1 = 3'b010;
+	parameter gma_ack1     = 3'b011;
+	parameter get_mem_adr2 = 3'b100;
+	parameter gma_ack2     = 3'b101;
+	parameter data         = 3'b110;
+	parameter data_ack     = 3'b111;
 
 	reg [2:0] state; // synopsys enum_state
 
@@ -114,7 +117,7 @@ module i2c_slave_model (scl, sda);
 	begin
 	   sda_o = 1'b1;
 	   state = idle;
-	   $readmemh("/../../testing_files/i2c_sim/i2c_slave_mem_init.txt", mem);
+	   $readmemh("/../../testing_files/i2c_sim/i2c_slave_mem_init_2B_reg.txt", mem);
 
 	end
 
@@ -151,8 +154,8 @@ module i2c_slave_model (scl, sda);
 	  if(scl)
 	    begin
 	        sta   <= #1 1'b1;
-		d_sta <= #1 1'b0;
-		sto   <= #1 1'b0;
+            d_sta <= #1 1'b0;
+            sto   <= #1 1'b0;
 
 	        if(debug)
 	          $display("%t i2c_slave 0x%h; start condition detected", $time, I2C_ADR);
@@ -183,14 +186,17 @@ module i2c_slave_model (scl, sda);
     // Print debugs of current state
 	always @(state) begin
 	    case(state)
-	        idle:        $display("%t i2c_slave 0x%h; STATE=IDLE", $time, I2C_ADR);
-	        slave_ack:   $display("%t i2c_slave 0x%h; STATE=SLAVE_ACK", $time, I2C_ADR);
-	        get_mem_adr: $display("%t i2c_slave 0x%h; STATE=GET_MEM_ADDR", $time, I2C_ADR);
-	        gma_ack:     $display("%t i2c_slave 0x%h; STATE=GMA_ACK", $time, I2C_ADR);
-	        data:        $display("%t i2c_slave 0x%h; STATE=DATA", $time, I2C_ADR);
-	        data_ack:    $display("%t i2c_slave 0x%h; STATE=DATA_ACK", $time, I2C_ADR);
+	        idle:         $display("%t i2c_slave 0x%h; STATE=IDLE", $time, I2C_ADR);
+	        slave_ack:    $display("%t i2c_slave 0x%h; STATE=SLAVE_ACK", $time, I2C_ADR);
+	        get_mem_adr1: $display("%t i2c_slave 0x%h; STATE=GET_MEM_ADDR first byte", $time, I2C_ADR);
+	        gma_ack1:     $display("%t i2c_slave 0x%h; STATE=SLAVE_ACK first byte", $time, I2C_ADR);
+	        get_mem_adr2: $display("%t i2c_slave 0x%h; STATE=GET_MEM_ADDR second byte", $time, I2C_ADR);
+	        gma_ack2:     $display("%t i2c_slave 0x%h; STATE=GMA_ACK second byte", $time, I2C_ADR);
+	        data:         $display("%t i2c_slave 0x%h; STATE=DATA", $time, I2C_ADR);
+	        data_ack:     $display("%t i2c_slave 0x%h; STATE=DATA_ACK", $time, I2C_ADR);
 	    endcase
 	end
+
 
 	// generate statemachine
 	always @(negedge scl or posedge sto)
@@ -200,12 +206,14 @@ module i2c_slave_model (scl, sda);
 
 	        sda_o <= #1 1'b1;
 	        ld    <= #1 1'b1;
+            is_2nd_reg_addr_byte <= 1'b0;
 	    end
 	  else
 	    begin
 	        // initial settings
 	        sda_o <= #1 1'b1;
 	        ld    <= #1 1'b0;
+            is_2nd_reg_addr_byte <= 1'b0;
 
 	        case(state) // synopsys full_case parallel_case
 	            idle: // idle state
@@ -222,16 +230,17 @@ module i2c_slave_model (scl, sda);
 	                    if(debug && !rw)
 	                      $display("%t i2c_slave 0x%h; command byte received (write)", $time, I2C_ADR);
 
-	                    if(rw)
+	                    if(rw && is_2nd_reg_addr_byte)
 	                      begin
 	                          mem_do <= #1 mem[mem_adr];
 
 	                          if(debug)
 	                            begin
-	                                #2 $display("%t i2c_slave 0x%h; data block read %x from address %x (1)", $time, I2C_ADR, mem_do, mem_adr);
-	                                #2 $display("%t i2c_slave 0x%h; memcheck [0]=%x, [1]=%x, [2]=%x, [3]=%x", $time, I2C_ADR, mem[4'h0], mem[4'h1], mem[4'h2], mem[4'h3]);
+	                                #2 $display("%t i2c_slave 0x%h; data block read 0x%h from address 0x%h (1)", $time, I2C_ADR, mem_do, mem_adr);
 	                            end
 	                      end
+                        mem_adr <= 16'd0;
+                        //$stop;
 	                end
                   end
 	            slave_ack:
@@ -242,24 +251,44 @@ module i2c_slave_model (scl, sda);
 	                        sda_o <= #1 mem_do[7];
 	                    end
 	                  else
-	                    state <= #1 get_mem_adr;
+	                    state <= #1 get_mem_adr1;
 
 	                  ld    <= #1 1'b1;
 	              end
 
-	            get_mem_adr: // wait for memory address
+	            get_mem_adr1: // wait for memory address
 	              begin
 	              if(acc_done)
 	                begin
-	                    state <= #1 gma_ack;
-	                    mem_adr <= #1 sr; // store memory address
+                        is_2nd_reg_addr_byte <= 1'b0;
+	                    state <= #1 gma_ack1;
+	                    mem_adr <= #1 {8'h00, sr}; // store memory address
 	                    sda_o <= #1 !(sr <= 15); // generate i2c_ack, for valid address
 
 	                    if(debug)
-	                      #1 $display("%t i2c_slave 0x%h; address received. adr=%x, ack=%b", $time, I2C_ADR, sr, sda_o);
+	                      #1 $display("%t i2c_slave 0x%h; address received. adr=0x%h, ack=%b", $time, I2C_ADR, mem_adr, sda_o);
 	                end
                   end
-	            gma_ack:
+	            gma_ack1:
+	              begin
+	                  state <= #1 get_mem_adr2;
+	                  ld    <= #1 1'b1;
+	              end
+
+	            get_mem_adr2: // wait for memory address
+	              begin
+	              if(acc_done)
+	                begin
+                        is_2nd_reg_addr_byte <= 1'b1;
+	                    state <= #1 gma_ack2;
+	                    mem_adr <= #1 {mem_adr[7:0], sr};// store memory address
+	                    sda_o <= #1 !(sr <= 15); // generate i2c_ack, for valid address
+
+	                    if(debug)
+	                      #1 $display("%t i2c_slave 0x%h; address received. adr=0x%h, ack=%b", $time, I2C_ADR, mem_adr, sda_o);
+	                end
+                  end
+	            gma_ack2:
 	              begin
 	                  state <= #1 data;
 	                  ld    <= #1 1'b1;
@@ -279,17 +308,18 @@ module i2c_slave_model (scl, sda);
 	                        if(rw)
 	                          begin
 	                              #3 mem_do <= mem[mem_adr];
-
+                                  //$stop;
 	                              if(debug)
-	                                #5 $display("%t i2c_slave 0x%h; data block read %x from address %x (2)", $time, I2C_ADR, mem_do, mem_adr);
+	                                #5 $display("%t i2c_slave 0x%h; data block read 0x%h from address 0x%h (2)", $time, I2C_ADR, mem_do, mem_adr);
 	                          end
 
 	                        if(!rw)
 	                          begin
-	                              mem[ mem_adr[3:0] ] <= #1 sr; // store data in memory
+	                              mem[mem_adr] <= #1 sr; // store data in memory
+                                  //$stop;
 
 	                              if(debug)
-	                                #2 $display("%t i2c_slave 0x%h; data block write %x to address %x", $time, I2C_ADR, sr, mem_adr);
+	                                #2 $display("%t i2c_slave 0x%h; data block write 0x%h to address 0x%h", $time, I2C_ADR, sr, mem_adr);
 	                          end
 	                    end
 	              end

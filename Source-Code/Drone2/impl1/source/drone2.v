@@ -67,12 +67,7 @@ module drone2 (
     input  wire sin,
     output wire rxrdy_n,
     output wire sout,
-    output wire txrdy_n,
-    
-    
-    // I2C debug wire inputs
-    input wire i2c_scl_debug /* synthesis syn_force_pads = 1*/,
-    input wire i2c_sda_debug /* synthesis syn_force_pads = 1*/
+    output wire txrdy_n
     );
 
     //--------------- Receiver Wires --------------//

@@ -28,9 +28,11 @@ module i2c_device_driver_tb();
     wire sda_2;
     reg  resetn;
     wire [7:0]led_data_out;
+    wire [7:0]i2c_top_debug;
     wire sys_clk;
     reg  next_mod_active;
     wire resetn_imu;
+    wire resetn_lidar;
     wire imu_good;
     wire valid_strobe;
     wire [15:0]accel_rate_x;
@@ -59,6 +61,7 @@ module i2c_device_driver_tb();
     wire [7:0]calib_status;
     wire [15:0]VL53L1X_chip_id; 
     wire [15:0]VL53L1X_range_mm;
+    wire [7:0]VL53L1X_firm_rdy;
 
     integer i = 0;
     integer j = 0;
@@ -78,9 +81,11 @@ module i2c_device_driver_tb();
         .sda_2(sda_2),
         .resetn(resetn),
         .led_data_out(led_data_out),
+        .i2c_top_debug(i2c_top_debug),
         .sys_clk(sys_clk),
         .next_mod_active(next_mod_active),
         .resetn_imu(resetn_imu),
+        .resetn_lidar(resetn_lidar),
         .imu_good(imu_good),
         .valid_strobe(valid_strobe),
         .accel_rate_x(accel_rate_x),
@@ -108,11 +113,12 @@ module i2c_device_driver_tb();
         .temperature(temperature),
         .calib_status(calib_status),
         .VL53L1X_chip_id(VL53L1X_chip_id),
-        .VL53L1X_range_mm(VL53L1X_range_mm)
-        ); /* synthesis syn_hier=hard */;
+        .VL53L1X_range_mm(VL53L1X_range_mm),
+        .VL53L1X_firm_rdy(VL53L1X_firm_rdy)
+        );
 
 	// Connect i2c slaves
-	i2c_slave_model #(SLAVE_ADDR_VL53l1X) VL53l1X (
+	i2c_slave_model_2B_reg #(SLAVE_ADDR_VL53l1X) VL53l1X (
 		.scl(scl_1),
 		.sda(sda_1)
 	);
