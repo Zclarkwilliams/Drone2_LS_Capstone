@@ -108,6 +108,7 @@ module drone2 (
     wire [15:0] VL53L1X_chip_id;
     wire [15:0] VL53L1X_range_mm;
     wire [7:0] VL53L1X_firm_rdy;
+    wire [7:0] VL53L1X_data_rdy;
     wire [7:0] i2c_driver_debug;
     wire [7:0] i2c_top_debug;
     
@@ -155,10 +156,16 @@ module drone2 (
     wire us_clk;
 
     //---------------- Reset Wires ----------------//
-    wire resetn;
+    //wire resetn;
+    reg  resetn;
     //wire soft_reset_n;
     //assign resetn = (machxo3_switch_reset_n & soft_reset_n);
-    assign resetn = (machxo3_switch_reset_n);
+    //assign resetn = (machxo3_switch_reset_n);
+    
+    // Synchronously latc reset signal - Make this input not a clock resource
+    always@(posedge sys_clk) begin
+        resetn <= machxo3_switch_reset_n;
+    end
     
     
 
@@ -230,24 +237,18 @@ module drone2 (
      * IMU Management and Control Module
      *        file - bno055_driver.v
      */
-    i2c_device_driver #(.INIT_INTERVAL(16'd10_000),
+    i2c_device_driver #(
+                        //.INIT_INTERVAL(16'd10_000),
+                        .INIT_INTERVAL(16'd1_000),
                         .POLL_INTERVAL(16'd20))
         I2C_Devices(
         // Outputs
         .imu_good(imu_good),
         .valid_strobe(imu_data_valid),
-        .gyro_rate_x(x_rotation_rate),
-        .gyro_rate_y(y_rotation_rate),
-        .gyro_rate_z(z_rotation_rate),
-        .euler_angle_x(x_rotation),
-        .euler_angle_y(y_rotation),
-        .euler_angle_z(z_rotation),
-        .linear_accel_x(x_linear_accel),
-        .linear_accel_y(y_linear_accel),
-        .linear_accel_z(z_linear_accel),
         .VL53L1X_chip_id(VL53L1X_chip_id),
         .VL53L1X_range_mm(VL53L1X_range_mm),
         .VL53L1X_firm_rdy(VL53L1X_firm_rdy),
+        .VL53L1X_data_rdy(VL53L1X_data_rdy),
         // DEBUG WIRE
         .led_data_out(i2c_driver_debug),
         .i2c_top_debug(i2c_top_debug),
@@ -456,11 +457,13 @@ module drone2 (
         .debug_13_in_16_bits({8'd0, swa_swb_val}),
         .debug_14_in_16_bits({11'd0, switch_b, switch_a}),
         .debug_15_in_16_bits(yaac_yaw_angle_target),
-        //.debug_16_in_16_bits(VL53L1X_chip_id),
-        .debug_16_in_16_bits({8'd0, VL53L1X_firm_rdy}),
+        .debug_16_in_16_bits(VL53L1X_chip_id),
+        //.debug_16_in_16_bits({8'd0, VL53L1X_firm_rdy}),
+        //.debug_16_in_16_bits({8'd0, VL53L1X_data_rdy}),
         .debug_17_in_16_bits({8'd0, i2c_driver_debug}),
-        .debug_18_in_16_bits({8'd0, i2c_top_debug}),
-        .debug_19_in_16_bits(VL53L1X_range_mm)
+        .debug_18_in_16_bits({8'd0, VL53L1X_firm_rdy}),
+        .debug_19_in_16_bits({8'd0, VL53L1X_data_rdy})
+        //.debug_19_in_16_bits(VL53L1X_range_mm)
 
     );
 //*/

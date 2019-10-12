@@ -58,7 +58,7 @@
 
 `timescale 1ns / 1ns
 
-module i2c_slave_model_2B_reg (scl, sda);
+module i2c_slave_model_2B_reg (resetn, scl, sda);
 
 	//
 	// parameters
@@ -68,13 +68,14 @@ module i2c_slave_model_2B_reg (scl, sda);
 	//
 	// input && outputs
 	//
+	input wire resetn;
 	input wire scl;
 	inout wire sda;
 
 	//
 	// Variable declaration
 	//
-	wire debug = 1'b1;
+	reg debug;
 
 	reg [7:0]  mem [65534:0]; // initiate memory 2 byte address (16 bit)
 	reg [15:0] mem_adr;       // memory address
@@ -118,24 +119,41 @@ module i2c_slave_model_2B_reg (scl, sda);
 	   sda_o = 1'b1;
 	   state = idle;
 	   $readmemh("/../../testing_files/i2c_sim/i2c_slave_mem_init_2B_reg.txt", mem);
-
 	end
 
 	// generate shift register
-	always @(posedge scl)
+	always @(posedge scl) begin
 	  sr <= #1 {sr[6:0],sda};
+    end
 
 	//detect my_address
 	assign my_adr = (sr[7:1] == I2C_ADR);
 	// FIXME: This should not be a generic assign, but rather
 	// qualified on address transfer phase and probably reset by stop
 
+    
+    // Only debug if time is non-zero (Not at initialization)
+    initial begin
+      debug = 1'b0;
+      #1;
+      debug = 1'b1;
+    end
+    
+    
+    always @(debug)
+      if(~debug)
+        $display("%t i2c_slave 0x%h; DEBUG disabled", $time, I2C_ADR);
+      else
+        $display("%t i2c_slave 0x%h; DEBUG enabled", $time, I2C_ADR);
+
+
 	//generate bit-counter
-	always @(posedge scl)
-	  if(ld)
+	always @(posedge scl, negedge resetn) begin
+      if(~resetn || ld)
 	    bit_cnt <= #1 3'b111;
 	  else
 	    bit_cnt <= #1 bit_cnt - 3'h1;
+    end
 
 	//generate access done signal
 	assign acc_done = !(|bit_cnt);
@@ -150,8 +168,13 @@ module i2c_slave_model_2B_reg (scl, sda);
 
 
 	//detect start condition
-	always @(negedge sda)
-	  if(scl)
+	always @(negedge sda, negedge resetn)
+      if(~resetn) begin
+	    sta   <= #1 1'b0;
+        d_sta <= #1 1'b0;
+        sto   <= #1 1'b0;
+      end
+      else if(scl)
 	    begin
 	        sta   <= #1 1'b1;
             d_sta <= #1 1'b0;
@@ -167,8 +190,12 @@ module i2c_slave_model_2B_reg (scl, sda);
 	  d_sta <= #1 sta;
 
 	// detect stop condition
-	always @(posedge sda)
-	  if(scl)
+	always @(posedge sda, negedge resetn)
+      if(~resetn) begin
+	    sta <= #1 1'b0;
+	    sto <= #1 1'b0;
+      end
+      else if(scl)
 	    begin
 	       sta <= #1 1'b0;
 	       sto <= #1 1'b1;
@@ -185,22 +212,33 @@ module i2c_slave_model_2B_reg (scl, sda);
     
     // Print debugs of current state
 	always @(state) begin
+      if(debug) begin
 	    case(state)
-	        idle:         $display("%t i2c_slave 0x%h; STATE=IDLE", $time, I2C_ADR);
-	        slave_ack:    $display("%t i2c_slave 0x%h; STATE=SLAVE_ACK", $time, I2C_ADR);
-	        get_mem_adr1: $display("%t i2c_slave 0x%h; STATE=GET_MEM_ADDR first byte", $time, I2C_ADR);
-	        gma_ack1:     $display("%t i2c_slave 0x%h; STATE=SLAVE_ACK first byte", $time, I2C_ADR);
-	        get_mem_adr2: $display("%t i2c_slave 0x%h; STATE=GET_MEM_ADDR second byte", $time, I2C_ADR);
-	        gma_ack2:     $display("%t i2c_slave 0x%h; STATE=GMA_ACK second byte", $time, I2C_ADR);
-	        data:         $display("%t i2c_slave 0x%h; STATE=DATA", $time, I2C_ADR);
-	        data_ack:     $display("%t i2c_slave 0x%h; STATE=DATA_ACK", $time, I2C_ADR);
+	      idle:         $display("%t i2c_slave 0x%h; STATE=IDLE", $time, I2C_ADR);
+	      slave_ack:    $display("%t i2c_slave 0x%h; STATE=SLAVE_ACK", $time, I2C_ADR);
+	      get_mem_adr1: $display("%t i2c_slave 0x%h; STATE=GET_MEM_ADDR first byte", $time, I2C_ADR);
+	      gma_ack1:     $display("%t i2c_slave 0x%h; STATE=SLAVE_ACK first byte", $time, I2C_ADR);
+	      get_mem_adr2: $display("%t i2c_slave 0x%h; STATE=GET_MEM_ADDR second byte", $time, I2C_ADR);
+	      gma_ack2:     $display("%t i2c_slave 0x%h; STATE=GMA_ACK second byte", $time, I2C_ADR);
+	      data:         $display("%t i2c_slave 0x%h; STATE=DATA", $time, I2C_ADR);
+	      data_ack:     $display("%t i2c_slave 0x%h; STATE=DATA_ACK", $time, I2C_ADR);
 	    endcase
+      end
 	end
 
 
 	// generate statemachine
-	always @(negedge scl or posedge sto)
-	  if (sto || (sta && !d_sta) )
+	always @(negedge scl, posedge sto, negedge resetn)
+	  if (~resetn) begin
+	        state   <= #1 idle;
+	        sda_o   <= #1 1'b1;
+	        ld      <= #1 1'b0;
+            is_2nd_reg_addr_byte <= 1'b0;
+            mem_adr <= 'd0;
+            mem_do  <= 'd0;
+            rw      <= 1'b0;
+      end
+      else if (sto || (sta && !d_sta) )
 	    begin
 	        state <= #1 idle; // reset statemachine
 
@@ -308,7 +346,7 @@ module i2c_slave_model_2B_reg (scl, sda);
 	                        if(rw)
 	                          begin
 	                              #3 mem_do <= mem[mem_adr];
-                                  //$stop;
+                                  $stop;
 	                              if(debug)
 	                                #5 $display("%t i2c_slave 0x%h; data block read 0x%h from address 0x%h (2)", $time, I2C_ADR, mem_do, mem_adr);
 	                          end
@@ -316,7 +354,7 @@ module i2c_slave_model_2B_reg (scl, sda);
 	                        if(!rw)
 	                          begin
 	                              mem[mem_adr] <= #1 sr; // store data in memory
-                                  //$stop;
+                                  $stop;
 
 	                              if(debug)
 	                                #2 $display("%t i2c_slave 0x%h; data block write 0x%h to address 0x%h", $time, I2C_ADR, sr, mem_adr);

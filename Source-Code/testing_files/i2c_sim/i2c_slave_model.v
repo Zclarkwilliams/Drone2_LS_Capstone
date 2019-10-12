@@ -58,7 +58,7 @@
 
 `timescale 1ns / 1ns
 
-module i2c_slave_model (scl, sda);
+module i2c_slave_model (resetn, scl, sda);
 
 	//
 	// parameters
@@ -68,13 +68,14 @@ module i2c_slave_model (scl, sda);
 	//
 	// input && outpus
 	//
+    input wire resetn;
 	input wire scl;
 	inout wire sda;
 
 	//
 	// Variable declaration
 	//
-	wire debug = 1'b1;
+	reg debug;
 
 	reg [7:0] mem [254:0]; // initiate memory
 	reg [7:0] mem_adr;     // memory address
@@ -105,6 +106,8 @@ module i2c_slave_model (scl, sda);
 	parameter data_ack    = 3'b101;
 
 	reg [2:0] state; // synopsys enum_state
+    
+    
 
 	//
 	// module body
@@ -126,6 +129,23 @@ module i2c_slave_model (scl, sda);
 	assign my_adr = (sr[7:1] == I2C_ADR);
 	// FIXME: This should not be a generic assign, but rather
 	// qualified on address transfer phase and probably reset by stop
+    
+    
+    // Only debug if time is non-zero (Not at initialization)
+    initial begin
+      debug = 1'b0;
+      #1;
+      //debug = 1'b1;
+      debug = 1'b0;
+    end
+    
+    
+    always @(debug)
+      if(~debug)
+        $display("%t i2c_slave 0x%h; DEBUG disabled", $time, I2C_ADR);
+      else
+        $display("%t i2c_slave 0x%h; DEBUG enabled", $time, I2C_ADR);
+
 
 	//generate bit-counter
 	always @(posedge scl)
@@ -182,15 +202,18 @@ module i2c_slave_model (scl, sda);
     
     // Print debugs of current state
 	always @(state) begin
+      if(debug) begin
 	    case(state)
-	        idle:        $display("%t i2c_slave 0x%h; STATE=IDLE", $time, I2C_ADR);
-	        slave_ack:   $display("%t i2c_slave 0x%h; STATE=SLAVE_ACK", $time, I2C_ADR);
-	        get_mem_adr: $display("%t i2c_slave 0x%h; STATE=GET_MEM_ADDR", $time, I2C_ADR);
-	        gma_ack:     $display("%t i2c_slave 0x%h; STATE=GMA_ACK", $time, I2C_ADR);
-	        data:        $display("%t i2c_slave 0x%h; STATE=DATA", $time, I2C_ADR);
-	        data_ack:    $display("%t i2c_slave 0x%h; STATE=DATA_ACK", $time, I2C_ADR);
+	      idle:         $display("%t i2c_slave 0x%h; STATE=IDLE", $time, I2C_ADR);
+	      slave_ack:    $display("%t i2c_slave 0x%h; STATE=SLAVE_ACK", $time, I2C_ADR);
+	      get_mem_adr:  $display("%t i2c_slave 0x%h; STATE=GET_MEM_ADDR", $time, I2C_ADR);
+	      gma_ack:      $display("%t i2c_slave 0x%h; STATE=SLAVE_ACK", $time, I2C_ADR);
+	      data:         $display("%t i2c_slave 0x%h; STATE=DATA", $time, I2C_ADR);
+	      data_ack:     $display("%t i2c_slave 0x%h; STATE=DATA_ACK", $time, I2C_ADR);
 	    endcase
+      end
 	end
+
 
 	// generate statemachine
 	always @(negedge scl or posedge sto)

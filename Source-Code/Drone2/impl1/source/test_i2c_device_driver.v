@@ -62,6 +62,7 @@ module i2c_device_driver_tb();
     wire [15:0]VL53L1X_chip_id; 
     wire [15:0]VL53L1X_range_mm;
     wire [7:0]VL53L1X_firm_rdy;
+    wire [7:0]VL53L1X_data_rdy;
 
     integer i = 0;
     integer j = 0;
@@ -88,42 +89,21 @@ module i2c_device_driver_tb();
         .resetn_lidar(resetn_lidar),
         .imu_good(imu_good),
         .valid_strobe(valid_strobe),
-        .accel_rate_x(accel_rate_x),
-        .accel_rate_y(accel_rate_y),
-        .accel_rate_z(accel_rate_z),
-        .magneto_rate_x(magneto_rate_x),
-        .magneto_rate_y(magneto_rate_y),
-        .magneto_rate_z(magneto_rate_z),
-        .gyro_rate_x(gyro_rate_x),
-        .gyro_rate_y(gyro_rate_y),
-        .gyro_rate_z(gyro_rate_z),
-        .euler_angle_x(euler_angle_x),
-        .euler_angle_y(euler_angle_y),
-        .euler_angle_z(euler_angle_z),
-        .quaternion_data_w(quaternion_data_w),
-        .quaternion_data_x(quaternion_data_x),
-        .quaternion_data_y(quaternion_data_y),
-        .quaternion_data_z(quaternion_data_z),
-        .linear_accel_x(linear_accel_x),
-        .linear_accel_y(linear_accel_y),
-        .linear_accel_z(linear_accel_z),
-        .gravity_accel_x(gravity_accel_x),
-        .gravity_accel_y(gravity_accel_y),
-        .gravity_accel_z(gravity_accel_z),
-        .temperature(temperature),
-        .calib_status(calib_status),
         .VL53L1X_chip_id(VL53L1X_chip_id),
         .VL53L1X_range_mm(VL53L1X_range_mm),
-        .VL53L1X_firm_rdy(VL53L1X_firm_rdy)
+        .VL53L1X_firm_rdy(VL53L1X_firm_rdy),
+        .VL53L1X_data_rdy(VL53L1X_data_rdy)
         );
 
 	// Connect i2c slaves
 	i2c_slave_model_2B_reg #(SLAVE_ADDR_VL53l1X) VL53l1X (
+        .resetn(resetn),
 		.scl(scl_1),
 		.sda(sda_1)
 	);
 
 	i2c_slave_model #(SLAVE_ADDR_BNO055) BNO055 (
+        .resetn(resetn),
 		.scl(scl_1),
 		.sda(sda_1)
 	);
