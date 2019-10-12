@@ -77,7 +77,7 @@ module i2c_slave_model (resetn, scl, sda);
 	//
 	reg debug;
 
-	reg [7:0] mem [254:0]; // initiate memory
+	reg [7:0] mem [0:254]; // initiate memory
 	reg [7:0] mem_adr;     // memory address
 	reg [7:0] mem_do;      // memory data output
 
@@ -276,7 +276,7 @@ module i2c_slave_model (resetn, scl, sda);
 	                begin
 	                    state <= #1 gma_ack;
 	                    mem_adr <= #1 sr; // store memory address
-	                    sda_o <= #1 !(sr <= 15); // generate i2c_ack, for valid address
+	                    sda_o <= #1 1'b0; // generate i2c_ack, for valid address
 
 	                    if(debug)
 	                      #1 $display("%t i2c_slave 0x%h; address received. adr=%x, ack=%b", $time, I2C_ADR, sr, sda_o);
@@ -295,9 +295,9 @@ module i2c_slave_model (resetn, scl, sda);
 
 	                  if(acc_done)
 	                    begin
-	                        state <= #1 data_ack;
+	                        state   <= #1 data_ack;
 	                        mem_adr <= #2 mem_adr + 8'h1;
-	                        sda_o <= #1 (rw && (mem_adr <= 15) ); // send ack on write, receive ack on read
+	                        sda_o   <= #1 (rw); // send ack on write, receive ack on read
 
 	                        if(rw)
 	                          begin
