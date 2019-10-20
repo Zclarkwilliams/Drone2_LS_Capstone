@@ -49,7 +49,8 @@
 // Continue Bosch BNO055 setup
 `define I2C_BNO055_STATE_SET_EXT_CRYSTAL                    'd11
 `define I2C_BNO055_STATE_SET_RUN_MODE                       'd12
-`define I2C_STATE_WAIT_20MS                                 'd13
+//`define I2C_STATE_WAIT_20MS                                 'd13
+`define I2C_STATE_WAIT_1MS                                 'd13
 // Continue Configuration of VL53L1X
 `define I2C_VL53L1X_STATE_INIT_START_MEASURE                'd14
 `define I2C_VL53L1X_STATE_INIT_POLL_DATA_READY              'd15

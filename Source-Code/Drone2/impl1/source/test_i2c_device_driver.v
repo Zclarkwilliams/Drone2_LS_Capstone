@@ -96,7 +96,8 @@ module i2c_device_driver_tb();
         );
 
 	// Connect i2c slaves
-	i2c_slave_model_2B_reg #(SLAVE_ADDR_VL53l1X) VL53l1X (
+	//i2c_slave_model_2B_reg #(SLAVE_ADDR_VL53l1X) VL53l1X (
+	i2c_slave_model #(SLAVE_ADDR_VL53l1X) VL53l1X (
         .resetn(resetn),
 		.scl(scl_1),
 		.sda(sda_1)

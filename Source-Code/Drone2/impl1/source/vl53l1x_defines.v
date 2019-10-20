@@ -1,19 +1,19 @@
 
 
-// Register addresses for the VL53L1X lidar sensor
+// Register addresses for the VL53L1X LiDAR sensor
 `define VL53L1X_SOFT_RESET_ADDR                                                 16'h0000
 `define VL53L1X_I2C_SLAVE_DEVICE_ADDRESS_ADDR                                   16'h0001
 `define VL53L1X_ANA_CONFIG_VHV_REF_SEL_VDDPIX_ADDR                              16'h0002
 `define VL53L1X_ANA_CONFIG_VHV_REF_SEL_VQUENCH_ADDR                             16'h0003
 `define VL53L1X_ANA_CONFIG_REG_AVDD1V2_SEL_ADDR                                 16'h0004
 `define VL53L1X_ANA_CONFIG_FAST_OSC_TRIM_ADDR                                   16'h0005
-`define VL53L1X_OSC_MEASURED_FAST_OSC_FREQUENCY_ADDR                            16'h0006
 `define VL53L1X_OSC_MEASURED_FAST_OSC_FREQUENCY_HI_ADDR                         16'h0006
 `define VL53L1X_OSC_MEASURED_FAST_OSC_FREQUENCY_LO_ADDR                         16'h0007
 `define VL53L1X_VHV_CONFIG_TIMEOUT_MACROP_LOOP_BOUND_ADDR                       16'h0008
 `define VL53L1X_VHV_CONFIG_COUNT_THRESH_ADDR                                    16'h0009
 `define VL53L1X_VHV_CONFIG_OFFSET_ADDR                                          16'h000A
 `define VL53L1X_VHV_CONFIG_INIT_ADDR                                            16'h000B
+// Not sure what would go here                                                              16'h000C
 `define VL53L1X_GLOBAL_CONFIG_SPAD_ENABLES_REF_0_ADDR                           16'h000D
 `define VL53L1X_GLOBAL_CONFIG_SPAD_ENABLES_REF_1_ADDR                           16'h000E
 `define VL53L1X_GLOBAL_CONFIG_SPAD_ENABLES_REF_2_ADDR                           16'h000F
@@ -23,28 +23,20 @@
 `define VL53L1X_GLOBAL_CONFIG_REF_EN_START_SELECT_ADDR                          16'h0013
 `define VL53L1X_REF_SPAD_MAN_NUM_REQUESTED_REF_SPADS_ADDR                       16'h0014
 `define VL53L1X_REF_SPAD_MAN_REF_LOCATION_ADDR                                  16'h0015
-`define VL53L1X_ALGO_CROSSTALK_COMPENSATION_PLANE_OFFSET_KCPS_ADDR              16'h0016
 `define VL53L1X_ALGO_CROSSTALK_COMPENSATION_PLANE_OFFSET_KCPS_HI_ADDR           16'h0016
 `define VL53L1X_ALGO_CROSSTALK_COMPENSATION_PLANE_OFFSET_KCPS_LO_ADDR           16'h0017
-`define VL53L1X_ALGO_CROSSTALK_COMPENSATION_X_PLANE_GRADIENT_KCPS_ADDR          16'h0018
 `define VL53L1X_ALGO_CROSSTALK_COMPENSATION_X_PLANE_GRADIENT_KCPS_HI_ADDR       16'h0018
 `define VL53L1X_ALGO_CROSSTALK_COMPENSATION_X_PLANE_GRADIENT_KCPS_LO_ADDR       16'h0019
-`define VL53L1X_ALGO_CROSSTALK_COMPENSATION_Y_PLANE_GRADIENT_KCPS_ADDR          16'h001A
 `define VL53L1X_ALGO_CROSSTALK_COMPENSATION_Y_PLANE_GRADIENT_KCPS_HI_ADDR       16'h001A
 `define VL53L1X_ALGO_CROSSTALK_COMPENSATION_Y_PLANE_GRADIENT_KCPS_LO_ADDR       16'h001B
-`define VL53L1X_REF_SPAD_CHAR_TOTAL_RATE_TARGET_MCPS_ADDR                       16'h001C
 `define VL53L1X_REF_SPAD_CHAR_TOTAL_RATE_TARGET_MCPS_HI_ADDR                    16'h001C
 `define VL53L1X_REF_SPAD_CHAR_TOTAL_RATE_TARGET_MCPS_LO_ADDR                    16'h001D
-`define VL53L1X_ALGO_PART_TO_PART_RANGE_OFFSET_MM_ADDR                          16'h001E
 `define VL53L1X_ALGO_PART_TO_PART_RANGE_OFFSET_MM_HI_ADDR                       16'h001E
 `define VL53L1X_ALGO_PART_TO_PART_RANGE_OFFSET_MM_LO_ADDR                       16'h001F
-`define VL53L1X_MM_CONFIG_INNER_OFFSET_MM_ADDR                                  16'h0020
 `define VL53L1X_MM_CONFIG_INNER_OFFSET_MM_HI_ADDR                               16'h0020
 `define VL53L1X_MM_CONFIG_INNER_OFFSET_MM_LO_ADDR                               16'h0021
-`define VL53L1X_MM_CONFIG_OUTER_OFFSET_MM_ADDR                                  16'h0022
 `define VL53L1X_MM_CONFIG_OUTER_OFFSET_MM_HI_ADDR                               16'h0022
 `define VL53L1X_MM_CONFIG_OUTER_OFFSET_MM_LO_ADDR                               16'h0023
-`define VL53L1X_DSS_CONFIG_TARGET_TOTAL_RATE_MCPS_ADDR                          16'h0024
 `define VL53L1X_DSS_CONFIG_TARGET_TOTAL_RATE_MCPS_HI_ADDR                       16'h0024
 `define VL53L1X_DSS_CONFIG_TARGET_TOTAL_RATE_MCPS_LO_ADDR                       16'h0025
 `define VL53L1X_DEBUG_CTRL_ADDR                                                 16'h0026
@@ -69,7 +61,6 @@
 `define VL53L1X_ALGO_CROSSTALK_COMPENSATION_VALID_HEIGHT_MM_ADDR                16'h0039
 `define VL53L1X_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_0_ADDR                    16'h003A
 `define VL53L1X_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_1_ADDR                    16'h003B
-`define VL53L1X_ALGO_RANGE_IGNORE_THRESHOLD_MCPS_ADDR                           16'h003C
 `define VL53L1X_ALGO_RANGE_IGNORE_THRESHOLD_MCPS_HI_ADDR                        16'h003C
 `define VL53L1X_ALGO_RANGE_IGNORE_THRESHOLD_MCPS_LO_ADDR                        16'h003D
 `define VL53L1X_ALGO_RANGE_IGNORE_VALID_HEIGHT_MM_ADDR                          16'h003E
@@ -82,21 +73,18 @@
 `define VL53L1X_GLOBAL_CONFIG_STREAM_DIVIDER_ADDR                               16'h0045
 `define VL53L1X_SYSTEM_INTERRUPT_CONFIG_GPIO_ADDR                               16'h0046
 `define VL53L1X_CAL_CONFIG_VCSEL_START_ADDR                                     16'h0047
-`define VL53L1X_CAL_CONFIG_REPEAT_RATE_ADDR                                     16'h0048
 `define VL53L1X_CAL_CONFIG_REPEAT_RATE_HI_ADDR                                  16'h0048
 `define VL53L1X_CAL_CONFIG_REPEAT_RATE_LO_ADDR                                  16'h0049
 `define VL53L1X_GLOBAL_CONFIG_VCSEL_WIDTH_ADDR                                  16'h004A
 `define VL53L1X_PHASECAL_CONFIG_TIMEOUT_MACROP_ADDR                             16'h004B
 `define VL53L1X_PHASECAL_CONFIG_TARGET_ADDR                                     16'h004C
 `define VL53L1X_PHASECAL_CONFIG_OVERRIDE_ADDR                                   16'h004D
+`define VL53L1X_UNNAMED_REG_0x004E_ADDR                                         16'h004E
 `define VL53L1X_DSS_CONFIG_ROI_MODE_CONTROL_ADDR                                16'h004F
-`define VL53L1X_SYSTEM_THRESH_RATE_HIGH_ADDR                                    16'h0050
 `define VL53L1X_SYSTEM_THRESH_RATE_HIGH_HI_ADDR                                 16'h0050
 `define VL53L1X_SYSTEM_THRESH_RATE_HIGH_LO_ADDR                                 16'h0051
-`define VL53L1X_SYSTEM_THRESH_RATE_LOW_ADDR                                     16'h0052
 `define VL53L1X_SYSTEM_THRESH_RATE_LOW_HI_ADDR                                  16'h0052
 `define VL53L1X_SYSTEM_THRESH_RATE_LOW_LO_ADDR                                  16'h0053
-`define VL53L1X_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_ADDR                   16'h0054
 `define VL53L1X_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_HI_ADDR                16'h0054
 `define VL53L1X_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_LO_ADDR                16'h0055
 `define VL53L1X_DSS_CONFIG_MANUAL_BLOCK_SELECT_ADDR                             16'h0056
@@ -113,25 +101,22 @@
 `define VL53L1X_RANGE_CONFIG_TIMEOUT_MACROP_B_HI_ADDR                           16'h0061
 `define VL53L1X_RANGE_CONFIG_TIMEOUT_MACROP_B_LO_ADDR                           16'h0062
 `define VL53L1X_RANGE_CONFIG_VCSEL_PERIOD_B_ADDR                                16'h0063
-`define VL53L1X_RANGE_CONFIG_SIGMA_THRESH_ADDR                                  16'h0064
 `define VL53L1X_RANGE_CONFIG_SIGMA_THRESH_HI_ADDR                               16'h0064
 `define VL53L1X_RANGE_CONFIG_SIGMA_THRESH_LO_ADDR                               16'h0065
-`define VL53L1X_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_ADDR                 16'h0066
 `define VL53L1X_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_HI_ADDR              16'h0066
 `define VL53L1X_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_LO_ADDR              16'h0067
 `define VL53L1X_RANGE_CONFIG_VALID_PHASE_LOW_ADDR                               16'h0068
 `define VL53L1X_RANGE_CONFIG_VALID_PHASE_HIGH_ADDR                              16'h0069
-`define VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_ADDR                             16'h006C
+`define VL53L1X_UNNAMED_REG_0x006A_ADDR                                         16'h006A
+`define VL53L1X_UNNAMED_REG_0x006B_ADDR                                         16'h006B
 `define VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_3_ADDR                           16'h006C
 `define VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_2_ADDR                           16'h006D
 `define VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_1_ADDR                           16'h006E
 `define VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_0_ADDR                           16'h006F
 `define VL53L1X_SYSTEM_FRACTIONAL_ENABLE_ADDR                                   16'h0070
 `define VL53L1X_SYSTEM_GROUPED_PARAMETER_HOLD_0_ADDR                            16'h0071
-`define VL53L1X_SYSTEM_THRESH_HIGH_ADDR                                         16'h0072
 `define VL53L1X_SYSTEM_THRESH_HIGH_HI_ADDR                                      16'h0072
 `define VL53L1X_SYSTEM_THRESH_HIGH_LO_ADDR                                      16'h0073
-`define VL53L1X_SYSTEM_THRESH_LOW_ADDR                                          16'h0074
 `define VL53L1X_SYSTEM_THRESH_LOW_HI_ADDR                                       16'h0074
 `define VL53L1X_SYSTEM_THRESH_LOW_LO_ADDR                                       16'h0075
 `define VL53L1X_SYSTEM_ENABLE_XTALK_PER_QUADRANT_ADDR                           16'h0076
@@ -176,7 +161,7 @@
 
 
 `define VL53L1X_INIT_VAL_PAD_I2C_HV_CONFIG                                      8'h00  // set bit 2 and 5 to 1 for fast plus mode (1MHz I2C) or 0x00 for regular (400 KHz or 50 KHz) 
-`define VL53L1X_INIT_VAL_PAD_I2C_HV_EXTSUP_CONFIG                               8'h00  // bit 0 if I2C pulled up at 1.8V, else set bit 0 to 1 (pull up at AVDD)  
+`define VL53L1X_INIT_VAL_PAD_I2C_HV_EXTSUP_CONFIG                               8'h00  // bit 0 if I2C pulled up at 1.8V, else set bit 0 to 1 (pull up at AVDD) 
 `define VL53L1X_INIT_VAL_GPIO_HV_PAD_CTRL                                       8'h00  // bit 0 if GPIO pulled up at 1.8V, else set bit 0 to 1 (pull up at AVDD)  
 `define VL53L1X_INIT_VAL_GPIO_HV_MUX_CTRL                                       8'h01  // set bit 4 to 0 for active high interrupt and 1 for active low (bits 3:0 must be 0x1) 
 `define VL53L1X_INIT_VAL_GPIO_TIO_HV_STATUS                                     8'h02  // bit 1 high = interrupt depending on the polarity
@@ -208,29 +193,29 @@
 `define VL53L1X_INIT_VAL_PHASECAL_CONFIG_TIMEOUT_MACROP                         8'h0A 
 `define VL53L1X_INIT_VAL_PHASECAL_CONFIG_TARGET                                 8'h21 
 `define VL53L1X_INIT_VAL_PHASECAL_CONFIG_OVERRIDE                               8'h00 
-`define VL53L1X_INIT_VAL_DSS_CONFIG_ROI_MODE_CONTROL                            8'h00 
-`define VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_HIGH_HI                             8'h05 
+`define VL53L1X_INIT_VAL_UNNAMED_REG_0x004E                                     8'h00  
+`define VL53L1X_INIT_VAL_DSS_CONFIG_ROI_MODE_CONTROL                            8'h05 
+`define VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_HIGH_HI                             8'h00 
 `define VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_HIGH_LO                             8'h00 
 `define VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_LOW_HI                              8'h00 
 `define VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_LOW_LO                              8'h00 
-`define VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_HI            8'h00 
-`define VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_LO            8'hC8 
+`define VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_HI            8'hC8 
+`define VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_LO            8'h00 
 `define VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_BLOCK_SELECT                         8'h00 
-`define VL53L1X_INIT_VAL_DSS_CONFIG_APERTURE_ATTENUATION                        8'h00 
-`define VL53L1X_INIT_VAL_DSS_CONFIG_MAX_SPADS_LIMIT                             8'h38 
-`define VL53L1X_INIT_VAL_DSS_CONFIG_MIN_SPADS_LIMIT                             8'hFF 
-`define VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_A_HI                          8'h01 
-`define VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_A_LO                          8'h00 
-`define VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_B_HI                          8'h08 
+`define VL53L1X_INIT_VAL_DSS_CONFIG_APERTURE_ATTENUATION                        8'h38 
+`define VL53L1X_INIT_VAL_DSS_CONFIG_MAX_SPADS_LIMIT                             8'hFF 
+`define VL53L1X_INIT_VAL_DSS_CONFIG_MIN_SPADS_LIMIT                             8'h01 
+`define VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_A_HI                          8'h00 
+`define VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_A_LO                          8'h08 
+`define VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_B_HI                          8'h00 
 `define VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_B_LO                          8'h00 
-`define VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_A_HI                       8'h00 
-`define VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_A_LO                       8'h01 
-`define VL53L1X_INIT_VAL_RANGE_CONFIG_VCSEL_PERIOD_A                            8'hDB 
-`define VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_B_HI                       8'h0F 
-`define VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_B_LO                       8'h01 
-`define VL53L1X_INIT_VAL_RANGE_CONFIG_VCSEL_PERIOD_B                            8'hF1 
-`define VL53L1X_INIT_VAL_RANGE_CONFIG_SIGMA_THRESH                              8'h0D 
-`define VL53L1X_INIT_VAL_RANGE_CONFIG_SIGMA_THRESH_HI                           8'h01  // Sigma threshold MSB (mm in 14.2 format for MSB+LSB), default value 90 mm   
+`define VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_A_HI                       8'h01 
+`define VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_A_LO                       8'hDB 
+`define VL53L1X_INIT_VAL_RANGE_CONFIG_VCSEL_PERIOD_A                            8'h0F 
+`define VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_B_HI                       8'h01 
+`define VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_B_LO                       8'hF1 
+`define VL53L1X_INIT_VAL_RANGE_CONFIG_VCSEL_PERIOD_B                            8'h0D 
+`define VL53L1X_INIT_VAL_RANGE_CONFIG_SIGMA_THRESH_HI                           8'h01  // Sigma threshold MSB (mm in 14.2 format for MSB+LSB), default value 90 mm  
 `define VL53L1X_INIT_VAL_RANGE_CONFIG_SIGMA_THRESH_LO                           8'h68  // Sigma threshold LSB  
 `define VL53L1X_INIT_VAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_HI          8'h00  // Min count Rate MSB (MCPS in 9.7 format for MSB+LSB) 
 `define VL53L1X_INIT_VAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_LO          8'h80  // Min count Rate LSB  

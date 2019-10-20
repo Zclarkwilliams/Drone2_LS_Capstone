@@ -462,8 +462,7 @@ module drone2 (
         //.debug_16_in_16_bits({8'd0, VL53L1X_data_rdy}),
         .debug_17_in_16_bits({8'd0, i2c_driver_debug}),
         .debug_18_in_16_bits({8'd0, VL53L1X_firm_rdy}),
-        .debug_19_in_16_bits({8'd0, VL53L1X_data_rdy})
-        //.debug_19_in_16_bits(VL53L1X_range_mm)
+        .debug_19_in_16_bits(VL53L1X_range_mm)
 
     );
 //*/

@@ -91,6 +91,7 @@ module i2c_slave_model_2B_reg (resetn, scl, sda);
 	wire      i2c_reset; // i2c-statemachine reset
 	reg [2:0] bit_cnt;   // 3bit downcounter
 	wire      acc_done;  // 8bits transfered
+	reg  last_acc_done;  // 8bits transfered
 	reg       ld;        // load downcounter
 
 	reg       sda_o;     // sda-drive level
@@ -167,6 +168,9 @@ module i2c_slave_model_2B_reg (resetn, scl, sda);
 	assign #1 sda_dly = sda;
 
 
+    always @ (posedge scl )
+      last_acc_done <= acc_done;
+
 	//detect start condition
 	always @(negedge sda, negedge resetn)
       if(~resetn) begin
@@ -235,7 +239,7 @@ module i2c_slave_model_2B_reg (resetn, scl, sda);
 	        ld      <= #1 1'b0;
             is_2nd_reg_addr_byte <= 1'b0;
             mem_adr <= 'd0;
-            mem_do  <= 'd0;
+            //mem_do  <= 'd0;
             rw      <= 1'b0;
       end
       else if (sto || (sta && !d_sta) )
@@ -270,7 +274,7 @@ module i2c_slave_model_2B_reg (resetn, scl, sda);
 
 	                    if(rw && is_2nd_reg_addr_byte)
 	                      begin
-	                          mem_do <= #1 mem_adr[0]? (((mem[mem_adr]) & 16'hFF00)>>8) : ((mem[mem_adr]) & 16'hFF00) ;
+	                          mem_do <= #1 mem_adr[0]? (((mem[mem_adr]) & 16'hFF00)>>8) : ((mem[mem_adr]) & 16'h00FF) ;
 
 	                          if(debug)
 	                            begin
@@ -337,29 +341,29 @@ module i2c_slave_model_2B_reg (resetn, scl, sda);
 	                  if(rw)
 	                    sda_o <= #1 mem_do[7];
 
-	                  if(acc_done)
+	                  if(last_acc_done)
 	                    begin
 	                        state   <= #1 data_ack;
 	                        mem_adr <= #2 mem_adr + 8'h1;
 	                        sda_o   <= #1 (rw); // send ack on write, receive ack on read
 
-	                        if(rw)
+	                        if(rw) //wr == 1 is a read
 	                          begin
                                   $display("@0 Memory read word 0x%h", mem[mem_adr]);
                                   $display("@0 mem_adr                           0x%h", mem_adr);
                                   $display("@0 mem_adr[0]                        0x%h", mem_adr[0]);
                                   $display("@0 (((mem[mem_adr]) & 16'hFF00)>>8)  0x%h", (((mem[mem_adr]) & 16'hFF00)>>8) );
                                   $display("@0 ((mem[mem_adr]) & 16'hFF00)       0x%h", ((mem[mem_adr]) & 16'h00FF));
-	                              #3 mem_do <= #1 mem_adr[0]? (((mem[mem_adr]) & 16'hFF00)>>8) : ((mem[mem_adr]) & 16'h00FF) ;
+	                              mem_do <= mem_adr[0]? (((mem[mem_adr]) & 16'hFF00)>>8) : ((mem[mem_adr]) & 16'h00FF) ;
                                   #3 $display("@3 Memory read word 0x%h", mem[mem_adr]);
                                   //$stop;
 	                              if(debug)
 	                                #5 $display("%t i2c_slave 0x%h; data block read 0x%h from address 0x%h (2) in data state", $time, I2C_ADR, mem_do, mem_adr);
 	                          end
 
-	                        if(!rw)
+	                        if(!rw) //wr == 0 is a write
 	                          begin
-	                              mem[mem_adr] <= #1 mem_adr[0] ? {sr, ((mem[mem_adr]) & 16'hFF00)} : {(((mem[mem_adr]) & 16'hFF00)>>8), sr} ; // store data in memory
+	                              mem[mem_adr] <= mem_adr[0] ? {sr, ((mem[mem_adr]) & 16'hFF00)} : {(((mem[mem_adr]) & 16'h00FF)>>8), sr} ; // store data in memory
                                   //$stop;
 
 	                              if(debug)
@@ -395,7 +399,7 @@ module i2c_slave_model_2B_reg (resetn, scl, sda);
 
 	// read data from memory
 	always @(posedge scl)
-	  if(!acc_done && rw)
+	  if(!last_acc_done && rw)
 	    mem_do <= #1 {mem_do[6:0], 1'b1}; // insert 1'b1 for host ack generation
 
 	// generate tri-states
