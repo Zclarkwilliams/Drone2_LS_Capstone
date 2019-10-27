@@ -91,26 +91,78 @@ module drone2 (
         yaac_enable_n;
 
     //---------------- IMU Wires ------------------//
+
     wire [`IMU_VAL_BIT_WIDTH-1:0]
-        x_rotation,
-        y_rotation,
-        z_rotation,
+        next_x_rotation_angle,
+        next_y_rotation_angle,
+        next_z_rotation_angle,
+        next_x_rotation_rate,
+        next_y_rotation_rate,
+        next_z_rotation_rate,
+        next_x_linear_accel,
+        next_y_linear_accel,
+        next_z_linear_accel,
+        next_gravity_accel_x,
+        next_gravity_accel_y,
+        next_gravity_accel_z,
+        next_quaternion_data_w,
+        next_quaternion_data_x,
+        next_quaternion_data_y,
+        next_quaternion_data_z,
+        next_accel_rate_x,
+        next_accel_rate_y,
+        next_accel_rate_z,
+        next_magneto_rate_x,
+        next_magneto_rate_y,
+        next_magneto_rate_z,
+        next_VL53L1X_chip_id,
+        next_VL53L1X_range_mm;
+    wire [`REC_VAL_BIT_WIDTH-1:0]      
+        next_temperature,
+        next_calib_status,
+        next_VL53L1X_firm_rdy,
+        next_VL53L1X_data_rdy,
+        next_i2c_driver_debug,
+        next_i2c_top_debug;
+        
+    reg [`IMU_VAL_BIT_WIDTH-1:0]
+        x_rotation_angle,
+        y_rotation_angle,
+        z_rotation_angle,
         x_rotation_rate,
         y_rotation_rate,
         z_rotation_rate,
         x_linear_accel,
         y_linear_accel,
-        z_linear_accel;
+        z_linear_accel,
+        gravity_accel_x,
+        gravity_accel_y,
+        gravity_accel_z,
+        quaternion_data_w,
+        quaternion_data_x,
+        quaternion_data_y,
+        quaternion_data_z,
+        accel_rate_x,
+        accel_rate_y,
+        accel_rate_z,
+        magneto_rate_x,
+        magneto_rate_y,
+        magneto_rate_z,
+        VL53L1X_chip_id,
+        VL53L1X_range_mm;
+        
+    reg [`REC_VAL_BIT_WIDTH-1:0]      
+        temperature,
+        calib_status,
+        VL53L1X_firm_rdy,
+        VL53L1X_data_rdy,
+        i2c_driver_debug,
+        i2c_top_debug;
     wire ac_active;
-    wire imu_data_valid_monitor;
-    wire imu_good;
-    wire imu_data_valid;
-    wire [15:0] VL53L1X_chip_id;
-    wire [15:0] VL53L1X_range_mm;
-    wire [7:0] VL53L1X_firm_rdy;
-    wire [7:0] VL53L1X_data_rdy;
-    wire [7:0] i2c_driver_debug;
-    wire [7:0] i2c_top_debug;
+    reg  imu_good;
+    wire next_imu_good;
+    reg  imu_data_valid;
+    wire next_imu_data_valid;
     
     //--------- Auto Mode Controller Wires --------//
     wire  [`REC_VAL_BIT_WIDTH-1:0] amc_throttle_val;
@@ -158,22 +210,13 @@ module drone2 (
     //---------------- Reset Wires ----------------//
     //wire resetn;
     reg  resetn;
-    //wire soft_reset_n;
-    //assign resetn = (machxo3_switch_reset_n & soft_reset_n);
-    //assign resetn = (machxo3_switch_reset_n);
-    
-    // Synchronously latc reset signal - Make this input not a clock resource
-    always@(posedge sys_clk) begin
-        resetn <= machxo3_switch_reset_n;
-    end
+
     
     
 
     //---------------- Mode Selector Wires ----------------//
     wire [2:0] switch_a;
     wire [1:0] switch_b;
-    //wire switch_a;
-    //assign switch_a = swa_swb_val[6];
     
     wire [15:0] z_linear_velocity;
 
@@ -243,15 +286,39 @@ module drone2 (
                         .POLL_INTERVAL(16'd20))
         I2C_Devices(
         // Outputs
-        .imu_good(imu_good),
-        .valid_strobe(imu_data_valid),
-        .VL53L1X_chip_id(VL53L1X_chip_id),
-        .VL53L1X_range_mm(VL53L1X_range_mm),
-        .VL53L1X_firm_rdy(VL53L1X_firm_rdy),
-        .VL53L1X_data_rdy(VL53L1X_data_rdy),
+        .imu_good(next_imu_good),
+        .accel_rate_x(next_accel_rate_x),
+        .accel_rate_y(next_accel_rate_y),
+        .accel_rate_z(next_accel_rate_z),
+        .magneto_rate_x(next_magneto_rate_x),
+        .magneto_rate_y(next_magneto_rate_y),
+        .magneto_rate_z(next_magneto_rate_z),
+        .gyro_rate_x(next_x_rotation_rate),
+        .gyro_rate_y(next_y_rotation_rate),
+        .gyro_rate_z(next_z_rotation_rate),
+        .euler_angle_x(next_x_rotation_angle),
+        .euler_angle_y(next_y_rotation_angle),
+        .euler_angle_z(next_z_rotation_angle),
+        .quaternion_data_w(next_quaternion_data_w),
+        .quaternion_data_x(next_quaternion_data_x),
+        .quaternion_data_y(next_quaternion_data_y),
+        .quaternion_data_z(next_quaternion_data_z),
+        .linear_accel_x(next_x_linear_accel),
+        .linear_accel_y(next_y_linear_accel),
+        .linear_accel_z(next_z_linear_accel),
+        .gravity_accel_x(next_gravity_accel_x),
+        .gravity_accel_y(next_gravity_accel_y),
+        .gravity_accel_z(next_gravity_accel_z),
+        .temperature(next_temperature),
+        .calib_status(next_calib_status),
+        .valid_strobe(next_imu_data_valid),
+        .VL53L1X_chip_id(next_VL53L1X_chip_id),
+        .VL53L1X_range_mm(next_VL53L1X_range_mm),
+        .VL53L1X_firm_rdy(next_VL53L1X_firm_rdy),
+        .VL53L1X_data_rdy(next_VL53L1X_data_rdy),
         // DEBUG WIRE
-        .led_data_out(i2c_driver_debug),
-        .i2c_top_debug(i2c_top_debug),
+        .led_data_out(next_i2c_driver_debug),
+        .i2c_top_debug(next_i2c_top_debug),
         // InOuts
         .scl_1(scl_1),
         .sda_1(sda_1),
@@ -309,7 +376,7 @@ module drone2 (
         .complete_signal(yaac_complete),
         .throttle_pwm_value_input(tc_throttle_val),
         .yaw_pwm_value_input(yaw_val),
-        .yaw_angle_imu(z_rotation),
+        .yaw_angle_imu(z_rotation_angle),
         .yaac_enable_n(yaac_enable_n),
         .switch_a(switch_a),
         .debug_out(yaac_debug),
@@ -343,8 +410,8 @@ module drone2 (
         .yaw_angle_error_in(yaac_yaw_angle_error),
         .roll_target(roll_val),
         .pitch_target(pitch_val),
-        .roll_actual(y_rotation),
-        .pitch_actual(x_rotation),
+        .roll_actual(y_rotation_angle),
+        .pitch_actual(x_rotation_angle),
         .switch_a(switch_a),
         .start_signal(yaac_complete),
         .resetn(resetn),
@@ -442,9 +509,9 @@ module drone2 (
         .sout(sout),
         .txrdy_n(txrdy_n),
 
-        .debug_1_in_16_bits(x_rotation),
-        .debug_2_in_16_bits(y_rotation),
-        .debug_3_in_16_bits(z_rotation),
+        .debug_1_in_16_bits(x_rotation_angle),
+        .debug_2_in_16_bits(y_rotation_angle),
+        .debug_3_in_16_bits(z_rotation_angle),
         .debug_4_in_16_bits(x_rotation_rate),
         .debug_5_in_16_bits(y_rotation_rate),
         .debug_6_in_16_bits(z_rotation_rate),
@@ -461,11 +528,91 @@ module drone2 (
         //.debug_16_in_16_bits({8'd0, VL53L1X_firm_rdy}),
         //.debug_16_in_16_bits({8'd0, VL53L1X_data_rdy}),
         .debug_17_in_16_bits({8'd0, i2c_driver_debug}),
-        .debug_18_in_16_bits({8'd0, VL53L1X_firm_rdy}),
+        .debug_18_in_16_bits({8'd0, VL53L1X_data_rdy}),
         .debug_19_in_16_bits(VL53L1X_range_mm)
 
     );
 //*/
+
+
+    // Synchronously latc reset signal - Make this input not a clock resource
+    always@(posedge sys_clk) begin
+        resetn <= machxo3_switch_reset_n;
+    end
+    
+    // Synchronously latch IMU values, prevent timing issue with large asynchronous paths
+    always@(posedge sys_clk, negedge resetn) begin
+        if(~resetn) begin
+            x_rotation_angle  = 'd0;
+            y_rotation_angle  = 'd0;
+            z_rotation_angle  = 'd0;
+            x_rotation_rate   = 'd0;
+            y_rotation_rate   = 'd0;
+            z_rotation_rate   = 'd0;
+            x_linear_accel    = 'd0;
+            y_linear_accel    = 'd0;
+            z_linear_accel    = 'd0;
+            gravity_accel_x   = 'd0;
+            gravity_accel_y   = 'd0;
+            gravity_accel_z   = 'd0;
+            quaternion_data_w = 'd0;
+            quaternion_data_x = 'd0;
+            quaternion_data_y = 'd0;
+            quaternion_data_z = 'd0;
+            accel_rate_x      = 'd0;
+            accel_rate_y      = 'd0;
+            accel_rate_z      = 'd0;
+            magneto_rate_x    = 'd0;
+            magneto_rate_y    = 'd0;
+            magneto_rate_z    = 'd0;
+            temperature       = 'd0;
+            calib_status      = 'd0;
+            VL53L1X_chip_id   = 'd0;
+            VL53L1X_range_mm  = 'd0;  
+            VL53L1X_firm_rdy  = 'd0;
+            VL53L1X_data_rdy  = 'd0;
+            imu_data_valid    = `FALSE;
+            imu_good          = `FALSE;
+            i2c_driver_debug  = 'd0;
+            i2c_top_debug     = 'd0;
+        end
+        else begin
+            x_rotation_angle  = next_x_rotation_angle;
+            y_rotation_angle  = next_y_rotation_angle;
+            z_rotation_angle  = next_z_rotation_angle;
+            x_rotation_rate   = next_x_rotation_rate;
+            y_rotation_rate   = next_y_rotation_rate;
+            z_rotation_rate   = next_z_rotation_rate;
+            x_linear_accel    = next_x_linear_accel;
+            y_linear_accel    = next_y_linear_accel;
+            z_linear_accel    = next_z_linear_accel;
+            gravity_accel_x   = next_gravity_accel_x;
+            gravity_accel_y   = next_gravity_accel_y;
+            gravity_accel_z   = next_gravity_accel_z;
+            quaternion_data_w = next_quaternion_data_w;
+            quaternion_data_x = next_quaternion_data_x;
+            quaternion_data_y = next_quaternion_data_y;
+            quaternion_data_z = next_quaternion_data_z;
+            accel_rate_x      = next_accel_rate_x;
+            accel_rate_y      = next_accel_rate_y;
+            accel_rate_z      = next_accel_rate_z;
+            magneto_rate_x    = next_magneto_rate_x;
+            magneto_rate_y    = next_magneto_rate_y;
+            magneto_rate_z    = next_magneto_rate_z;   
+            temperature       = next_temperature;
+            calib_status      = next_calib_status;
+            VL53L1X_chip_id   = next_VL53L1X_chip_id;
+            VL53L1X_range_mm  = next_VL53L1X_range_mm;   
+            VL53L1X_firm_rdy  = next_VL53L1X_firm_rdy;
+            VL53L1X_data_rdy  = next_VL53L1X_data_rdy;
+            imu_data_valid    = next_imu_data_valid;
+            imu_good          = next_imu_good;
+            i2c_driver_debug  = next_i2c_driver_debug;
+            i2c_top_debug     = next_i2c_top_debug;
+        end
+    end
+    
+
     // Enable bits
     assign yaac_enable_n = `LOW_ACTIVE_ENABLE;  // Enable YAAC
     assign tc_enable_n   = `LOW_ACTIVE_ENABLE;  // Enable TC
