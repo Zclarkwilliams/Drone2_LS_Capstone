@@ -115,6 +115,7 @@ module i2c_device_driver #(
     reg  go;                                          //  Flag to i2c module signaling start of i2c transaction. All inputs must be valid before asserting this bit
     reg  next_go_flag;                                //  Next value of the i2c module GO flag
     wire one_byte_ready;                              //  Flag from i2c module indicating that a byte has been received, data_rx is valid
+    reg  previous_one_byte_ready;                     //  Value of one_byte_ready at previous clock tick
     wire busy;                                        //  Flag from i2c module indicating that a transaction is in progress
     reg  [6:0]slave_address;                          //  Slave address of device being accessed
     reg  [6:0]next_slave_address;                     //  Next value of slave address of device being accessed
@@ -169,6 +170,7 @@ module i2c_device_driver #(
     reg is_2_byte_reg;                                //  This I2C device uses 2 byte registers, boolean 1 = true, 0 = false - If yes, then MSB transmitted first, then LSB
     reg next_is_2_byte_reg;                           //  Next value of I2C 2 byte register bool
 
+    wire [7:0] trash;
 
     //
     //  Module body
@@ -177,6 +179,9 @@ module i2c_device_driver #(
     //assign led_data_out = (i2c_state    <= `I2C_DRV_STATE_BOOT_WAIT ) ? 8'h41 : BNO055_data_rx_reg[led_view_index]; //  Output for calibration status LEDs OR indicates that the IMU is in reset
     assign led_data_out = return_state;
     //assign led_data_out = VL53L1X_data_rx_reg_index;
+
+
+    assign i2c_top_debug = {2'b00, VL53L1X_data_rx_reg_index};
 
 
 
@@ -206,13 +211,13 @@ module i2c_device_driver #(
                     .one_byte_ready(one_byte_ready),
                     .i2c_number(i2c_number),
                     .sys_clk(sys_clk),
-                    .i2c_top_debug(i2c_top_debug)
+                    .i2c_top_debug(trash)
     );
 
 
     //  Generates a multiple of 1ms length duration delay trigger - Defaulted to 650 ms for BNO055 reset and boot time
     //  When the count down counter wraps around the timer is triggered and stops counting
-    always@(negedge sys_clk, negedge resetn) begin
+    always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin
             //$display("nMs timer reset");
             count_ms             <= INIT_INTERVAL;
@@ -272,17 +277,61 @@ module i2c_device_driver #(
 
     //  During a read cycle increment the BNO055_data_rx_reg_index until it reaches the end of  BNO055_data_rx_reg
     //  If a byte has been read (one_byte_ready is asserted) assign it to the BNO055_data_rx_reg  byte array at the location specified by BNO055_data_rx_reg_index
-    always@(posedge one_byte_ready, negedge setn_BNO055_buffer, negedge resetn) begin
+    always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin
             // Initialize data rx register to all 0s on reset
-            for(BNO055_data_rx_reg_index = 0; BNO055_data_rx_reg_index < `BNO055_DATA_RX_BYTE_REG_CNT; BNO055_data_rx_reg_index = BNO055_data_rx_reg_index+'d1)
-                BNO055_data_rx_reg[BNO055_data_rx_reg_index]   <= 'd0;
-            BNO055_data_rx_reg_index  <= 'd0;
+            BNO055_data_rx_reg[`BNO055_ACC_DATA_X_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_ACC_DATA_X_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_ACC_DATA_Y_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_ACC_DATA_Y_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_ACC_DATA_Z_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_ACC_DATA_Z_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_MAG_DATA_X_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_MAG_DATA_X_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_MAG_DATA_Y_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_MAG_DATA_Y_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_MAG_DATA_Z_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_MAG_DATA_Z_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_GYR_DATA_X_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_GYR_DATA_X_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_GYR_DATA_Y_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_GYR_DATA_Y_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_GYR_DATA_Z_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_GYR_DATA_Z_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_EUL_DATA_Z_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_EUL_DATA_Z_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_EUL_DATA_X_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_EUL_DATA_X_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_EUL_DATA_Y_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_EUL_DATA_Y_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_QUA_DATA_W_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_QUA_DATA_W_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_QUA_DATA_X_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_QUA_DATA_X_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_QUA_DATA_Y_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_QUA_DATA_Y_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_QUA_DATA_Z_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_QUA_DATA_Z_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_LIN_DATA_X_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_LIN_DATA_X_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_LIN_DATA_Y_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_LIN_DATA_Y_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_LIN_DATA_Z_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_LIN_DATA_Z_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_GRA_DATA_X_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_GRA_DATA_X_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_GRA_DATA_Y_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_GRA_DATA_Y_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_GRA_DATA_Z_LSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_GRA_DATA_Z_MSB_INDEX]   <= 'd0;
+            BNO055_data_rx_reg[`BNO055_TEMPERATURE_DATA_INDEX] <= 'd0;
+            BNO055_data_rx_reg[`BNO055_CALIBRATION_DATA_INDEX] <= 'd0;
         end
         else if(~setn_BNO055_buffer ) begin
             BNO055_data_rx_reg_index  <= 'd0;
         end
-        else if (one_byte_ready && (~rx_from_VL53L1X)) begin  // A byte has been read by I2C from BNO055
+        // A byte has been read by I2C triggered on posedge of one_byte_ready
+        if (one_byte_ready && (~previous_one_byte_ready)) begin
             if (~rx_from_VL53L1X) begin  // The byte is NOT from the VL53L1X
                 // If the index is pointing to the last index in the array, then rest pointer
                 // and write this byte to the start of the array
@@ -300,8 +349,8 @@ module i2c_device_driver #(
     end
 
 
-    // Increment VL53L1X data rx reg index and indicate high/low byte for 2 byte reads
-    always@(negedge sys_clk, negedge next_setn_VL53L1X_buffer, negedge resetn) begin
+    // Set VL53L1X data rx reg index and indicate high/low byte for 2 byte reads
+    always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin
             $display("%t, One VL53L1X byte ready of a one byte read", $time);
             VL53L1X_data_rx_reg_index <= `VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX;
@@ -309,7 +358,8 @@ module i2c_device_driver #(
         end
         else if(rx_from_VL53L1X) begin // RX byte from VL53L1X LiDAR
             VL53L1X_data_rx_reg_index <= next_VL53L1X_data_rx_reg_index;
-            if(one_byte_ready) begin                 // Read a byte
+            // A byte has been read by I2C triggered on posedge of one_byte_ready
+            if (one_byte_ready && (~previous_one_byte_ready)) begin
                 if (target_read_count  == 'd1) begin // Single byte read
                     $display("%t, One VL53L1X byte ready of a one byte read", $time);
                     VL53L1X_high_byte_bool     <= `TRUE;
@@ -327,7 +377,7 @@ module i2c_device_driver #(
 
     //  During a read cycle increment the VL53L1X_data_rx_reg_index until it reaches the end of  VL53L1X_data_rx_reg
     //  If a byte has been read (one_byte_ready is asserted) assign it to the VL53L1X_data_rx_reg byte array at the location specified by VL53L1X_data_rx_reg_index
-    always@(posedge one_byte_ready, negedge setn_VL53L1X_buffer, negedge resetn) begin
+    always@(posedge sys_clk, negedge setn_VL53L1X_buffer, negedge resetn) begin
         if(~resetn) begin
             VL53L1X_data_rx_reg[0] <= 'd0;
             VL53L1X_data_rx_reg[1] <= 'd0;
@@ -338,7 +388,8 @@ module i2c_device_driver #(
             VL53L1X_data_rx_reg[6] <= 'd0;
             VL53L1X_data_rx_reg[7] <= 'd0;
         end
-        else if (one_byte_ready && rx_from_VL53L1X) begin  // A byte has been read by I2C and byte is from the VL53L1X
+        // A byte has been read by I2C and byte is from the VL53L1X, on posedge of one_byte_ready
+        else if (one_byte_ready && (~previous_one_byte_ready) && rx_from_VL53L1X) begin
             if(VL53L1X_high_byte_bool)
                 VL53L1X_data_rx_reg[VL53L1X_data_rx_reg_index]       <= data_rx;
             else
@@ -400,7 +451,7 @@ module i2c_device_driver #(
                 valid_strobe <= `LOW;
         end
     end
-    
+
 
     //  Take data read byte array and assign the byte values to output data wires
     //  Most of the data outputs are 16 bit words
@@ -505,6 +556,14 @@ module i2c_device_driver #(
         end
     end
 
+    // Track one_byte_ready on sys_clk posedge assign to previous_one_byte_ready
+    always@(posedge sys_clk, negedge resetn) begin
+        if(~resetn)
+            previous_one_byte_ready <= `FALSE;
+        else
+            previous_one_byte_ready <= one_byte_ready;
+    end
+
     // Advance state and registered data at each positive clock edge
     always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin
@@ -567,7 +626,7 @@ module i2c_device_driver #(
             next_led_view_index      = `FALSE;
             next_rx_from_VL53L1X     = `FALSE;
             next_is_2_byte_reg       = `FALSE;
-            next_setn_BNO055_buffer  = `LOW;  
+            next_setn_BNO055_buffer  = `LOW;
             next_setn_VL53L1X_buffer = `LOW;
             next_target_read_count   = 'd1;
             i2c_number               = 1'b0; // Default to i2c EFB #1
@@ -593,7 +652,7 @@ module i2c_device_driver #(
             next_led_view_index      = led_view_index;
             next_rx_from_VL53L1X     = rx_from_VL53L1X;
             next_is_2_byte_reg       = is_2_byte_reg;
-            next_setn_BNO055_buffer  = `HIGH;  
+            next_setn_BNO055_buffer  = `HIGH;
             next_setn_VL53L1X_buffer = `HIGH;
             next_target_read_count   = target_read_count;
             i2c_number               = 1'b0; // Default to i2c EFB #1
@@ -742,120 +801,234 @@ module i2c_device_driver #(
                     next_data_reg      = cal_reg_addr;
                     next_read_write_in = `I2C_WRITE;
                     case(cal_reg_addr)
-                        `BNO055_ACCEL_OFFSET_X_LSB_ADDR                             : next_data_tx = 8'd229;
-                        `BNO055_ACCEL_OFFSET_X_MSB_ADDR                             : next_data_tx = 8'd255;
-                        `BNO055_ACCEL_OFFSET_Y_LSB_ADDR                             : next_data_tx = 8'd210;
-                        `BNO055_ACCEL_OFFSET_Y_MSB_ADDR                             : next_data_tx = 8'd255;
-                        `BNO055_ACCEL_OFFSET_Z_LSB_ADDR                             : next_data_tx = 8'd38;
-                        `BNO055_ACCEL_OFFSET_Z_MSB_ADDR                             : next_data_tx = 8'd0;
-                        `BNO055_MAG_OFFSET_X_LSB_ADDR                               : next_data_tx = 8'd28;
-                        `BNO055_MAG_OFFSET_X_MSB_ADDR                               : next_data_tx = 8'd1;
-                        `BNO055_MAG_OFFSET_Y_LSB_ADDR                               : next_data_tx = 8'd30;
-                        `BNO055_MAG_OFFSET_Y_MSB_ADDR                               : next_data_tx = 8'd0;
-                        `BNO055_MAG_OFFSET_Z_LSB_ADDR                               : next_data_tx = 8'd163;
-                        `BNO055_MAG_OFFSET_Z_MSB_ADDR                               : next_data_tx = 8'd255;
-                        `BNO055_GYRO_OFFSET_X_LSB_ADDR                              : next_data_tx = 8'd254;
-                        `BNO055_GYRO_OFFSET_X_MSB_ADDR                              : next_data_tx = 8'd255;
-                        `BNO055_GYRO_OFFSET_Y_LSB_ADDR                              : next_data_tx = 8'd253;
-                        `BNO055_GYRO_OFFSET_Y_MSB_ADDR                              : next_data_tx = 8'd255;
-                        `BNO055_GYRO_OFFSET_Z_LSB_ADDR                              : next_data_tx = 8'd0;
-                        `BNO055_GYRO_OFFSET_Z_MSB_ADDR                              : next_data_tx = 8'd0;
-                        `BNO055_ACCEL_RADIUS_LSB_ADDR                               : next_data_tx = 8'd3;
-                        `BNO055_ACCEL_RADIUS_MSB_ADDR                               : next_data_tx = 8'd232;
-                        `BNO055_MAG_RADIUS_LSB_ADDR                                 : next_data_tx = 8'd3;
-                        `BNO055_MAG_RADIUS_MSB_ADDR                                 : next_data_tx = 8'd83;
-                        `VL53L1X_PAD_I2C_HV_CONFIG_ADDR                             : next_data_tx = `VL53L1X_INIT_VAL_PAD_I2C_HV_CONFIG;
-                        `VL53L1X_PAD_I2C_HV_EXTSUP_CONFIG_ADDR                      : next_data_tx = `VL53L1X_INIT_VAL_PAD_I2C_HV_EXTSUP_CONFIG;
-                        `VL53L1X_GPIO_HV_PAD_CTRL_ADDR                              : next_data_tx = `VL53L1X_INIT_VAL_GPIO_HV_PAD_CTRL;
-                        `VL53L1X_GPIO_HV_MUX_CTRL_ADDR                              : next_data_tx = `VL53L1X_INIT_VAL_GPIO_HV_MUX_CTRL;
-                        `VL53L1X_GPIO_TIO_HV_STATUS_ADDR                            : next_data_tx = `VL53L1X_INIT_VAL_GPIO_TIO_HV_STATUS;
-                        `VL53L1X_GPIO_FIO_HV_STATUS_ADDR                            : next_data_tx = `VL53L1X_INIT_VAL_GPIO_FIO_HV_STATUS;
-                        `VL53L1X_ANA_CONFIG_SPAD_SEL_PSWIDTH_ADDR                   : next_data_tx = `VL53L1X_INIT_VAL_ANA_CONFIG_SPAD_SEL_PSWIDTH;
-                        `VL53L1X_ANA_CONFIG_VCSEL_PULSE_WIDTH_OFFSET_ADDR           : next_data_tx = `VL53L1X_INIT_VAL_ANA_CONFIG_VCSEL_PULSE_WIDTH_OFFSET;
-                        `VL53L1X_ANA_CONFIG_FAST_OSC_CONFIG_CTRL_ADDR               : next_data_tx = `VL53L1X_INIT_VAL_ANA_CONFIG_FAST_OSC_CONFIG_CTRL;
-                        `VL53L1X_SIGMA_ESTIMATOR_EFFECTIVE_PULSE_WIDTH_NS_ADDR      : next_data_tx = `VL53L1X_INIT_VAL_SIGMA_ESTIMATOR_EFFECTIVE_PULSE_WIDTH_NS;
-                        `VL53L1X_SIGMA_ESTIMATOR_EFFECTIVE_AMBIENT_WIDTH_NS_ADDR    : next_data_tx = `VL53L1X_INIT_VAL_SIGMA_ESTIMATOR_EFFECTIVE_AMBIENT_WIDTH_NS;
-                        `VL53L1X_SIGMA_ESTIMATOR_SIGMA_REF_MM_ADDR                  : next_data_tx = `VL53L1X_INIT_VAL_SIGMA_ESTIMATOR_SIGMA_REF_MM;
-                        `VL53L1X_ALGO_CROSSTALK_COMPENSATION_VALID_HEIGHT_MM_ADDR   : next_data_tx = `VL53L1X_INIT_VAL_ALGO_CROSSTALK_COMPENSATION_VALID_HEIGHT_MM;
-                        `VL53L1X_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_0_ADDR       : next_data_tx = `VL53L1X_INIT_VAL_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_0;
-                        `VL53L1X_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_1_ADDR       : next_data_tx = `VL53L1X_INIT_VAL_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_1;
-                        `VL53L1X_ALGO_RANGE_IGNORE_THRESHOLD_MCPS_HI_ADDR           : next_data_tx = `VL53L1X_INIT_VAL_ALGO_RANGE_IGNORE_THRESHOLD_MCPS_HI;
-                        `VL53L1X_ALGO_RANGE_IGNORE_THRESHOLD_MCPS_LO_ADDR           : next_data_tx = `VL53L1X_INIT_VAL_ALGO_RANGE_IGNORE_THRESHOLD_MCPS_LO;
-                        `VL53L1X_ALGO_RANGE_IGNORE_VALID_HEIGHT_MM_ADDR             : next_data_tx = `VL53L1X_INIT_VAL_ALGO_RANGE_IGNORE_VALID_HEIGHT_MM;
-                        `VL53L1X_ALGO_RANGE_MIN_CLIP_ADDR                           : next_data_tx = `VL53L1X_INIT_VAL_ALGO_RANGE_MIN_CLIP;
-                        `VL53L1X_ALGO_CONSISTENCY_CHECK_TOLERANCE_ADDR              : next_data_tx = `VL53L1X_INIT_VAL_ALGO_CONSISTENCY_CHECK_TOLERANCE;
-                        `VL53L1X_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_2_ADDR       : next_data_tx = `VL53L1X_INIT_VAL_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_2;
-                        `VL53L1X_SD_CONFIG_RESET_STAGES_MSB_ADDR                    : next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_RESET_STAGES_MSB;
-                        `VL53L1X_SD_CONFIG_RESET_STAGES_LSB_ADDR                    : next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_RESET_STAGES_LSB;
-                        `VL53L1X_GPH_CONFIG_STREAM_COUNT_UPDATE_VALUE_ADDR          : next_data_tx = `VL53L1X_INIT_VAL_GPH_CONFIG_STREAM_COUNT_UPDATE_VALUE;
-                        `VL53L1X_GLOBAL_CONFIG_STREAM_DIVIDER_ADDR                  : next_data_tx = `VL53L1X_INIT_VAL_GLOBAL_CONFIG_STREAM_DIVIDER;
-                        `VL53L1X_SYSTEM_INTERRUPT_CONFIG_GPIO_ADDR                  : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_INTERRUPT_CONFIG_GPIO;
-                        `VL53L1X_CAL_CONFIG_VCSEL_START_ADDR                        : next_data_tx = `VL53L1X_INIT_VAL_CAL_CONFIG_VCSEL_START;
-                        `VL53L1X_CAL_CONFIG_REPEAT_RATE_HI_ADDR                     : next_data_tx = `VL53L1X_INIT_VAL_CAL_CONFIG_REPEAT_RATE_HI;
-                        `VL53L1X_CAL_CONFIG_REPEAT_RATE_LO_ADDR                     : next_data_tx = `VL53L1X_INIT_VAL_CAL_CONFIG_REPEAT_RATE_LO;
-                        `VL53L1X_GLOBAL_CONFIG_VCSEL_WIDTH_ADDR                     : next_data_tx = `VL53L1X_INIT_VAL_GLOBAL_CONFIG_VCSEL_WIDTH;
-                        `VL53L1X_PHASECAL_CONFIG_TIMEOUT_MACROP_ADDR                : next_data_tx = `VL53L1X_INIT_VAL_PHASECAL_CONFIG_TIMEOUT_MACROP;
-                        `VL53L1X_PHASECAL_CONFIG_TARGET_ADDR                        : next_data_tx = `VL53L1X_INIT_VAL_PHASECAL_CONFIG_TARGET;
-                        `VL53L1X_PHASECAL_CONFIG_OVERRIDE_ADDR                      : next_data_tx = `VL53L1X_INIT_VAL_PHASECAL_CONFIG_OVERRIDE;
-                        `VL53L1X_UNNAMED_REG_0x004E_ADDR                            : next_data_tx = `VL53L1X_INIT_VAL_UNNAMED_REG_0x004E;
-                        `VL53L1X_DSS_CONFIG_ROI_MODE_CONTROL_ADDR                   : next_data_tx = `VL53L1X_INIT_VAL_DSS_CONFIG_ROI_MODE_CONTROL;
-                        `VL53L1X_SYSTEM_THRESH_RATE_HIGH_HI_ADDR                    : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_HIGH_HI;
-                        `VL53L1X_SYSTEM_THRESH_RATE_HIGH_LO_ADDR                    : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_HIGH_LO;
-                        `VL53L1X_SYSTEM_THRESH_RATE_LOW_HI_ADDR                     : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_LOW_HI;
-                        `VL53L1X_SYSTEM_THRESH_RATE_LOW_LO_ADDR                     : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_LOW_LO;
-                        `VL53L1X_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_HI_ADDR   : next_data_tx = `VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_HI;
-                        `VL53L1X_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_LO_ADDR   : next_data_tx = `VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_LO;
-                        `VL53L1X_DSS_CONFIG_MANUAL_BLOCK_SELECT_ADDR                : next_data_tx = `VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_BLOCK_SELECT;
-                        `VL53L1X_DSS_CONFIG_APERTURE_ATTENUATION_ADDR               : next_data_tx = `VL53L1X_INIT_VAL_DSS_CONFIG_APERTURE_ATTENUATION;
-                        `VL53L1X_DSS_CONFIG_MAX_SPADS_LIMIT_ADDR                    : next_data_tx = `VL53L1X_INIT_VAL_DSS_CONFIG_MAX_SPADS_LIMIT;
-                        `VL53L1X_DSS_CONFIG_MIN_SPADS_LIMIT_ADDR                    : next_data_tx = `VL53L1X_INIT_VAL_DSS_CONFIG_MIN_SPADS_LIMIT;
-                        `VL53L1X_MM_CONFIG_TIMEOUT_MACROP_A_HI_ADDR                 : next_data_tx = `VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_A_HI;
-                        `VL53L1X_MM_CONFIG_TIMEOUT_MACROP_A_LO_ADDR                 : next_data_tx = `VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_A_LO;
-                        `VL53L1X_MM_CONFIG_TIMEOUT_MACROP_B_HI_ADDR                 : next_data_tx = `VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_B_HI;
-                        `VL53L1X_MM_CONFIG_TIMEOUT_MACROP_B_LO_ADDR                 : next_data_tx = `VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_B_LO;
-                        `VL53L1X_RANGE_CONFIG_TIMEOUT_MACROP_A_HI_ADDR              : next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_A_HI;
-                        `VL53L1X_RANGE_CONFIG_TIMEOUT_MACROP_A_LO_ADDR              : next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_A_LO;
-                        `VL53L1X_RANGE_CONFIG_VCSEL_PERIOD_A_ADDR                   : next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_VCSEL_PERIOD_A;
-                        `VL53L1X_RANGE_CONFIG_TIMEOUT_MACROP_B_HI_ADDR              : next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_B_HI;
-                        `VL53L1X_RANGE_CONFIG_TIMEOUT_MACROP_B_LO_ADDR              : next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_B_LO;
-                        `VL53L1X_RANGE_CONFIG_VCSEL_PERIOD_B_ADDR                   : next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_VCSEL_PERIOD_B;
-                        `VL53L1X_RANGE_CONFIG_SIGMA_THRESH_HI_ADDR                  : next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_SIGMA_THRESH_HI;
-                        `VL53L1X_RANGE_CONFIG_SIGMA_THRESH_LO_ADDR                  : next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_SIGMA_THRESH_LO;
-                        `VL53L1X_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_HI_ADDR : next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_HI;
-                        `VL53L1X_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_LO_ADDR : next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_LO;
-                        `VL53L1X_RANGE_CONFIG_VALID_PHASE_LOW_ADDR                  : next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_VALID_PHASE_LOW;
-                        `VL53L1X_RANGE_CONFIG_VALID_PHASE_HIGH_ADDR                 : next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_VALID_PHASE_HIGH;
-                        `VL53L1X_UNNAMED_REG_0x006A_ADDR                            : next_data_tx = `VL53L1X_INIT_VAL_UNNAMED_REG_0x006A;
-                        `VL53L1X_UNNAMED_REG_0x006B_ADDR                            : next_data_tx = `VL53L1X_INIT_VAL_UNNAMED_REG_0x006B;
-                        `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_3_ADDR              : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_INTERMEASUREMENT_PERIOD_3;
-                        `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_2_ADDR              : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_INTERMEASUREMENT_PERIOD_2;
-                        `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_1_ADDR              : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_INTERMEASUREMENT_PERIOD_1;
-                        `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_0_ADDR              : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_INTERMEASUREMENT_PERIOD_0;
-                        `VL53L1X_SYSTEM_FRACTIONAL_ENABLE_ADDR                      : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_FRACTIONAL_ENABLE;
-                        `VL53L1X_SYSTEM_GROUPED_PARAMETER_HOLD_0_ADDR               : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_GROUPED_PARAMETER_HOLD_0;
-                        `VL53L1X_SYSTEM_THRESH_HIGH_HI_ADDR                         : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_HIGH_HI;
-                        `VL53L1X_SYSTEM_THRESH_HIGH_LO_ADDR                         : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_HIGH_LO;
-                        `VL53L1X_SYSTEM_THRESH_LOW_HI_ADDR                          : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_LOW_HI;
-                        `VL53L1X_SYSTEM_THRESH_LOW_LO_ADDR                          : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_LOW_LO;
-                        `VL53L1X_SYSTEM_ENABLE_XTALK_PER_QUADRANT_ADDR              : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_ENABLE_XTALK_PER_QUADRANT;
-                        `VL53L1X_SYSTEM_SEED_CONFIG_ADDR                            : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_SEED_CONFIG;
-                        `VL53L1X_SD_CONFIG_WOI_SD0_ADDR                             : next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_WOI_SD0;
-                        `VL53L1X_SD_CONFIG_WOI_SD1_ADDR                             : next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_WOI_SD1;
-                        `VL53L1X_SD_CONFIG_INITIAL_PHASE_SD0_ADDR                   : next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_INITIAL_PHASE_SD0;
-                        `VL53L1X_SD_CONFIG_INITIAL_PHASE_SD1_ADDR                   : next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_INITIAL_PHASE_SD1;
-                        `VL53L1X_SYSTEM_GROUPED_PARAMETER_HOLD_1_ADDR               : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_GROUPED_PARAMETER_HOLD_1;
-                        `VL53L1X_SD_CONFIG_FIRST_ORDER_SELECT_ADDR                  : next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_FIRST_ORDER_SELECT;
-                        `VL53L1X_SD_CONFIG_QUANTIFIER_ADDR                          : next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_QUANTIFIER;
-                        `VL53L1X_ROI_CONFIG_USER_ROI_CENTRE_SPAD_ADDR               : next_data_tx = `VL53L1X_INIT_VAL_ROI_CONFIG_USER_ROI_CENTRE_SPAD;
-                        `VL53L1X_ROI_CONFIG_USER_ROI_REQUESTED_GLOBAL_XY_SIZE_ADDR  : next_data_tx = `VL53L1X_INIT_VAL_ROI_CONFIG_USER_ROI_REQUESTED_GLOBAL_XY_SIZE;
-                        `VL53L1X_SYSTEM_SEQUENCE_CONFIG_ADDR                        : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_SEQUENCE_CONFIG;
-                        `VL53L1X_SYSTEM_GROUPED_PARAMETER_HOLD_ADDR                 : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_GROUPED_PARAMETER_HOLD;
-                        `VL53L1X_POWER_MANAGEMENT_GO1_POWER_FORCE_ADDR              : next_data_tx = `VL53L1X_INIT_VAL_POWER_MANAGEMENT_GO1_POWER_FORCE;
-                        `VL53L1X_SYSTEM_STREAM_COUNT_CTRL_ADDR                      : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_STREAM_COUNT_CTRL;
-                        `VL53L1X_FIRMWARE_ENABLE_ADDR                               : next_data_tx = `VL53L1X_INIT_VAL_FIRMWARE_ENABLE;
-                        `VL53L1X_SYSTEM_INTERRUPT_CLEAR_ADDR                        : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_INTERRUPT_CLEAR;
-                        `VL53L1X_SYSTEM_MODE_START_ADDR                             : next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_MODE_START;
-                        default                                                     : next_data_tx = 8'd0;
+                        `BNO055_ACCEL_OFFSET_X_LSB_ADDR                             :
+                                                        next_data_tx = 8'd229;
+                        `BNO055_ACCEL_OFFSET_X_MSB_ADDR                             :
+                                                        next_data_tx = 8'd255;
+                        `BNO055_ACCEL_OFFSET_Y_LSB_ADDR                             :
+                                                        next_data_tx = 8'd210;
+                        `BNO055_ACCEL_OFFSET_Y_MSB_ADDR                             :
+                                                        next_data_tx = 8'd255;
+                        `BNO055_ACCEL_OFFSET_Z_LSB_ADDR                             :
+                                                        next_data_tx = 8'd38;
+                        `BNO055_ACCEL_OFFSET_Z_MSB_ADDR                             :
+                                                        next_data_tx = 8'd0;
+                        `BNO055_MAG_OFFSET_X_LSB_ADDR                               :
+                                                        next_data_tx = 8'd28;
+                        `BNO055_MAG_OFFSET_X_MSB_ADDR                               :
+                                                        next_data_tx = 8'd1;
+                        `BNO055_MAG_OFFSET_Y_LSB_ADDR                               :
+                                                        next_data_tx = 8'd30;
+                        `BNO055_MAG_OFFSET_Y_MSB_ADDR                               :
+                                                        next_data_tx = 8'd0;
+                        `BNO055_MAG_OFFSET_Z_LSB_ADDR                               :
+                                                        next_data_tx = 8'd163;
+                        `BNO055_MAG_OFFSET_Z_MSB_ADDR                               :
+                                                        next_data_tx = 8'd255;
+                        `BNO055_GYRO_OFFSET_X_LSB_ADDR                              :
+                                                        next_data_tx = 8'd254;
+                        `BNO055_GYRO_OFFSET_X_MSB_ADDR                              :
+                                                        next_data_tx = 8'd255;
+                        `BNO055_GYRO_OFFSET_Y_LSB_ADDR                              :
+                                                        next_data_tx = 8'd253;
+                        `BNO055_GYRO_OFFSET_Y_MSB_ADDR                              :
+                                                        next_data_tx = 8'd255;
+                        `BNO055_GYRO_OFFSET_Z_LSB_ADDR                              :
+                                                        next_data_tx = 8'd0;
+                        `BNO055_GYRO_OFFSET_Z_MSB_ADDR                              :
+                                                        next_data_tx = 8'd0;
+                        `BNO055_ACCEL_RADIUS_LSB_ADDR                               :
+                                                        next_data_tx = 8'd3;
+                        `BNO055_ACCEL_RADIUS_MSB_ADDR                               :
+                                                        next_data_tx = 8'd232;
+                        `BNO055_MAG_RADIUS_LSB_ADDR                                 :
+                                                        next_data_tx = 8'd3;
+                        `BNO055_MAG_RADIUS_MSB_ADDR                                 :
+                                                        next_data_tx = 8'd83;
+                        `VL53L1X_PAD_I2C_HV_CONFIG_ADDR                             :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_PAD_I2C_HV_CONFIG;
+                        `VL53L1X_PAD_I2C_HV_EXTSUP_CONFIG_ADDR                      :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_PAD_I2C_HV_EXTSUP_CONFIG;
+                        `VL53L1X_GPIO_HV_PAD_CTRL_ADDR                              :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_GPIO_HV_PAD_CTRL;
+                        `VL53L1X_GPIO_HV_MUX_CTRL_ADDR                              :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_GPIO_HV_MUX_CTRL;
+                        `VL53L1X_GPIO_TIO_HV_STATUS_ADDR                            :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_GPIO_TIO_HV_STATUS;
+                        `VL53L1X_GPIO_FIO_HV_STATUS_ADDR                            :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_GPIO_FIO_HV_STATUS;
+                        `VL53L1X_ANA_CONFIG_SPAD_SEL_PSWIDTH_ADDR                   :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_ANA_CONFIG_SPAD_SEL_PSWIDTH;
+                        `VL53L1X_ANA_CONFIG_VCSEL_PULSE_WIDTH_OFFSET_ADDR           :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_ANA_CONFIG_VCSEL_PULSE_WIDTH_OFFSET;
+                        `VL53L1X_ANA_CONFIG_FAST_OSC_CONFIG_CTRL_ADDR               :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_ANA_CONFIG_FAST_OSC_CONFIG_CTRL;
+                        `VL53L1X_SIGMA_ESTIMATOR_EFFECTIVE_PULSE_WIDTH_NS_ADDR      :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SIGMA_ESTIMATOR_EFFECTIVE_PULSE_WIDTH_NS;
+                        `VL53L1X_SIGMA_ESTIMATOR_EFFECTIVE_AMBIENT_WIDTH_NS_ADDR    :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SIGMA_ESTIMATOR_EFFECTIVE_AMBIENT_WIDTH_NS;
+                        `VL53L1X_SIGMA_ESTIMATOR_SIGMA_REF_MM_ADDR                  :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SIGMA_ESTIMATOR_SIGMA_REF_MM;
+                        `VL53L1X_ALGO_CROSSTALK_COMPENSATION_VALID_HEIGHT_MM_ADDR   :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_ALGO_CROSSTALK_COMPENSATION_VALID_HEIGHT_MM;
+                        `VL53L1X_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_0_ADDR       :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_0;
+                        `VL53L1X_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_1_ADDR       :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_1;
+                        `VL53L1X_ALGO_RANGE_IGNORE_THRESHOLD_MCPS_HI_ADDR           :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_ALGO_RANGE_IGNORE_THRESHOLD_MCPS_HI;
+                        `VL53L1X_ALGO_RANGE_IGNORE_THRESHOLD_MCPS_LO_ADDR           :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_ALGO_RANGE_IGNORE_THRESHOLD_MCPS_LO;
+                        `VL53L1X_ALGO_RANGE_IGNORE_VALID_HEIGHT_MM_ADDR             :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_ALGO_RANGE_IGNORE_VALID_HEIGHT_MM;
+                        `VL53L1X_ALGO_RANGE_MIN_CLIP_ADDR                           :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_ALGO_RANGE_MIN_CLIP;
+                        `VL53L1X_ALGO_CONSISTENCY_CHECK_TOLERANCE_ADDR              :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_ALGO_CONSISTENCY_CHECK_TOLERANCE;
+                        `VL53L1X_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_2_ADDR       :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_2;
+                        `VL53L1X_SD_CONFIG_RESET_STAGES_MSB_ADDR                    :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_RESET_STAGES_MSB;
+                        `VL53L1X_SD_CONFIG_RESET_STAGES_LSB_ADDR                    :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_RESET_STAGES_LSB;
+                        `VL53L1X_GPH_CONFIG_STREAM_COUNT_UPDATE_VALUE_ADDR          :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_GPH_CONFIG_STREAM_COUNT_UPDATE_VALUE;
+                        `VL53L1X_GLOBAL_CONFIG_STREAM_DIVIDER_ADDR                  :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_GLOBAL_CONFIG_STREAM_DIVIDER;
+                        `VL53L1X_SYSTEM_INTERRUPT_CONFIG_GPIO_ADDR                  :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_INTERRUPT_CONFIG_GPIO;
+                        `VL53L1X_CAL_CONFIG_VCSEL_START_ADDR                        :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_CAL_CONFIG_VCSEL_START;
+                        `VL53L1X_CAL_CONFIG_REPEAT_RATE_HI_ADDR                     :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_CAL_CONFIG_REPEAT_RATE_HI;
+                        `VL53L1X_CAL_CONFIG_REPEAT_RATE_LO_ADDR                     :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_CAL_CONFIG_REPEAT_RATE_LO;
+                        `VL53L1X_GLOBAL_CONFIG_VCSEL_WIDTH_ADDR                     :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_GLOBAL_CONFIG_VCSEL_WIDTH;
+                        `VL53L1X_PHASECAL_CONFIG_TIMEOUT_MACROP_ADDR                :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_PHASECAL_CONFIG_TIMEOUT_MACROP;
+                        `VL53L1X_PHASECAL_CONFIG_TARGET_ADDR                        :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_PHASECAL_CONFIG_TARGET;
+                        `VL53L1X_PHASECAL_CONFIG_OVERRIDE_ADDR                      :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_PHASECAL_CONFIG_OVERRIDE;
+                        `VL53L1X_UNNAMED_REG_0x004E_ADDR                            :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_UNNAMED_REG_0x004E;
+                        `VL53L1X_DSS_CONFIG_ROI_MODE_CONTROL_ADDR                   :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_DSS_CONFIG_ROI_MODE_CONTROL;
+                        `VL53L1X_SYSTEM_THRESH_RATE_HIGH_HI_ADDR                    :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_HIGH_HI;
+                        `VL53L1X_SYSTEM_THRESH_RATE_HIGH_LO_ADDR                    :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_HIGH_LO;
+                        `VL53L1X_SYSTEM_THRESH_RATE_LOW_HI_ADDR                     :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_LOW_HI;
+                        `VL53L1X_SYSTEM_THRESH_RATE_LOW_LO_ADDR                     :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_LOW_LO;
+                        `VL53L1X_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_HI_ADDR   :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_HI;
+                        `VL53L1X_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_LO_ADDR   :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_LO;
+                        `VL53L1X_DSS_CONFIG_MANUAL_BLOCK_SELECT_ADDR                :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_BLOCK_SELECT;
+                        `VL53L1X_DSS_CONFIG_APERTURE_ATTENUATION_ADDR               :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_DSS_CONFIG_APERTURE_ATTENUATION;
+                        `VL53L1X_DSS_CONFIG_MAX_SPADS_LIMIT_ADDR                    :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_DSS_CONFIG_MAX_SPADS_LIMIT;
+                        `VL53L1X_DSS_CONFIG_MIN_SPADS_LIMIT_ADDR                    :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_DSS_CONFIG_MIN_SPADS_LIMIT;
+                        `VL53L1X_MM_CONFIG_TIMEOUT_MACROP_A_HI_ADDR                 :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_A_HI;
+                        `VL53L1X_MM_CONFIG_TIMEOUT_MACROP_A_LO_ADDR                 :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_A_LO;
+                        `VL53L1X_MM_CONFIG_TIMEOUT_MACROP_B_HI_ADDR                 :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_B_HI;
+                        `VL53L1X_MM_CONFIG_TIMEOUT_MACROP_B_LO_ADDR                 :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_B_LO;
+                        `VL53L1X_RANGE_CONFIG_TIMEOUT_MACROP_A_HI_ADDR              :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_A_HI;
+                        `VL53L1X_RANGE_CONFIG_TIMEOUT_MACROP_A_LO_ADDR              :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_A_LO;
+                        `VL53L1X_RANGE_CONFIG_VCSEL_PERIOD_A_ADDR                   :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_VCSEL_PERIOD_A;
+                        `VL53L1X_RANGE_CONFIG_TIMEOUT_MACROP_B_HI_ADDR              :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_B_HI;
+                        `VL53L1X_RANGE_CONFIG_TIMEOUT_MACROP_B_LO_ADDR              :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_B_LO;
+                        `VL53L1X_RANGE_CONFIG_VCSEL_PERIOD_B_ADDR                   :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_VCSEL_PERIOD_B;
+                        `VL53L1X_RANGE_CONFIG_SIGMA_THRESH_HI_ADDR                  :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_SIGMA_THRESH_HI;
+                        `VL53L1X_RANGE_CONFIG_SIGMA_THRESH_LO_ADDR                  :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_SIGMA_THRESH_LO;
+                        `VL53L1X_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_HI_ADDR :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_HI;
+                        `VL53L1X_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_LO_ADDR :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_LO;
+                        `VL53L1X_RANGE_CONFIG_VALID_PHASE_LOW_ADDR                  :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_VALID_PHASE_LOW;
+                        `VL53L1X_RANGE_CONFIG_VALID_PHASE_HIGH_ADDR                 :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_RANGE_CONFIG_VALID_PHASE_HIGH;
+                        `VL53L1X_UNNAMED_REG_0x006A_ADDR                            :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_UNNAMED_REG_0x006A;
+                        `VL53L1X_UNNAMED_REG_0x006B_ADDR                            :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_UNNAMED_REG_0x006B;
+                        `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_3_ADDR              :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_INTERMEASUREMENT_PERIOD_3;
+                        `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_2_ADDR              :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_INTERMEASUREMENT_PERIOD_2;
+                        `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_1_ADDR              :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_INTERMEASUREMENT_PERIOD_1;
+                        `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_0_ADDR              :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_INTERMEASUREMENT_PERIOD_0;
+                        `VL53L1X_SYSTEM_FRACTIONAL_ENABLE_ADDR                      :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_FRACTIONAL_ENABLE;
+                        `VL53L1X_SYSTEM_GROUPED_PARAMETER_HOLD_0_ADDR               :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_GROUPED_PARAMETER_HOLD_0;
+                        `VL53L1X_SYSTEM_THRESH_HIGH_HI_ADDR                         :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_HIGH_HI;
+                        `VL53L1X_SYSTEM_THRESH_HIGH_LO_ADDR                         :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_HIGH_LO;
+                        `VL53L1X_SYSTEM_THRESH_LOW_HI_ADDR                          :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_LOW_HI;
+                        `VL53L1X_SYSTEM_THRESH_LOW_LO_ADDR                          :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_THRESH_LOW_LO;
+                        `VL53L1X_SYSTEM_ENABLE_XTALK_PER_QUADRANT_ADDR              :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_ENABLE_XTALK_PER_QUADRANT;
+                        `VL53L1X_SYSTEM_SEED_CONFIG_ADDR                            :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_SEED_CONFIG;
+                        `VL53L1X_SD_CONFIG_WOI_SD0_ADDR                             :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_WOI_SD0;
+                        `VL53L1X_SD_CONFIG_WOI_SD1_ADDR                             :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_WOI_SD1;
+                        `VL53L1X_SD_CONFIG_INITIAL_PHASE_SD0_ADDR                   :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_INITIAL_PHASE_SD0;
+                        `VL53L1X_SD_CONFIG_INITIAL_PHASE_SD1_ADDR                   :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_INITIAL_PHASE_SD1;
+                        `VL53L1X_SYSTEM_GROUPED_PARAMETER_HOLD_1_ADDR               :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_GROUPED_PARAMETER_HOLD_1;
+                        `VL53L1X_SD_CONFIG_FIRST_ORDER_SELECT_ADDR                  :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_FIRST_ORDER_SELECT;
+                        `VL53L1X_SD_CONFIG_QUANTIFIER_ADDR                          :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SD_CONFIG_QUANTIFIER;
+                        `VL53L1X_ROI_CONFIG_USER_ROI_CENTRE_SPAD_ADDR               :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_ROI_CONFIG_USER_ROI_CENTRE_SPAD;
+                        `VL53L1X_ROI_CONFIG_USER_ROI_REQUESTED_GLOBAL_XY_SIZE_ADDR  :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_ROI_CONFIG_USER_ROI_REQUESTED_GLOBAL_XY_SIZE;
+                        `VL53L1X_SYSTEM_SEQUENCE_CONFIG_ADDR                        :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_SEQUENCE_CONFIG;
+                        `VL53L1X_SYSTEM_GROUPED_PARAMETER_HOLD_ADDR                 :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_GROUPED_PARAMETER_HOLD;
+                        `VL53L1X_POWER_MANAGEMENT_GO1_POWER_FORCE_ADDR              :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_POWER_MANAGEMENT_GO1_POWER_FORCE;
+                        `VL53L1X_SYSTEM_STREAM_COUNT_CTRL_ADDR                      :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_STREAM_COUNT_CTRL;
+                        `VL53L1X_FIRMWARE_ENABLE_ADDR                               :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_FIRMWARE_ENABLE;
+                        `VL53L1X_SYSTEM_INTERRUPT_CLEAR_ADDR                        :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_INTERRUPT_CLEAR;
+                        `VL53L1X_SYSTEM_MODE_START_ADDR                             :
+                                                        next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_MODE_START;
+                        default                                                     :
+                                                        next_data_tx = 8'd0;
                     endcase
                 end
                 `I2C_STATE_CAL_RESTORE_NEXT: begin // See if this was the last, loop around if more, otherwise, exit loop
@@ -994,7 +1167,12 @@ module i2c_device_driver #(
                     next_imu_good          = `TRUE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
-                    next_i2c_state         = `I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_TX_PERIOD;
+                    clear_waiting_ms       = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
+                    count_ms_init_time     = `FALSE;          // Make sure this is a POLL_INTERVAL timer for upcoming WAIT_IMU_POLL_TIME state
+                    if(delay_timer_at_poll)
+                        next_i2c_state     = `I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_TX_PERIOD;
+                    else
+                        next_i2c_state     = `I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_CALCULATE;
                     // measurement period = result from previous * 100 * 1.075 = result from previous * 107.5 = (result from previous * 107)/2
                     next_VL53L1X_measurement_period = ((VL53L1X_osc_cal_val * 107)>>>2);
                 end
@@ -1004,34 +1182,16 @@ module i2c_device_driver #(
                     next_go_flag           = `NOT_GO;
                     next_measurement_period_tx_index = measurement_period_tx_index - 3'd1;
                     if(measurement_period_tx_index == 3'd0)
-                        next_return_state  = `I2C_VL53L1X_STATE_START_MEASURE;
-                    else
-                        next_return_state  = `I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_TX_PERIOD;
+                        next_return_state = `I2C_DRV_STATE_WAIT_IMU_POLL_TIME;
                     next_i2c_state         = `I2C_DRV_SUB_STATE_START;
                     next_data_reg          = `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_3_ADDR;
                     case(measurement_period_tx_index)
-                        3'd0    : next_data_tx = VL53L1X_measurement_period[7 :0 ]; 
-                        3'd1    : next_data_tx = VL53L1X_measurement_period[15:8 ];  
-                        3'd2    : next_data_tx = VL53L1X_measurement_period[23:16]; 
                         3'd3    : next_data_tx = VL53L1X_measurement_period[31:24];
+                        3'd2    : next_data_tx = VL53L1X_measurement_period[23:16];
+                        3'd1    : next_data_tx = VL53L1X_measurement_period[15:8 ];
+                        3'd0    : next_data_tx = VL53L1X_measurement_period[7 :0 ];
                         default : next_data_tx = 8'd0;
                     endcase
-                    next_read_write_in     = `I2C_WRITE;
-                    next_is_2_byte_reg     = `TRUE;
-                end
-                `I2C_VL53L1X_STATE_START_MEASURE: begin
-                    next_imu_good          = `TRUE;
-                    next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
-                    next_go_flag           = `NOT_GO;
-                    clear_waiting_ms       = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
-                    count_ms_init_time     = `FALSE;          // Make sure this is a POLL_INTERVAL timer
-                    if(delay_timer_at_poll)
-                        next_i2c_state     = `I2C_DRV_SUB_STATE_START;
-                    else
-                        next_i2c_state     = `I2C_VL53L1X_STATE_START_MEASURE;
-                    next_return_state      = `I2C_DRV_STATE_WAIT_IMU_POLL_TIME;
-                    next_data_reg          = `VL53L1X_SYSTEM_MODE_START_ADDR;
-                    next_data_tx           = 8'h40;
                     next_read_write_in     = `I2C_WRITE;
                     next_is_2_byte_reg     = `TRUE;
                 end
@@ -1048,9 +1208,20 @@ module i2c_device_driver #(
                     next_setn_BNO055_buffer  = `LOW; // Clear BNO055 RX data buffer index
                     next_setn_VL53L1X_buffer = `LOW; // Clear VL53L1X data and firmware ready
                     if(delay_timer_done)
-                        next_i2c_state     = `I2C_VL53L1X_STATE_POLL_READY;
+                        next_i2c_state     = `I2C_VL53L1X_STATE_START_MEASURE;
                     else
                         next_i2c_state     = `I2C_DRV_STATE_WAIT_IMU_POLL_TIME;
+                end
+                `I2C_VL53L1X_STATE_START_MEASURE: begin
+                    next_imu_good          = `TRUE;
+                    next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
+                    next_go_flag           = `NOT_GO;
+                    next_i2c_state         = `I2C_DRV_SUB_STATE_START;
+                    next_return_state      = `I2C_VL53L1X_STATE_POLL_READY;
+                    next_data_reg          = `VL53L1X_SYSTEM_MODE_START_ADDR;
+                    next_data_tx           = 8'h40;
+                    next_read_write_in     = `I2C_WRITE;
+                    next_is_2_byte_reg     = `TRUE;
                 end
                 `I2C_VL53L1X_STATE_POLL_READY: begin
                     next_imu_good          = `TRUE;

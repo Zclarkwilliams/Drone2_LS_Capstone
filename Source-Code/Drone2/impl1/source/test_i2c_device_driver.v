@@ -118,6 +118,11 @@ module i2c_device_driver_tb();
         .VL53L1X_firm_rdy(VL53L1X_firm_rdy),
         .VL53L1X_data_rdy(VL53L1X_data_rdy)
         );
+        
+        
+        
+    always@(VL53L1X_chip_id)
+        $display("%t: Chip ID is %h", $time, VL53L1X_chip_id);
 
 	// Connect i2c slaves
 	//i2c_slave_model_2B_reg #(SLAVE_ADDR_VL53l1X) VL53l1X (

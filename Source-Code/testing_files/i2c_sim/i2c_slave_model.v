@@ -359,12 +359,12 @@ module i2c_slave_model (resetn, scl, sda);
 	wire tst_sta = sta;
 
 	specify
-	  specparam normal_scl_low  = 500, //4700, 
-	            normal_scl_high = 500, //4000,
-	            normal_tsu_sta  = 500, //4700, change to relax simulation
-	            normal_thd_sta  = 500, //4000,
-	            normal_tsu_sto  = 500, //4000,
-	            normal_tbuf     = 500, //4700,    
+	  specparam normal_scl_low  = 4700, 
+	            normal_scl_high = 4000,
+	            normal_tsu_sta  = 4700, //change to relax simulation
+	            normal_thd_sta  = 4000,
+	            normal_tsu_sto  = 4000,
+	            normal_tbuf     = 4700,    
 	            
 
 	            fast_scl_low  =  600,

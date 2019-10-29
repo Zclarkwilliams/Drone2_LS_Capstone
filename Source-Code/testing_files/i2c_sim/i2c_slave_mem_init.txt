@@ -1,7 +1,7 @@
 00
 01
-02
-03
+EA
+CC
 04
 05
 06
@@ -47,7 +47,7 @@
 2E
 2F
 30
-31
+03 //Changed from 31 to 03 to simulate firmware ready in VL53L1X
 32
 33
 34
@@ -62,7 +62,7 @@
 3D
 3E
 3F
-40
+03 //Changed from 40 to 03 to simulate firmware ready in VL53L1X
 41
 42
 43
