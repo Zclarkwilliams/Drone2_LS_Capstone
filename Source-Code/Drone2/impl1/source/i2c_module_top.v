@@ -297,7 +297,8 @@ module i2c_module(
                         next_we            = `WB_WE_WRITE;
                         next_stb           = `WB_CMD_START;
                         next_addr          = efb_registers[`I2C_BR0_INDEX][i2c_number];
-                        next_data_tx       = 8'd190; // Prescaler value for a 38.00 MHz clock to 400kHz i2c rate
+                        //next_data_tx       = 8'd190; // Prescaler value for a 38.00 MHz clock to 400kHz i2c rate
+                        next_data_tx       = 8'd23; // Prescaler value for a 38.00 MHz clock to 400kHz i2c rate
                         next_ack_flag      = `TRUE;
                         resetn_imu         = `LOW;
                         clear_byte_rd_left = `HIGH;

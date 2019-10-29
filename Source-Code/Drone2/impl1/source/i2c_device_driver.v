@@ -272,7 +272,7 @@ module i2c_device_driver #(
 
     //  During a read cycle increment the BNO055_data_rx_reg_index until it reaches the end of  BNO055_data_rx_reg
     //  If a byte has been read (one_byte_ready is asserted) assign it to the BNO055_data_rx_reg  byte array at the location specified by BNO055_data_rx_reg_index
-    always@(negedge one_byte_ready, negedge setn_BNO055_buffer, negedge resetn) begin
+    always@(posedge one_byte_ready, negedge setn_BNO055_buffer, negedge resetn) begin
         if(~resetn) begin
             // Initialize data rx register to all 0s on reset
             for(BNO055_data_rx_reg_index = 0; BNO055_data_rx_reg_index < `BNO055_DATA_RX_BYTE_REG_CNT; BNO055_data_rx_reg_index = BNO055_data_rx_reg_index+'d1)
@@ -307,24 +307,21 @@ module i2c_device_driver #(
             VL53L1X_data_rx_reg_index <= `VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX;
             VL53L1X_high_byte_bool    <= `TRUE;
         end
-        else if(one_byte_ready && rx_from_VL53L1X) begin // RX from VL53L1X
+        else if(rx_from_VL53L1X) begin // RX byte from VL53L1X LiDAR
             VL53L1X_data_rx_reg_index <= next_VL53L1X_data_rx_reg_index;
-            if (target_read_count  == 'd1) begin // Single byte read
-                $display("%t, One VL53L1X byte ready of a one byte read", $time);
-                VL53L1X_high_byte_bool     <= `TRUE;
+            if(one_byte_ready) begin                 // Read a byte
+                if (target_read_count  == 'd1) begin // Single byte read
+                    $display("%t, One VL53L1X byte ready of a one byte read", $time);
+                    VL53L1X_high_byte_bool     <= `TRUE;
+                end
+                else begin                     // A byte has been read by I2C - 2 byte read
+                    $display("%t, One VL53L1X byte ready of a two byte read", $time);
+                    if(VL53L1X_high_byte_bool) // This was the first byte
+                        VL53L1X_high_byte_bool <= `FALSE;
+                    else
+                        VL53L1X_high_byte_bool <= `TRUE;
+                end
             end
-            else begin                     // A byte has been read by I2C - 2 byte read
-                $display("%t, One VL53L1X byte ready of a two byte read", $time);
-                if(VL53L1X_high_byte_bool) // This was the first byte
-                    VL53L1X_high_byte_bool <= `FALSE;
-                else
-                    VL53L1X_high_byte_bool <= `TRUE;
-            end
-        end
-        else if(~next_setn_VL53L1X_buffer && setn_VL53L1X_buffer ) begin // Only trigger on negedge
-            $display("%t, Setting VL53L1X buffer", $time);
-            VL53L1X_high_byte_bool    <= `TRUE;
-            VL53L1X_data_rx_reg_index <= next_VL53L1X_data_rx_reg_index;
         end
     end
 
@@ -332,14 +329,14 @@ module i2c_device_driver #(
     //  If a byte has been read (one_byte_ready is asserted) assign it to the VL53L1X_data_rx_reg byte array at the location specified by VL53L1X_data_rx_reg_index
     always@(posedge one_byte_ready, negedge setn_VL53L1X_buffer, negedge resetn) begin
         if(~resetn) begin
-            VL53L1X_data_rx_reg[0] <= 8'hFF;
-            VL53L1X_data_rx_reg[1] <= 8'hFF;
-            VL53L1X_data_rx_reg[2] <= 8'hFF;
-            VL53L1X_data_rx_reg[3] <= 8'hFF;
-            VL53L1X_data_rx_reg[4] <= 8'hFF;
-            VL53L1X_data_rx_reg[5] <= 8'hFF;
-            VL53L1X_data_rx_reg[6] <= 8'hFF;
-            VL53L1X_data_rx_reg[7] <= 8'hFF;
+            VL53L1X_data_rx_reg[0] <= 'd0;
+            VL53L1X_data_rx_reg[1] <= 'd0;
+            VL53L1X_data_rx_reg[2] <= 'd0;
+            VL53L1X_data_rx_reg[3] <= 'd0;
+            VL53L1X_data_rx_reg[4] <= 'd0;
+            VL53L1X_data_rx_reg[5] <= 'd0;
+            VL53L1X_data_rx_reg[6] <= 'd0;
+            VL53L1X_data_rx_reg[7] <= 'd0;
         end
         else if (one_byte_ready && rx_from_VL53L1X) begin  // A byte has been read by I2C and byte is from the VL53L1X
             if(VL53L1X_high_byte_bool)
@@ -490,11 +487,11 @@ module i2c_device_driver #(
     //  This block is for VL53L1X registers
     always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin
-            VL53L1X_chip_id     <= 16'hFF_FF;
-            VL53L1X_range_mm    <= 16'hFF_FF;
-            VL53L1X_data_rdy    <= 8'hFF;
-            VL53L1X_firm_rdy    <= 8'hFF;
-            VL53L1X_osc_cal_val <= 8'hFF;
+            VL53L1X_chip_id     <= 'd0;
+            VL53L1X_range_mm    <= 'd0;
+            VL53L1X_data_rdy    <= 'd0;
+            VL53L1X_firm_rdy    <= 'd0;
+            VL53L1X_osc_cal_val <= 'd0;
         end
         else begin
             VL53L1X_chip_id     <= {VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX],
@@ -650,6 +647,7 @@ module i2c_device_driver #(
                     next_imu_good          = `FALSE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
+                    next_i2c_state         = `I2C_DRV_SUB_STATE_START;
                     next_return_state      = `I2C_VL53L1X_STATE_READ_FIRMWARE_READY;
                     next_data_reg          = `VL53L1X_IDENTIFICATION_MODEL_ID_ADDR;
                     next_data_tx           = `BYTE_ALL_ZERO;
@@ -657,20 +655,17 @@ module i2c_device_driver #(
                     next_rx_from_VL53L1X   = `TRUE;
                     next_is_2_byte_reg     = `TRUE;
                     next_target_read_count = 5'd2;
-                    set_reg_index(`VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX,
-                                  `I2C_VL53L1X_STATE_READ_CHIP_ID,
-                                  `I2C_DRV_SUB_STATE_START);
                     next_led_view_index    = 1'b0;
+                    next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX;
                 end
                 `I2C_VL53L1X_STATE_READ_FIRMWARE_READY: begin
                     next_imu_good          = `TRUE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
-                    set_reg_index(`VL53L1X_DATA_RX_REG_FIRMWARE_SYSTEM_STATUS_INDEX,
-                                  `I2C_VL53L1X_STATE_READ_FIRMWARE_READY,
-                                  `I2C_DRV_SUB_STATE_START);
                     if(VL53L1X_firm_rdy[0] == 1'b1) // If firmware ready, go to next state
                         next_i2c_state     = `I2C_BNO055_STATE_READ_CHIP_ID;
+                    else
+                        next_i2c_state     = `I2C_DRV_SUB_STATE_START;
                     next_return_state      = `I2C_VL53L1X_STATE_READ_FIRMWARE_READY;
                     next_data_reg          = `VL53L1X_FIRMWARE_SYSTEM_STATUS_ADDR;
                     next_data_tx           = `BYTE_ALL_ZERO;
@@ -678,6 +673,7 @@ module i2c_device_driver #(
                     next_rx_from_VL53L1X   = `TRUE;
                     next_is_2_byte_reg     = `TRUE;
                     next_target_read_count = 5'd1;
+                    next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_FIRMWARE_SYSTEM_STATUS_INDEX;
                 end
                 `I2C_BNO055_STATE_READ_CHIP_ID: begin // Page 0
                     next_imu_good          = `FALSE;
@@ -926,9 +922,7 @@ module i2c_device_driver #(
                     if(VL53L1X_data_rdy[0] == 1'b1) // If measurement ready, go to next state
                         next_i2c_state     = `I2C_VL53L1X_STATE_INIT_CLEAR_INTERRUPT;
                     else
-                        set_reg_index(`VL53L1X_DATA_RX_REG_DATA_RDY_INDEX,
-                                      `I2C_VL53L1X_STATE_INIT_POLL_DATA_READY,
-                                      `I2C_DRV_SUB_STATE_START);
+                        next_i2c_state     = `I2C_DRV_SUB_STATE_START;
                     next_return_state      = `I2C_VL53L1X_STATE_INIT_POLL_DATA_READY;
                     next_data_reg          = `VL53L1X_GPIO_TIO_HV_STATUS_ADDR;
                     next_data_tx           = `BYTE_ALL_ZERO;
@@ -936,6 +930,7 @@ module i2c_device_driver #(
                     next_rx_from_VL53L1X   = `TRUE;
                     next_is_2_byte_reg     = `TRUE;
                     next_target_read_count = 5'd1;
+                    next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_DATA_RDY_INDEX;
                 end
                 `I2C_VL53L1X_STATE_INIT_CLEAR_INTERRUPT: begin
                     next_imu_good          = `TRUE;
@@ -985,6 +980,7 @@ module i2c_device_driver #(
                     next_imu_good          = `TRUE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
+                    next_i2c_state         = `I2C_DRV_SUB_STATE_START;
                     next_return_state      = `I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_CALCULATE;
                     next_data_reg          = `VL53L1X_RESULT_OSC_CALIBRATE_VAL_ADDR;
                     next_data_tx           = `BYTE_ALL_ZERO;
@@ -992,9 +988,7 @@ module i2c_device_driver #(
                     next_rx_from_VL53L1X   = `TRUE;
                     next_is_2_byte_reg     = `TRUE;
                     next_target_read_count = 5'd2;
-                    set_reg_index(`VL53L1X_DATA_RX_REG_RESULT_OSC_CAL_VAL_HI_INDEX,
-                                  `I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_RX_OSC_VAL,
-                                  `I2C_DRV_SUB_STATE_START);
+                    next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_RESULT_OSC_CAL_VAL_HI_INDEX;
                 end
                 `I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_CALCULATE: begin
                     next_imu_good          = `TRUE;
@@ -1065,9 +1059,7 @@ module i2c_device_driver #(
                     if(VL53L1X_data_rdy[0] == 1'b1) // If measurement ready, go to next state
                         next_i2c_state     = `I2C_VL53L1X_STATE_GET_MEASUREMENT;
                     else
-                        set_reg_index(`VL53L1X_DATA_RX_REG_DATA_RDY_INDEX,
-                                      `I2C_VL53L1X_STATE_POLL_READY,
-                                      `I2C_DRV_SUB_STATE_START);
+                        next_i2c_state     = `I2C_DRV_SUB_STATE_START;
                     next_return_state      = `I2C_VL53L1X_STATE_POLL_READY;
                     next_data_reg          = `VL53L1X_GPIO_TIO_HV_STATUS_ADDR;
                     next_data_tx           = `BYTE_ALL_ZERO;
@@ -1075,11 +1067,13 @@ module i2c_device_driver #(
                     next_rx_from_VL53L1X   = `TRUE;
                     next_is_2_byte_reg     = `TRUE;
                     next_target_read_count = 5'd1;
+                    next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_DATA_RDY_INDEX;
                 end
                 `I2C_VL53L1X_STATE_GET_MEASUREMENT: begin
                     next_imu_good          = `TRUE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
+                    next_i2c_state         = `I2C_DRV_SUB_STATE_START;
                     next_return_state      = `I2C_VL53L1X_STATE_CLEAR_INTERRUPT;
                     next_data_reg          = `VL53L1X_RESULT_FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0_ADDR;
                     next_data_tx           = `BYTE_ALL_ZERO;
@@ -1087,9 +1081,7 @@ module i2c_device_driver #(
                     next_rx_from_VL53L1X   = `TRUE;
                     next_is_2_byte_reg     = `TRUE;
                     next_target_read_count = 5'd2;
-                    set_reg_index(`VL53L1X_DATA_RX_REG_RESULT_RANGE_MEASURE_MM_HI_INDEX,
-                                  `I2C_VL53L1X_STATE_GET_MEASUREMENT,
-                                  `I2C_DRV_SUB_STATE_START);
+                    next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_RESULT_RANGE_MEASURE_MM_HI_INDEX;
                 end
                 `I2C_VL53L1X_STATE_CLEAR_INTERRUPT: begin
                     next_imu_good          = `TRUE;
@@ -1177,28 +1169,4 @@ module i2c_device_driver #(
             endcase
         end
     end
-    task automatic set_reg_index;
-        input reg [5:0] index;
-        input reg [`I2C_DRV_STATE_BITS-1:0] this_state;
-        input reg [`I2C_DRV_STATE_BITS-1:0] next_state;
-        begin
-            $display("%t, VL53L1X_high_byte_bool is %b", $time, VL53L1X_high_byte_bool);
-            $display("%t, VL53L1X_data_rx_reg_index is %b", $time, VL53L1X_data_rx_reg_index);
-            $display("%t, index is %b", $time, index);
-            $display("%t, VL53L1X_high_byte_bool && (VL53L1X_data_rx_reg_index == index) is %b", $time, (VL53L1X_high_byte_bool && (VL53L1X_data_rx_reg_index == index)));
-            $display("%t, (~VL53L1X_high_byte_bool && (VL53L1X_data_rx_reg_index == (index + 'd1))) is %b", $time, (~VL53L1X_high_byte_bool && (VL53L1X_data_rx_reg_index == (index + 'd1))));
-            next_setn_VL53L1X_buffer       = `HIGH;
-            next_VL53L1X_data_rx_reg_index = index;
-            if( (VL53L1X_high_byte_bool && (VL53L1X_data_rx_reg_index == index)) || (~VL53L1X_high_byte_bool && (VL53L1X_data_rx_reg_index == (index + 'd1))) ) begin
-                $display("%t, Ready to go to the next state", $time);
-                next_setn_VL53L1X_buffer = `HIGH;
-                next_i2c_state           = next_state;
-            end
-            else begin
-                $display("%t, Not ready, stay in this state", $time);
-                next_setn_VL53L1X_buffer = `LOW;
-                next_i2c_state           = this_state;
-            end
-        end
-    endtask
 endmodule

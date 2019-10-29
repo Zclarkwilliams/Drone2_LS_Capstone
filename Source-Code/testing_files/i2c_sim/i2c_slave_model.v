@@ -359,29 +359,38 @@ module i2c_slave_model (resetn, scl, sda);
 	wire tst_sta = sta;
 
 	specify
-	  specparam normal_scl_low  = 4700, 
-	            normal_scl_high = 4000,
-	            normal_tsu_sta  = 2000, //4700, change to relax simulation
-	            normal_thd_sta  = 2000, //4000,
-	            normal_tsu_sto  = 2000, //4000,
-	            normal_tbuf     = 4700,    
+	  specparam normal_scl_low  = 500, //4700, 
+	            normal_scl_high = 500, //4000,
+	            normal_tsu_sta  = 500, //4700, change to relax simulation
+	            normal_thd_sta  = 500, //4000,
+	            normal_tsu_sto  = 500, //4000,
+	            normal_tbuf     = 500, //4700,    
 	            
 
-	            fast_scl_low  = 1300,
+	            fast_scl_low  =  600,
 	            fast_scl_high =  600,
-	            fast_tsu_sta  = 1300,
+	            fast_tsu_sta  =  600,
 	            fast_thd_sta  =  600,
 	            fast_tsu_sto  =  600,
-	            fast_tbuf     = 1300;
+	            fast_tbuf     =  600;
 
-	  $width(negedge scl, normal_scl_low);  // scl low time
-	  $width(posedge scl, normal_scl_high); // scl high time
+	  // $width(negedge scl, normal_scl_low);  // scl low time
+	  // $width(posedge scl, normal_scl_high); // scl high time
 
-	  $setup(posedge scl, negedge sda &&& scl, normal_tsu_sta); // setup start
-	  $setup(negedge sda &&& scl, negedge scl, normal_thd_sta); // hold start
-	  $setup(posedge scl, posedge sda &&& scl, normal_tsu_sto); // setup stop
+	  // $setup(posedge scl, negedge sda &&& scl, normal_tsu_sta); // setup start
+	  // $setup(negedge sda &&& scl, negedge scl, normal_thd_sta); // hold start
+	  // $setup(posedge scl, posedge sda &&& scl, normal_tsu_sto); // setup stop
 
-	  $setup(posedge tst_sta, posedge tst_sto, normal_tbuf); // stop to start time
+	  // $setup(posedge tst_sta, posedge tst_sto, normal_tbuf); // stop to start time
+
+	  $width(negedge scl, fast_scl_low);  // scl low time
+	  $width(posedge scl, fast_scl_high); // scl high time
+
+	  $setup(posedge scl, negedge sda &&& scl, fast_tsu_sta); // setup start
+	  $setup(negedge sda &&& scl, negedge scl, fast_thd_sta); // hold start
+	  $setup(posedge scl, posedge sda &&& scl, fast_tsu_sto); // setup stop
+
+	  $setup(posedge tst_sta, posedge tst_sto, fast_tbuf); // stop to start time
 	endspecify
 
 endmodule
