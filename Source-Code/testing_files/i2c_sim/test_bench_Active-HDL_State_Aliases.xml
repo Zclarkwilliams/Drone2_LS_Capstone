@@ -6,22 +6,33 @@
 			<Mapping value="1" mnemonic="BOOT"/>
 			<Mapping value="2" mnemonic="BOOT_WAIT"/>
 			<Mapping value="3" mnemonic="VL53L1X_ID"/>
-			<Mapping value="13" mnemonic="BNO055_ID"/>
-			<Mapping value="14" mnemonic="SET_UNITS"/>
-			<Mapping value="15" mnemonic="SET_POWER"/>
-			<Mapping value="16" mnemonic="CAL_DATA"/>
-			<Mapping value="17" mnemonic="CAL_START"/>
-			<Mapping value="18" mnemonic="CAL_WAIT"/>
-			<Mapping value="19" mnemonic="CAL_STOP"/>
-			<Mapping value="20" mnemonic="CAL_AGAIN"/>
-			<Mapping value="21" mnemonic="SET_EXT_XTL"/>
-			<Mapping value="22" mnemonic="SET_RUN"/>
-			<Mapping value="23" mnemonic="WAIT_20MS"/>
-			<Mapping value="24" mnemonic="DATA_BURST"/>
-			<Mapping value="25" mnemonic="WAIT_POLL"/>
-			<Mapping value="26" mnemonic="START"/>
-			<Mapping value="27" mnemonic="WAIT_I2C"/>
-			<Mapping value="28" mnemonic="STOP"/>
+			<Mapping value="4" mnemonic="VL53L1X_FRM_RDY"/>
+			<Mapping value="5" mnemonic="BNO055_ID"/>
+			<Mapping value="6" mnemonic="BNO055_SET_UNITS"/>
+			<Mapping value="7" mnemonic="BNO055_SET_POWER"/>
+			<Mapping value="8" mnemonic="CAL_DATA"/>
+			<Mapping value="9" mnemonic="CAL_NEXT"/>
+			<Mapping value="10" mnemonic="CAL_AGAIN"/>
+			<Mapping value="11" mnemonic="BNO055_SET_EXT_XTL"/>
+			<Mapping value="12" mnemonic="BNO055_SET_RUN"/>
+			<Mapping value="13" mnemonic="VL53L1X_INIT_STA_MEAS"/>
+			<Mapping value="14" mnemonic="VL53L1X_INIT_POLL"/>
+			<Mapping value="15" mnemonic="VL53L1X_INIT_CLR_INT"/>
+			<Mapping value="16" mnemonic="VL53L1X_INIT_STO_MEAS"/>
+			<Mapping value="17" mnemonic="VL53L1X_INIT_TEMP_LOOP"/>
+			<Mapping value="18" mnemonic="VL53L1X_INIT_TEMP_CFG"/>
+			<Mapping value="19" mnemonic="VL53L1X_INIT_RX_OSC"/>
+			<Mapping value="20" mnemonic="VL53L1X_INIT_CALC"/>
+			<Mapping value="21" mnemonic="VL53L1X_INIT_TX_PERIOD"/>
+			<Mapping value="22" mnemonic="VL53L1X_ST_MEAS"/>
+			<Mapping value="23" mnemonic="WAIT_POLL"/>
+			<Mapping value="24" mnemonic="VL53L1X_POLL_RDY"/>
+			<Mapping value="25" mnemonic="VL53L1X_GET_MEAS"/>
+			<Mapping value="26" mnemonic="VL53L1X_CLR_INT"/>
+			<Mapping value="27" mnemonic="BNO055_DATA_BURST"/>
+			<Mapping value="28" mnemonic="START"/>
+			<Mapping value="29" mnemonic="WAIT_I2C"/>
+			<Mapping value="30" mnemonic="STOP"/>
 		</Alias>
 		<Alias name="i2c_state_cmd">
 			<Mapping value="0" mnemonic="RESET"/>

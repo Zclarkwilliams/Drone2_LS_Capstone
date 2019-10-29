@@ -26,7 +26,7 @@
  *          resetn_imu             Low active reset signal to IMU hardware to trigger reset
  *          imu_good               The IMU is either in an error or initial bootup states, measurements not yet active
  *          valid_strobe           Strobe signal that indicates the end of the data collection poll, subsequent modules key off this strobe.
-  *          accel_rate_x           Accelerometer X-Axis                Precision: 1 m/s^2 = 100 LSB
+ *          accel_rate_x           Accelerometer X-Axis                Precision: 1 m/s^2 = 100 LSB
  *          accel_rate_y           Accelerometer Y-Axis                Precision: 1 m/s^2 = 100 LSB
  *          accel_rate_z           Accelerometer Z-Axis                Precision: 1 m/s^2 = 100 LSB
  *          magneto_rate_x         Magnetometer X-Axis                 Precision: 1uT = 16 LSB
@@ -137,7 +137,6 @@ module i2c_device_driver #(
     reg  [5:0]BNO055_data_rx_reg_index;               //  Index in BNO055_data_rx_reg for current byte
     reg  [5:0]VL53L1X_data_rx_reg_index;              //  Index in VL53L1X_data_rx_reg for current byte from VL53L1X
     reg  [5:0]next_VL53L1X_data_rx_reg_index;         //  Manually set index in VL53L1X_data_rx_reg for next byte from VL53L1X
-    reg  set_VL53L1X_data_rx_reg_index;               //  Flag to indicate manual set of next VL53L1X_data_rx_reg_index 
     reg  [5:0]led_view_index;                         //  Index in BNO055_data_rx_reg that is being monitored with status LEDs
     reg  [5:0]next_led_view_index;                    //  Next value of LED View Index
     reg  [7:0]BNO055_data_rx_reg[`BNO055_DATA_RX_BYTE_REG_CNT-1:0];     //  Store all measurement bytes from BNO055 read burst
@@ -147,11 +146,11 @@ module i2c_device_driver #(
     reg  [31:0]next_VL53L1X_measurement_period;       //  Next value of calculated measurement period for the VL53L1X LiDAR sensor
     reg  [2:0]measurement_period_tx_index;            //  Pointer to byte of VL53L1X_measurement_period to transmit
     reg  [2:0]next_measurement_period_tx_index;       //  Next value of pointer to byte of VL53L1X_measurement_period to transmit
-    reg  resetn_BNO055_buffer;                        //  Negedge clears received measurement buffer
-    reg  next_resetn_BNO055_buffer;                   //  Negedge clears received measurement buffer
-    reg  resetn_VL53L1X_buffer;                       //  Negedge clears received measurement buffer
-    reg  next_resetn_VL53L1X_buffer;                  //  Negedge clears received measurement buffer
-    reg  rx_data_latch_strobe;                        //  Strobe data output register, latch onto current data in rx buffer, asynchronous latch
+    reg  VL53L1X_high_byte_bool;                      //  Indicates whether the next byte received from VL53L1X is a high byte or a low byte
+    reg  setn_BNO055_buffer;                          //  Negedge clears received measurement buffer
+    reg  next_setn_BNO055_buffer;                     //  Negedge clears received measurement buffer
+    reg  setn_VL53L1X_buffer;                         //  Negedge clears received measurement buffer
+    reg  next_setn_VL53L1X_buffer;                    //  Negedge clears received measurement buffer
     reg  next_imu_good;                               //  Next value of module imu_good bit
     reg  i2c_number;                                  //  The i2c module to call, 0 = i2c EFB #1, 1 = i2c EFB #2
     reg  rx_from_VL53L1X;                             //  Receiving from VL53L1X = 1, from BNO055 = 0
@@ -271,29 +270,19 @@ module i2c_device_driver #(
         end
     end
 
-    always@(posedge sys_clk, posedge set_VL53L1X_data_rx_reg_index, negedge resetn_VL53L1X_buffer, negedge resetn) begin
-        if(~resetn)
-            VL53L1X_data_rx_reg_index <= 'd0;
-        else if(~resetn_VL53L1X_buffer )
-            VL53L1X_data_rx_reg_index <= 'd0;
-        else if (set_VL53L1X_data_rx_reg_index)
-            VL53L1X_data_rx_reg_index <= next_VL53L1X_data_rx_reg_index;
-        else if (one_byte_ready) // A byte has been read by I2C
-            VL53L1X_data_rx_reg_index <= VL53L1X_data_rx_reg_index + 6'd1;
-    end
     //  During a read cycle increment the BNO055_data_rx_reg_index until it reaches the end of  BNO055_data_rx_reg
     //  If a byte has been read (one_byte_ready is asserted) assign it to the BNO055_data_rx_reg  byte array at the location specified by BNO055_data_rx_reg_index
-    always@(posedge sys_clk, negedge resetn_BNO055_buffer, negedge resetn) begin
+    always@(negedge one_byte_ready, negedge setn_BNO055_buffer, negedge resetn) begin
         if(~resetn) begin
             // Initialize data rx register to all 0s on reset
             for(BNO055_data_rx_reg_index = 0; BNO055_data_rx_reg_index < `BNO055_DATA_RX_BYTE_REG_CNT; BNO055_data_rx_reg_index = BNO055_data_rx_reg_index+'d1)
                 BNO055_data_rx_reg[BNO055_data_rx_reg_index]   <= 'd0;
             BNO055_data_rx_reg_index  <= 'd0;
         end
-        else if(~resetn_BNO055_buffer ) begin
+        else if(~setn_BNO055_buffer ) begin
             BNO055_data_rx_reg_index  <= 'd0;
         end
-        else if (one_byte_ready) begin  // A byte has been read by I2C
+        else if (one_byte_ready && (~rx_from_VL53L1X)) begin  // A byte has been read by I2C from BNO055
             if (~rx_from_VL53L1X) begin  // The byte is NOT from the VL53L1X
                 // If the index is pointing to the last index in the array, then rest pointer
                 // and write this byte to the start of the array
@@ -311,25 +300,56 @@ module i2c_device_driver #(
     end
 
 
+    // Increment VL53L1X data rx reg index and indicate high/low byte for 2 byte reads
+    always@(negedge sys_clk, negedge next_setn_VL53L1X_buffer, negedge resetn) begin
+        if(~resetn) begin
+            $display("%t, One VL53L1X byte ready of a one byte read", $time);
+            VL53L1X_data_rx_reg_index <= `VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX;
+            VL53L1X_high_byte_bool    <= `TRUE;
+        end
+        else if(one_byte_ready && rx_from_VL53L1X) begin // RX from VL53L1X
+            VL53L1X_data_rx_reg_index <= next_VL53L1X_data_rx_reg_index;
+            if (target_read_count  == 'd1) begin // Single byte read
+                $display("%t, One VL53L1X byte ready of a one byte read", $time);
+                VL53L1X_high_byte_bool     <= `TRUE;
+            end
+            else begin                     // A byte has been read by I2C - 2 byte read
+                $display("%t, One VL53L1X byte ready of a two byte read", $time);
+                if(VL53L1X_high_byte_bool) // This was the first byte
+                    VL53L1X_high_byte_bool <= `FALSE;
+                else
+                    VL53L1X_high_byte_bool <= `TRUE;
+            end
+        end
+        else if(~next_setn_VL53L1X_buffer && setn_VL53L1X_buffer ) begin // Only trigger on negedge
+            $display("%t, Setting VL53L1X buffer", $time);
+            VL53L1X_high_byte_bool    <= `TRUE;
+            VL53L1X_data_rx_reg_index <= next_VL53L1X_data_rx_reg_index;
+        end
+    end
+
     //  During a read cycle increment the VL53L1X_data_rx_reg_index until it reaches the end of  VL53L1X_data_rx_reg
     //  If a byte has been read (one_byte_ready is asserted) assign it to the VL53L1X_data_rx_reg byte array at the location specified by VL53L1X_data_rx_reg_index
-    always@(posedge sys_clk, negedge resetn_VL53L1X_buffer, negedge resetn) begin
+    always@(posedge one_byte_ready, negedge setn_VL53L1X_buffer, negedge resetn) begin
         if(~resetn) begin
-            VL53L1X_data_rx_reg[0] <= 'd0;
-            VL53L1X_data_rx_reg[1] <= 'd0;
-            VL53L1X_data_rx_reg[2] <= 'd0;
-            VL53L1X_data_rx_reg[3] <= 'd0;
-            VL53L1X_data_rx_reg[4] <= 'd0;
-            VL53L1X_data_rx_reg[5] <= 'd0;
-            VL53L1X_data_rx_reg[6] <= 'd0;
-            VL53L1X_data_rx_reg[7] <= 'd0;
-        end
-        else if(~resetn_VL53L1X_buffer ) begin
-            VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_FIRMWARE_SYSTEM_STATUS_INDEX] <= 'd0;
-            VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_DATA_RDY_INDEX]               <= 'd0;
+            VL53L1X_data_rx_reg[0] <= 8'hFF;
+            VL53L1X_data_rx_reg[1] <= 8'hFF;
+            VL53L1X_data_rx_reg[2] <= 8'hFF;
+            VL53L1X_data_rx_reg[3] <= 8'hFF;
+            VL53L1X_data_rx_reg[4] <= 8'hFF;
+            VL53L1X_data_rx_reg[5] <= 8'hFF;
+            VL53L1X_data_rx_reg[6] <= 8'hFF;
+            VL53L1X_data_rx_reg[7] <= 8'hFF;
         end
         else if (one_byte_ready && rx_from_VL53L1X) begin  // A byte has been read by I2C and byte is from the VL53L1X
-            VL53L1X_data_rx_reg[VL53L1X_data_rx_reg_index] <= data_rx;
+            if(VL53L1X_high_byte_bool)
+                VL53L1X_data_rx_reg[VL53L1X_data_rx_reg_index]       <= data_rx;
+            else
+                VL53L1X_data_rx_reg[VL53L1X_data_rx_reg_index + 'd1] <= data_rx;
+        end
+        else if(~setn_VL53L1X_buffer) begin // Clear firmware/data ready registers
+            VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_FIRMWARE_SYSTEM_STATUS_INDEX] <= 'd0;
+            VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_DATA_RDY_INDEX]               <= 'd0;
         end
     end
 
@@ -337,20 +357,20 @@ module i2c_device_driver #(
     //  Generates a 20ms countdown timer that enables module output valid strobe when it counts beyond 0
     //  When timer wraps around the enable signal is set for clock tick, or delayed for 1 additional tick
     //
-    //  If rx_data_latch_strobe is not asserted then the enable signal is asserted for one click tick
+    //  If one_byte_ready is not asserted then the enable signal is asserted for one click tick
     //  Otherwise it will not be asserted now and will be asserted at the next clock tick
     always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin  // Reset, set starting values
             master_trigger_count_ms <= `WAIT_MS_DIVIDER * POLL_INTERVAL;
             valid_strobe_enable     <= `FALSE;
         end
-        //  Timer wrapped around and rx_data_latch_strobe not asserted, reset timer and assert enable
-        else if( master_trigger_count_ms[20] == `TRUE && ~rx_data_latch_strobe) begin
+        //  Timer wrapped around and one_byte_ready NOT asserted, reset timer and assert enable
+        else if( master_trigger_count_ms[20] == `TRUE && (~one_byte_ready)) begin
             master_trigger_count_ms <= `WAIT_MS_DIVIDER * POLL_INTERVAL;
             valid_strobe_enable     <= `TRUE;
         end
-        //  Timer wrapped around and rx_data_latch_strobe is asserted, leave timer and do not assert enable
-        else if( master_trigger_count_ms[20] == `TRUE && rx_data_latch_strobe) begin
+        //  Timer wrapped around and one_byte_ready IS asserted, leave timer and do not assert enable
+        else if( master_trigger_count_ms[20] == `TRUE && one_byte_ready) begin
             master_trigger_count_ms <= master_trigger_count_ms;
             valid_strobe_enable     <= `FALSE;
         end
@@ -388,7 +408,7 @@ module i2c_device_driver #(
     //  Take data read byte array and assign the byte values to output data wires
     //  Most of the data outputs are 16 bit words
     //  This block is for BNO055 registers
-    always@(posedge sys_clk, posedge rx_data_latch_strobe, negedge resetn) begin
+    always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin
             accel_rate_x        <= 16'd0;
             accel_rate_y        <= 16'd0;
@@ -415,31 +435,53 @@ module i2c_device_driver #(
             temperature         <= 8'd0;
             calib_status        <= 8'd0;
         end
-        else if(rx_data_latch_strobe) begin
-            accel_rate_x        <= {BNO055_data_rx_reg[`BNO055_ACC_DATA_X_MSB_INDEX],BNO055_data_rx_reg[`BNO055_ACC_DATA_X_LSB_INDEX]};
-            accel_rate_y        <= {BNO055_data_rx_reg[`BNO055_ACC_DATA_Y_MSB_INDEX],BNO055_data_rx_reg[`BNO055_ACC_DATA_Y_LSB_INDEX]};
-            accel_rate_z        <= {BNO055_data_rx_reg[`BNO055_ACC_DATA_Z_MSB_INDEX],BNO055_data_rx_reg[`BNO055_ACC_DATA_Z_LSB_INDEX]};
-            magneto_rate_x      <= {BNO055_data_rx_reg[`BNO055_MAG_DATA_X_MSB_INDEX],BNO055_data_rx_reg[`BNO055_MAG_DATA_X_LSB_INDEX]};
-            magneto_rate_y      <= {BNO055_data_rx_reg[`BNO055_MAG_DATA_Y_MSB_INDEX],BNO055_data_rx_reg[`BNO055_MAG_DATA_Y_LSB_INDEX]};
-            magneto_rate_z      <= {BNO055_data_rx_reg[`BNO055_MAG_DATA_Z_MSB_INDEX],BNO055_data_rx_reg[`BNO055_MAG_DATA_Z_LSB_INDEX]};
-            gyro_rate_x         <= {BNO055_data_rx_reg[`BNO055_GYR_DATA_X_MSB_INDEX],BNO055_data_rx_reg[`BNO055_GYR_DATA_X_LSB_INDEX]};
-            gyro_rate_y         <= {BNO055_data_rx_reg[`BNO055_GYR_DATA_Y_MSB_INDEX],BNO055_data_rx_reg[`BNO055_GYR_DATA_Y_LSB_INDEX]};
-            gyro_rate_z         <= {BNO055_data_rx_reg[`BNO055_GYR_DATA_Z_MSB_INDEX],BNO055_data_rx_reg[`BNO055_GYR_DATA_Z_LSB_INDEX]};
-            euler_angle_x       <= {BNO055_data_rx_reg[`BNO055_EUL_DATA_X_MSB_INDEX],BNO055_data_rx_reg[`BNO055_EUL_DATA_X_LSB_INDEX]};
-            euler_angle_y       <= {BNO055_data_rx_reg[`BNO055_EUL_DATA_Y_MSB_INDEX],BNO055_data_rx_reg[`BNO055_EUL_DATA_Y_LSB_INDEX]};
-            euler_angle_z       <= {BNO055_data_rx_reg[`BNO055_EUL_DATA_Z_MSB_INDEX],BNO055_data_rx_reg[`BNO055_EUL_DATA_Z_LSB_INDEX]};
-            quaternion_data_w   <= {BNO055_data_rx_reg[`BNO055_QUA_DATA_W_MSB_INDEX],BNO055_data_rx_reg[`BNO055_QUA_DATA_W_LSB_INDEX]};
-            quaternion_data_x   <= {BNO055_data_rx_reg[`BNO055_QUA_DATA_X_MSB_INDEX],BNO055_data_rx_reg[`BNO055_QUA_DATA_X_LSB_INDEX]};
-            quaternion_data_y   <= {BNO055_data_rx_reg[`BNO055_QUA_DATA_Y_MSB_INDEX],BNO055_data_rx_reg[`BNO055_QUA_DATA_Y_LSB_INDEX]};
-            quaternion_data_z   <= {BNO055_data_rx_reg[`BNO055_QUA_DATA_Z_MSB_INDEX],BNO055_data_rx_reg[`BNO055_QUA_DATA_Z_LSB_INDEX]};
-            linear_accel_x      <= {BNO055_data_rx_reg[`BNO055_LIN_DATA_X_MSB_INDEX],BNO055_data_rx_reg[`BNO055_LIN_DATA_X_LSB_INDEX]};
-            linear_accel_y      <= {BNO055_data_rx_reg[`BNO055_LIN_DATA_Y_MSB_INDEX],BNO055_data_rx_reg[`BNO055_LIN_DATA_Y_LSB_INDEX]};
-            linear_accel_z      <= {BNO055_data_rx_reg[`BNO055_LIN_DATA_Z_MSB_INDEX],BNO055_data_rx_reg[`BNO055_LIN_DATA_Z_LSB_INDEX]};
-            gravity_accel_x     <= {BNO055_data_rx_reg[`BNO055_GRA_DATA_X_MSB_INDEX],BNO055_data_rx_reg[`BNO055_GRA_DATA_X_LSB_INDEX]};
-            gravity_accel_y     <= {BNO055_data_rx_reg[`BNO055_GRA_DATA_Y_MSB_INDEX],BNO055_data_rx_reg[`BNO055_GRA_DATA_Y_LSB_INDEX]};
-            gravity_accel_z     <= {BNO055_data_rx_reg[`BNO055_GRA_DATA_Z_MSB_INDEX],BNO055_data_rx_reg[`BNO055_GRA_DATA_Z_LSB_INDEX]};
-            temperature         <= BNO055_data_rx_reg[`BNO055_TEMPERATURE_DATA_INDEX];
-            calib_status        <= BNO055_data_rx_reg[`BNO055_CALIBRATION_DATA_INDEX];
+        else begin
+            accel_rate_x        <= {BNO055_data_rx_reg[`BNO055_ACC_DATA_X_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_ACC_DATA_X_LSB_INDEX]};
+            accel_rate_y        <= {BNO055_data_rx_reg[`BNO055_ACC_DATA_Y_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_ACC_DATA_Y_LSB_INDEX]};
+            accel_rate_z        <= {BNO055_data_rx_reg[`BNO055_ACC_DATA_Z_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_ACC_DATA_Z_LSB_INDEX]};
+            magneto_rate_x      <= {BNO055_data_rx_reg[`BNO055_MAG_DATA_X_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_MAG_DATA_X_LSB_INDEX]};
+            magneto_rate_y      <= {BNO055_data_rx_reg[`BNO055_MAG_DATA_Y_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_MAG_DATA_Y_LSB_INDEX]};
+            magneto_rate_z      <= {BNO055_data_rx_reg[`BNO055_MAG_DATA_Z_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_MAG_DATA_Z_LSB_INDEX]};
+            gyro_rate_x         <= {BNO055_data_rx_reg[`BNO055_GYR_DATA_X_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_GYR_DATA_X_LSB_INDEX]};
+            gyro_rate_y         <= {BNO055_data_rx_reg[`BNO055_GYR_DATA_Y_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_GYR_DATA_Y_LSB_INDEX]};
+            gyro_rate_z         <= {BNO055_data_rx_reg[`BNO055_GYR_DATA_Z_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_GYR_DATA_Z_LSB_INDEX]};
+            euler_angle_x       <= {BNO055_data_rx_reg[`BNO055_EUL_DATA_X_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_EUL_DATA_X_LSB_INDEX]};
+            euler_angle_y       <= {BNO055_data_rx_reg[`BNO055_EUL_DATA_Y_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_EUL_DATA_Y_LSB_INDEX]};
+            euler_angle_z       <= {BNO055_data_rx_reg[`BNO055_EUL_DATA_Z_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_EUL_DATA_Z_LSB_INDEX]};
+            quaternion_data_w   <= {BNO055_data_rx_reg[`BNO055_QUA_DATA_W_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_QUA_DATA_W_LSB_INDEX]};
+            quaternion_data_x   <= {BNO055_data_rx_reg[`BNO055_QUA_DATA_X_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_QUA_DATA_X_LSB_INDEX]};
+            quaternion_data_y   <= {BNO055_data_rx_reg[`BNO055_QUA_DATA_Y_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_QUA_DATA_Y_LSB_INDEX]};
+            quaternion_data_z   <= {BNO055_data_rx_reg[`BNO055_QUA_DATA_Z_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_QUA_DATA_Z_LSB_INDEX]};
+            linear_accel_x      <= {BNO055_data_rx_reg[`BNO055_LIN_DATA_X_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_LIN_DATA_X_LSB_INDEX]};
+            linear_accel_y      <= {BNO055_data_rx_reg[`BNO055_LIN_DATA_Y_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_LIN_DATA_Y_LSB_INDEX]};
+            linear_accel_z      <= {BNO055_data_rx_reg[`BNO055_LIN_DATA_Z_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_LIN_DATA_Z_LSB_INDEX]};
+            gravity_accel_x     <= {BNO055_data_rx_reg[`BNO055_GRA_DATA_X_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_GRA_DATA_X_LSB_INDEX]};
+            gravity_accel_y     <= {BNO055_data_rx_reg[`BNO055_GRA_DATA_Y_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_GRA_DATA_Y_LSB_INDEX]};
+            gravity_accel_z     <= {BNO055_data_rx_reg[`BNO055_GRA_DATA_Z_MSB_INDEX],
+                                    BNO055_data_rx_reg[`BNO055_GRA_DATA_Z_LSB_INDEX]};
+            temperature         <=  BNO055_data_rx_reg[`BNO055_TEMPERATURE_DATA_INDEX];
+            calib_status        <=  BNO055_data_rx_reg[`BNO055_CALIBRATION_DATA_INDEX];
         end
     end
 
@@ -448,18 +490,21 @@ module i2c_device_driver #(
     //  This block is for VL53L1X registers
     always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin
-            VL53L1X_chip_id     <= 16'd0;
-            VL53L1X_range_mm    <= 16'd0;
-            VL53L1X_data_rdy    <= 8'd0;
-            VL53L1X_firm_rdy    <= 8'd0;
-            VL53L1X_osc_cal_val <= 16'd0;
+            VL53L1X_chip_id     <= 16'hFF_FF;
+            VL53L1X_range_mm    <= 16'hFF_FF;
+            VL53L1X_data_rdy    <= 8'hFF;
+            VL53L1X_firm_rdy    <= 8'hFF;
+            VL53L1X_osc_cal_val <= 8'hFF;
         end
-        else if(rx_data_latch_strobe) begin
-            VL53L1X_chip_id     <= {VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX],                VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_CHIP_ID_LO_INDEX]};
-            VL53L1X_range_mm    <= {VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_RESULT_RANGE_MEASURE_MM_HI_INDEX],VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_RESULT_RANGE_MEASURE_MM_LO_INDEX]};
-            VL53L1X_data_rdy    <= VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_DATA_RDY_INDEX];
-            VL53L1X_firm_rdy    <= VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_FIRMWARE_SYSTEM_STATUS_INDEX];
-            VL53L1X_osc_cal_val <= {VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_RESULT_OSC_CAL_VAL_HI_INDEX],VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_RESULT_OSC_CAL_VAL_LO_INDEX]};
+        else begin
+            VL53L1X_chip_id     <= {VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX],
+                                    VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_CHIP_ID_LO_INDEX]};
+            VL53L1X_range_mm    <= {VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_RESULT_RANGE_MEASURE_MM_HI_INDEX],
+                                    VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_RESULT_RANGE_MEASURE_MM_LO_INDEX]};
+            VL53L1X_data_rdy    <=  VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_DATA_RDY_INDEX];
+            VL53L1X_firm_rdy    <=  VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_FIRMWARE_SYSTEM_STATUS_INDEX];
+            VL53L1X_osc_cal_val <= {VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_RESULT_OSC_CAL_VAL_HI_INDEX],
+                                    VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_RESULT_OSC_CAL_VAL_LO_INDEX]};
         end
     end
 
@@ -482,10 +527,9 @@ module i2c_device_driver #(
             is_2_byte_reg       <= `FALSE;
             VL53L1X_measurement_period  <= 32'd0;
             measurement_period_tx_index <= 3'd4;
-            resetn_BNO055_buffer        <= `TRUE;
-            resetn_VL53L1X_buffer       <= `TRUE;
+            setn_BNO055_buffer          <= `HIGH;
+            setn_VL53L1X_buffer         <= `HIGH;
             cal_reg_addr                <= `BNO055_ACCEL_OFFSET_X_LSB_ADDR;
-            //cal_reg_addr                <= `VL53L1X_PAD_I2C_HV_CONFIG_ADDR;
         end
         else begin
             data_reg            <= next_data_reg;
@@ -504,8 +548,8 @@ module i2c_device_driver #(
             is_2_byte_reg       <= next_is_2_byte_reg;
             VL53L1X_measurement_period  <= next_VL53L1X_measurement_period;
             measurement_period_tx_index <= next_measurement_period_tx_index;
-            resetn_BNO055_buffer        <= next_resetn_BNO055_buffer;
-            resetn_VL53L1X_buffer       <= next_resetn_VL53L1X_buffer;
+            setn_BNO055_buffer          <= next_setn_BNO055_buffer;
+            setn_VL53L1X_buffer         <= next_setn_VL53L1X_buffer;
             cal_reg_addr                <= next_cal_reg_addr;
         end
     end
@@ -514,54 +558,51 @@ module i2c_device_driver #(
     // IMU FSM, Determine next state of FSM and drive i2c module inputs
     always@(*) begin
         if( ~(resetn & resetn_imu) ) begin
-            next_imu_good             = `FALSE;
-            clear_waiting_ms          = `RUN_MS_TIMER;
-            count_ms_init_time        = `FALSE;
-            next_i2c_state            = `I2C_DRV_STATE_RESET;
-            next_return_state         = `I2C_DRV_STATE_RESET;
-            next_go_flag              = `NOT_GO;
-            next_data_reg             = `ALL_ZERO_2BYTE;
-            next_data_tx              = `BYTE_ALL_ZERO;
-            next_read_write_in        = `I2C_READ;
-            next_led_view_index       = `FALSE;
-            next_rx_from_VL53L1X      = `FALSE;
-            next_is_2_byte_reg        = `FALSE;
-            next_resetn_BNO055_buffer  = `LOW;  
-            next_resetn_VL53L1X_buffer = `LOW;
-            next_target_read_count    = 'd1;
-            rx_data_latch_strobe      = `LOW;
-            i2c_number                = 1'b0; // Default to i2c EFB #1
-            next_slave_address        = `VL53L1X_SLAVE_ADDRESS;
-            next_calibrated_once      = `FALSE;
-            set_VL53L1X_data_rx_reg_index    = `FALSE;
-            next_VL53L1X_data_rx_reg_index   = 8'd0;
+            next_imu_good            = `FALSE;
+            clear_waiting_ms         = `RUN_MS_TIMER;
+            count_ms_init_time       = `FALSE;
+            next_i2c_state           = `I2C_DRV_STATE_RESET;
+            next_return_state        = `I2C_DRV_STATE_RESET;
+            next_go_flag             = `NOT_GO;
+            next_data_reg            = `ALL_ZERO_2BYTE;
+            next_data_tx             = `BYTE_ALL_ZERO;
+            next_read_write_in       = `I2C_READ;
+            next_led_view_index      = `FALSE;
+            next_rx_from_VL53L1X     = `FALSE;
+            next_is_2_byte_reg       = `FALSE;
+            next_setn_BNO055_buffer  = `LOW;  
+            next_setn_VL53L1X_buffer = `LOW;
+            next_target_read_count   = 'd1;
+            i2c_number               = 1'b0; // Default to i2c EFB #1
+            next_slave_address       = `VL53L1X_SLAVE_ADDRESS;
+            next_calibrated_once     = `FALSE;
+            next_cal_VL53L1X_bool    = `FALSE;
+            next_VL53L1X_data_rx_reg_index   = `VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX;
             next_VL53L1X_measurement_period  = 32'd0;
             next_measurement_period_tx_index = 3'd3;
             next_cal_reg_addr                = `BNO055_ACCEL_OFFSET_X_LSB_ADDR;
-            //next_cal_reg_addr                = `VL53L1X_PAD_I2C_HV_CONFIG_ADDR;
         end
         else begin
             // Default to preserve these values, can be altered in lower steps
-            next_imu_good             = imu_good;
-            clear_waiting_ms          = `RUN_MS_TIMER;
-            count_ms_init_time        = `FALSE;
-            next_go_flag              = `NOT_GO;
-            next_i2c_state            = i2c_state;
-            next_return_state         = return_state;
-            next_data_reg             = data_reg;
-            next_data_tx              = data_tx;
-            next_read_write_in        = read_write_in;
-            next_led_view_index       = led_view_index;
-            next_rx_from_VL53L1X      = rx_from_VL53L1X;
-            next_is_2_byte_reg        = is_2_byte_reg;
-            next_resetn_BNO055_buffer  = `HIGH;  
-            next_resetn_VL53L1X_buffer = `HIGH;
-            next_target_read_count    = target_read_count;
-            rx_data_latch_strobe      = `LOW;
-            i2c_number                = 1'b0; // Default to i2c EFB #1
-            next_slave_address        = `VL53L1X_SLAVE_ADDRESS;
-            next_calibrated_once      = calibrated_once;
-            set_VL53L1X_data_rx_reg_index    = `FALSE;
+            next_imu_good            = imu_good;
+            clear_waiting_ms         = `RUN_MS_TIMER;
+            count_ms_init_time       = `FALSE;
+            next_go_flag             = `NOT_GO;
+            next_i2c_state           = i2c_state;
+            next_return_state        = return_state;
+            next_data_reg            = data_reg;
+            next_data_tx             = data_tx;
+            next_read_write_in       = read_write_in;
+            next_led_view_index      = led_view_index;
+            next_rx_from_VL53L1X     = rx_from_VL53L1X;
+            next_is_2_byte_reg       = is_2_byte_reg;
+            next_setn_BNO055_buffer  = `HIGH;  
+            next_setn_VL53L1X_buffer = `HIGH;
+            next_target_read_count   = target_read_count;
+            i2c_number               = 1'b0; // Default to i2c EFB #1
+            next_slave_address       = `VL53L1X_SLAVE_ADDRESS;
+            next_calibrated_once     = calibrated_once;
+            next_cal_VL53L1X_bool    = cal_VL53L1X_bool;
             next_VL53L1X_data_rx_reg_index   = VL53L1X_data_rx_reg_index;
             next_VL53L1X_measurement_period  = VL53L1X_measurement_period;
             next_measurement_period_tx_index = measurement_period_tx_index;
@@ -574,10 +615,10 @@ module i2c_device_driver #(
                     if(~delay_timer_started) //Timer not yet set to starting value
                         next_i2c_state      = `I2C_DRV_STATE_RESET;
                     else
-                        next_i2c_state        = `I2C_DRV_STATE_BOOT;
-                    next_slave_address        = `VL53L1X_SLAVE_ADDRESS;
-                    next_calibrated_once      = 1'b0;
-                    next_rx_from_VL53L1X      = `FALSE;
+                        next_i2c_state      = `I2C_DRV_STATE_BOOT;
+                    next_slave_address      = `VL53L1X_SLAVE_ADDRESS;
+                    next_calibrated_once    = 1'b0;
+                    next_rx_from_VL53L1X    = `FALSE;
                 end
                 `I2C_DRV_STATE_BOOT: begin
                     next_imu_good      = `FALSE;
@@ -590,15 +631,15 @@ module i2c_device_driver #(
                     else
                         next_i2c_state = `I2C_DRV_STATE_BOOT;
                     next_slave_address = `VL53L1X_SLAVE_ADDRESS;
-                    next_resetn_BNO055_buffer  = `LOW; // Clear BNO055 RX data buffer index
-                    next_resetn_VL53L1X_buffer = `LOW; // Clear VL53L1X RX data buffer index and data ready
+                    next_setn_BNO055_buffer  = `LOW; // Clear BNO055 RX data buffer index
+                    next_setn_VL53L1X_buffer = `LOW; // Clear VL53L1X data and firmware ready
                 end
                 `I2C_DRV_STATE_BOOT_WAIT: begin
                     next_imu_good      = `FALSE;
                     clear_waiting_ms   = `RUN_MS_TIMER;
                     count_ms_init_time = `FALSE;
-                    next_i2c_state     = `I2C_DRV_STATE_BOOT_WAIT;
                     next_slave_address = `VL53L1X_SLAVE_ADDRESS;
+                    next_setn_VL53L1X_buffer = `HIGH;
                     // Wait for I2C to be not busy and delay timer done
                     if(~busy && delay_timer_done)
                         next_i2c_state     = `I2C_VL53L1X_STATE_READ_CHIP_ID;
@@ -609,7 +650,6 @@ module i2c_device_driver #(
                     next_imu_good          = `FALSE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
-                    next_i2c_state         = `I2C_DRV_SUB_STATE_START;
                     next_return_state      = `I2C_VL53L1X_STATE_READ_FIRMWARE_READY;
                     next_data_reg          = `VL53L1X_IDENTIFICATION_MODEL_ID_ADDR;
                     next_data_tx           = `BYTE_ALL_ZERO;
@@ -617,16 +657,20 @@ module i2c_device_driver #(
                     next_rx_from_VL53L1X   = `TRUE;
                     next_is_2_byte_reg     = `TRUE;
                     next_target_read_count = 5'd2;
+                    set_reg_index(`VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX,
+                                  `I2C_VL53L1X_STATE_READ_CHIP_ID,
+                                  `I2C_DRV_SUB_STATE_START);
                     next_led_view_index    = 1'b0;
                 end
                 `I2C_VL53L1X_STATE_READ_FIRMWARE_READY: begin
                     next_imu_good          = `TRUE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
+                    set_reg_index(`VL53L1X_DATA_RX_REG_FIRMWARE_SYSTEM_STATUS_INDEX,
+                                  `I2C_VL53L1X_STATE_READ_FIRMWARE_READY,
+                                  `I2C_DRV_SUB_STATE_START);
                     if(VL53L1X_firm_rdy[0] == 1'b1) // If firmware ready, go to next state
                         next_i2c_state     = `I2C_BNO055_STATE_READ_CHIP_ID;
-                    else
-                        next_i2c_state     = `I2C_DRV_SUB_STATE_START;
                     next_return_state      = `I2C_VL53L1X_STATE_READ_FIRMWARE_READY;
                     next_data_reg          = `VL53L1X_FIRMWARE_SYSTEM_STATUS_ADDR;
                     next_data_tx           = `BYTE_ALL_ZERO;
@@ -634,10 +678,6 @@ module i2c_device_driver #(
                     next_rx_from_VL53L1X   = `TRUE;
                     next_is_2_byte_reg     = `TRUE;
                     next_target_read_count = 5'd1;
-                    set_VL53L1X_data_rx_reg_index  = `TRUE;
-                    next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_FIRMWARE_SYSTEM_STATUS_INDEX;
-                    next_cal_reg_addr              = `BNO055_ACCEL_OFFSET_X_LSB_ADDR;
-                    //next_cal_reg_addr              = `VL53L1X_PAD_I2C_HV_CONFIG_ADDR;
                 end
                 `I2C_BNO055_STATE_READ_CHIP_ID: begin // Page 0
                     next_imu_good          = `FALSE;
@@ -682,14 +722,21 @@ module i2c_device_driver #(
                     next_data_reg      = `BNO055_PWR_MODE_ADDR;
                     next_data_tx       = `BNO055_POWER_MODE_NORMAL;
                     next_read_write_in = `I2C_WRITE;
+                    next_cal_reg_addr  = `BNO055_ACCEL_OFFSET_X_LSB_ADDR;
                 end
                 `I2C_STATE_CAL_RESTORE_DATA: begin
                     next_imu_good      = `FALSE;
-                    if (cal_VL53L1X_bool && (cal_reg_addr <= `BNO055_MAG_RADIUS_MSB_ADDR)) begin // Calibration restore to BNO055
+                    if ((~cal_VL53L1X_bool) && (cal_reg_addr < `BNO055_MAG_RADIUS_MSB_ADDR)) begin       // Calibration restore to BNO055
                         next_cal_VL53L1X_bool = `FALSE;
                         next_slave_address    = `BNO055_SLAVE_ADDRESS;
                     end
-                    else begin                                                                   // Calibration restore to VL53L1X
+                    else if ((~cal_VL53L1X_bool) && (cal_reg_addr >= `BNO055_MAG_RADIUS_MSB_ADDR)) begin // Next iteration will be configure VL53L1X
+                        next_cal_VL53L1X_bool = `TRUE;
+                        next_slave_address    = `VL53L1X_SLAVE_ADDRESS;
+                        // Set the next calibration address, (Not the current one) - This pass is the last register in the BNO055
+                        next_cal_reg_addr     = `VL53L1X_PAD_I2C_HV_CONFIG_ADDR - 1; // Set to one less because it will increment once before being used
+                    end
+                    else begin                                                                        // Configure VL53L1X
                         next_cal_VL53L1X_bool = `TRUE;
                         next_slave_address    = `VL53L1X_SLAVE_ADDRESS;
                     end
@@ -823,22 +870,22 @@ module i2c_device_driver #(
                     next_data_tx       = data_tx;
                     next_read_write_in = read_write_in;
                     next_cal_reg_addr  = cal_reg_addr      + 8'd1;
-                    if(cal_reg_addr >= (`VL53L1X_SYSTEM_MODE_START_ADDR)) begin
+                    if(cal_reg_addr >= (`VL53L1X_SYSTEM_MODE_START_ADDR))
                         next_i2c_state = `I2C_STATE_CAL_RESTORE_AGAIN;
-                    end
-                    else begin
-                        next_i2c_state = `I2C_STATE_CAL_RESTORE_DATA;
-                    end
-                end
-                `I2C_STATE_CAL_RESTORE_AGAIN: begin // Restore calibration two times, to ensure that one calibration parameter doesn't need to be written before another.
-                    next_imu_good        = `FALSE;
-                    next_go_flag         = `NOT_GO;
-                    next_slave_address   = `BNO055_SLAVE_ADDRESS;
-                    next_calibrated_once = 1'b1;
-                    if(calibrated_once)
-                        next_i2c_state = `I2C_BNO055_STATE_SET_EXT_CRYSTAL;
                     else
                         next_i2c_state = `I2C_STATE_CAL_RESTORE_DATA;
+                end
+                `I2C_STATE_CAL_RESTORE_AGAIN: begin // Restore calibration two times, to ensure that one calibration parameter doesn't need to be written before another.
+                    next_imu_good         = `FALSE;
+                    next_go_flag          = `NOT_GO;
+                    next_slave_address    = `BNO055_SLAVE_ADDRESS;
+                    next_calibrated_once  = `TRUE;
+                    next_cal_VL53L1X_bool = `FALSE;
+                    next_cal_reg_addr     = `BNO055_ACCEL_OFFSET_X_LSB_ADDR;
+                    if(calibrated_once)
+                        next_i2c_state    = `I2C_BNO055_STATE_SET_EXT_CRYSTAL;
+                    else
+                        next_i2c_state    = `I2C_STATE_CAL_RESTORE_DATA;
                 end
                 `I2C_BNO055_STATE_SET_EXT_CRYSTAL: begin // Has to be done after calibration restore, for some odd reason not documented in IMU docs
                     next_imu_good      = `FALSE;
@@ -870,7 +917,7 @@ module i2c_device_driver #(
                     next_data_tx           = 8'h40;
                     next_read_write_in     = `I2C_WRITE;
                     next_is_2_byte_reg     = `TRUE;
-                    next_resetn_VL53L1X_buffer  = `LOW; // Clear VL53L1X RX data buffer index and data ready
+                    next_setn_VL53L1X_buffer = `LOW; // Clear VL53L1X data and firmware ready
                 end
                 `I2C_VL53L1X_STATE_INIT_POLL_DATA_READY: begin
                     next_imu_good          = `TRUE;
@@ -879,7 +926,9 @@ module i2c_device_driver #(
                     if(VL53L1X_data_rdy[0] == 1'b1) // If measurement ready, go to next state
                         next_i2c_state     = `I2C_VL53L1X_STATE_INIT_CLEAR_INTERRUPT;
                     else
-                        next_i2c_state     = `I2C_DRV_SUB_STATE_START;
+                        set_reg_index(`VL53L1X_DATA_RX_REG_DATA_RDY_INDEX,
+                                      `I2C_VL53L1X_STATE_INIT_POLL_DATA_READY,
+                                      `I2C_DRV_SUB_STATE_START);
                     next_return_state      = `I2C_VL53L1X_STATE_INIT_POLL_DATA_READY;
                     next_data_reg          = `VL53L1X_GPIO_TIO_HV_STATUS_ADDR;
                     next_data_tx           = `BYTE_ALL_ZERO;
@@ -887,8 +936,6 @@ module i2c_device_driver #(
                     next_rx_from_VL53L1X   = `TRUE;
                     next_is_2_byte_reg     = `TRUE;
                     next_target_read_count = 5'd1;
-                    set_VL53L1X_data_rx_reg_index  = `TRUE;
-                    next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_DATA_RDY_INDEX;
                 end
                 `I2C_VL53L1X_STATE_INIT_CLEAR_INTERRUPT: begin
                     next_imu_good          = `TRUE;
@@ -938,7 +985,6 @@ module i2c_device_driver #(
                     next_imu_good          = `TRUE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
-                    next_i2c_state         = `I2C_DRV_SUB_STATE_START;
                     next_return_state      = `I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_CALCULATE;
                     next_data_reg          = `VL53L1X_RESULT_OSC_CALIBRATE_VAL_ADDR;
                     next_data_tx           = `BYTE_ALL_ZERO;
@@ -946,8 +992,9 @@ module i2c_device_driver #(
                     next_rx_from_VL53L1X   = `TRUE;
                     next_is_2_byte_reg     = `TRUE;
                     next_target_read_count = 5'd2;
-                    set_VL53L1X_data_rx_reg_index  = `TRUE;
-                    next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_RESULT_OSC_CAL_VAL_HI_INDEX;
+                    set_reg_index(`VL53L1X_DATA_RX_REG_RESULT_OSC_CAL_VAL_HI_INDEX,
+                                  `I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_RX_OSC_VAL,
+                                  `I2C_DRV_SUB_STATE_START);
                 end
                 `I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_CALCULATE: begin
                     next_imu_good          = `TRUE;
@@ -984,13 +1031,15 @@ module i2c_device_driver #(
                     next_go_flag           = `NOT_GO;
                     clear_waiting_ms       = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
                     count_ms_init_time     = `FALSE;          // Make sure this is a POLL_INTERVAL timer
-                    next_i2c_state         = `I2C_DRV_SUB_STATE_START;
+                    if(delay_timer_at_poll)
+                        next_i2c_state     = `I2C_DRV_SUB_STATE_START;
+                    else
+                        next_i2c_state     = `I2C_VL53L1X_STATE_START_MEASURE;
                     next_return_state      = `I2C_DRV_STATE_WAIT_IMU_POLL_TIME;
                     next_data_reg          = `VL53L1X_SYSTEM_MODE_START_ADDR;
                     next_data_tx           = 8'h40;
                     next_read_write_in     = `I2C_WRITE;
                     next_is_2_byte_reg     = `TRUE;
-                    next_resetn_VL53L1X_buffer  = `LOW; // Clear VL53L1X RX data buffer index and data ready
                 end
                 `I2C_DRV_STATE_WAIT_IMU_POLL_TIME: begin     // Wait 20 ms between polls to maintain 50Hz polling rate
                                                             // wait time is i2c time + time spent here, for a total of 20ms,
@@ -1002,8 +1051,8 @@ module i2c_device_driver #(
                     next_data_reg          = `ALL_ZERO_2BYTE;
                     next_data_tx           = `BYTE_ALL_ZERO;
                     next_go_flag           = `NOT_GO;
-                    next_resetn_BNO055_buffer   = `LOW; // Clear BNO055 RX data buffer index
-                    next_resetn_VL53L1X_buffer  = `LOW; // Clear VL53L1X RX data buffer index and data ready
+                    next_setn_BNO055_buffer  = `LOW; // Clear BNO055 RX data buffer index
+                    next_setn_VL53L1X_buffer = `LOW; // Clear VL53L1X data and firmware ready
                     if(delay_timer_done)
                         next_i2c_state     = `I2C_VL53L1X_STATE_POLL_READY;
                     else
@@ -1016,7 +1065,9 @@ module i2c_device_driver #(
                     if(VL53L1X_data_rdy[0] == 1'b1) // If measurement ready, go to next state
                         next_i2c_state     = `I2C_VL53L1X_STATE_GET_MEASUREMENT;
                     else
-                        next_i2c_state     = `I2C_DRV_SUB_STATE_START;
+                        set_reg_index(`VL53L1X_DATA_RX_REG_DATA_RDY_INDEX,
+                                      `I2C_VL53L1X_STATE_POLL_READY,
+                                      `I2C_DRV_SUB_STATE_START);
                     next_return_state      = `I2C_VL53L1X_STATE_POLL_READY;
                     next_data_reg          = `VL53L1X_GPIO_TIO_HV_STATUS_ADDR;
                     next_data_tx           = `BYTE_ALL_ZERO;
@@ -1024,14 +1075,11 @@ module i2c_device_driver #(
                     next_rx_from_VL53L1X   = `TRUE;
                     next_is_2_byte_reg     = `TRUE;
                     next_target_read_count = 5'd1;
-                    set_VL53L1X_data_rx_reg_index  = `TRUE;
-                    next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_DATA_RDY_INDEX;
                 end
                 `I2C_VL53L1X_STATE_GET_MEASUREMENT: begin
                     next_imu_good          = `TRUE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
-                    next_i2c_state         = `I2C_DRV_SUB_STATE_START;
                     next_return_state      = `I2C_VL53L1X_STATE_CLEAR_INTERRUPT;
                     next_data_reg          = `VL53L1X_RESULT_FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0_ADDR;
                     next_data_tx           = `BYTE_ALL_ZERO;
@@ -1039,8 +1087,9 @@ module i2c_device_driver #(
                     next_rx_from_VL53L1X   = `TRUE;
                     next_is_2_byte_reg     = `TRUE;
                     next_target_read_count = 5'd2;
-                    set_VL53L1X_data_rx_reg_index  = `TRUE;
-                    next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_RESULT_RANGE_MEASURE_MM_HI_INDEX;
+                    set_reg_index(`VL53L1X_DATA_RX_REG_RESULT_RANGE_MEASURE_MM_HI_INDEX,
+                                  `I2C_VL53L1X_STATE_GET_MEASUREMENT,
+                                  `I2C_DRV_SUB_STATE_START);
                 end
                 `I2C_VL53L1X_STATE_CLEAR_INTERRUPT: begin
                     next_imu_good          = `TRUE;
@@ -1048,7 +1097,10 @@ module i2c_device_driver #(
                     next_go_flag           = `NOT_GO;
                     clear_waiting_ms       = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
                     count_ms_init_time     = `FALSE;          // Make sure this is a POLL_INTERVAL timer
-                    next_i2c_state         = `I2C_DRV_SUB_STATE_START;
+                    if(delay_timer_at_poll)
+                        next_i2c_state     = `I2C_DRV_SUB_STATE_START;
+                    else
+                        next_i2c_state     = `I2C_VL53L1X_STATE_CLEAR_INTERRUPT;
                     next_return_state      = `I2C_BNO055_STATE_READ_DATA_BURST;
                     next_data_reg          = `VL53L1X_SYSTEM_INTERRUPT_CLEAR_ADDR;
                     next_data_tx           = 8'h01;
@@ -1060,7 +1112,6 @@ module i2c_device_driver #(
                     count_ms_init_time     = `FALSE;          // Make sure this is a POLL_INTERVAL timer
                     next_slave_address     = `BNO055_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
-                    next_i2c_state         = `I2C_DRV_SUB_STATE_START;
                     next_return_state      = `I2C_DRV_STATE_WAIT_IMU_POLL_TIME;
                     next_data_reg          = `BNO055_ACCEL_DATA_X_LSB_ADDR;
                     next_data_tx           = `BYTE_ALL_ZERO;
@@ -1098,9 +1149,6 @@ module i2c_device_driver #(
                     next_data_reg          = `ALL_ZERO_2BYTE;
                     next_data_tx           = `BYTE_ALL_ZERO;
                     clear_waiting_ms       = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
-                    next_i2c_state         = `I2C_STATE_WAIT_1MS;
-                    if(read_write_in == `I2C_READ) // Only latch data if this was a read
-                        rx_data_latch_strobe = `HIGH;
                     next_i2c_state         = return_state;
                 end
 
@@ -1120,14 +1168,37 @@ module i2c_device_driver #(
                     next_led_view_index    = `FALSE;
                     next_rx_from_VL53L1X   = `FALSE;
                     next_is_2_byte_reg     = `FALSE;
-                    next_resetn_BNO055_buffer   = `LOW; // Clear BNO055 RX data buffer index
-                    next_resetn_VL53L1X_buffer  = `LOW; // Clear VL53L1X RX data buffer index and data ready
+                    next_setn_BNO055_buffer  = `LOW; // Clear BNO055 RX data buffer index
+                    next_setn_VL53L1X_buffer = `LOW; // Clear VL53L1X data and firmware ready
                     next_target_read_count = 1'b1;
-                    rx_data_latch_strobe   = `LOW;
                     i2c_number             = 1'b0; // Default to i2c EFB #1
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                 end
             endcase
         end
     end
+    task automatic set_reg_index;
+        input reg [5:0] index;
+        input reg [`I2C_DRV_STATE_BITS-1:0] this_state;
+        input reg [`I2C_DRV_STATE_BITS-1:0] next_state;
+        begin
+            $display("%t, VL53L1X_high_byte_bool is %b", $time, VL53L1X_high_byte_bool);
+            $display("%t, VL53L1X_data_rx_reg_index is %b", $time, VL53L1X_data_rx_reg_index);
+            $display("%t, index is %b", $time, index);
+            $display("%t, VL53L1X_high_byte_bool && (VL53L1X_data_rx_reg_index == index) is %b", $time, (VL53L1X_high_byte_bool && (VL53L1X_data_rx_reg_index == index)));
+            $display("%t, (~VL53L1X_high_byte_bool && (VL53L1X_data_rx_reg_index == (index + 'd1))) is %b", $time, (~VL53L1X_high_byte_bool && (VL53L1X_data_rx_reg_index == (index + 'd1))));
+            next_setn_VL53L1X_buffer       = `HIGH;
+            next_VL53L1X_data_rx_reg_index = index;
+            if( (VL53L1X_high_byte_bool && (VL53L1X_data_rx_reg_index == index)) || (~VL53L1X_high_byte_bool && (VL53L1X_data_rx_reg_index == (index + 'd1))) ) begin
+                $display("%t, Ready to go to the next state", $time);
+                next_setn_VL53L1X_buffer = `HIGH;
+                next_i2c_state           = next_state;
+            end
+            else begin
+                $display("%t, Not ready, stay in this state", $time);
+                next_setn_VL53L1X_buffer = `LOW;
+                next_i2c_state           = this_state;
+            end
+        end
+    endtask
 endmodule
