@@ -46,6 +46,7 @@ module drone2 (
     output wire motor_3_pwm,
     output wire motor_4_pwm,
     output wire resetn_imu,
+    //output wire resetn_lidar,
     output wire resetn_lidar,
     output reg  [7:0] led_data_out,
     // Inputs
@@ -163,6 +164,9 @@ module drone2 (
     wire next_imu_good;
     reg  imu_data_valid;
     wire next_imu_data_valid;
+    
+    
+    wire trash;
     
     //--------- Auto Mode Controller Wires --------//
     wire  [`REC_VAL_BIT_WIDTH-1:0] amc_throttle_val;
@@ -328,7 +332,8 @@ module drone2 (
         .resetn(resetn),
         .sys_clk(sys_clk),
         .resetn_imu(resetn_imu),
-        .resetn_lidar(resetn_lidar),
+        .resetn_lidar(trash),
+        //.resetn_lidar(resetn_lidar),
         .next_mod_active(throttle_controller_active)
     );
 
@@ -528,7 +533,8 @@ module drone2 (
         //.debug_16_in_16_bits({8'd0, VL53L1X_firm_rdy}),
         //.debug_16_in_16_bits({8'd0, VL53L1X_data_rdy}),
         .debug_17_in_16_bits({8'd0, i2c_driver_debug}),
-        .debug_18_in_16_bits({8'd0, VL53L1X_data_rdy}),
+        .debug_18_in_16_bits({8'd0, VL53L1X_firm_rdy}),
+        //.debug_18_in_16_bits({8'd0, VL53L1X_data_rdy}),
         //.debug_19_in_16_bits(VL53L1X_range_mm)
         .debug_19_in_16_bits({8'd0, i2c_top_debug})
 
@@ -620,6 +626,8 @@ module drone2 (
     //assign tc_enable_n   = `LOW_ACTIVE_DISABLE; // Disable TC
     //assign soft_reset_n  = `LOW_ACTIVE_DISABLE; // Disable this reset for now, connect if soft reset is needed and remove this line
         
+    
+    assign resetn_lidar = 1;
     /**
      * The section below is for use with Debug LEDs
      */

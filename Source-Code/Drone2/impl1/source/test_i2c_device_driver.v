@@ -75,7 +75,7 @@ module i2c_device_driver_tb();
                     .SEDSTDBY());
 
 
-    i2c_device_driver #(2) DUT(
+    i2c_device_driver #(10) DUT(
         .scl_1(scl_1),
         .sda_1(sda_1),
         .scl_2(scl_2),
