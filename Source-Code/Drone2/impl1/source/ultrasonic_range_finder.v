@@ -152,7 +152,7 @@ module ultrasonic_range_finder (
      
      Calculation in 32 bits from 18 bit  source data (reduces calculation error)
      
-     REturns 10 bit result, 
+     Returns 18 bit result, 
      
      Formula:
      Distance = time (In microseconds) * 1/58
@@ -168,7 +168,7 @@ module ultrasonic_range_finder (
         reg [31:0] urf_high_time_us_internal;
         reg [31:0] calc_urf_range_internal;
         begin
-            //Put this valie in ipper 18 bits, pad lower 14 bits with 0 
+            //Put this value in upper 18 bits, pad lower 14 bits with 0 
             urf_high_time_us_internal = {urf_high_time_us, 14'd0};
             calc_urf_range_internal   = ( (urf_high_time_us_internal>>6) +
                                           (urf_high_time_us_internal>>10) +
