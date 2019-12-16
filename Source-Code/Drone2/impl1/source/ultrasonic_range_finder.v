@@ -148,7 +148,7 @@ module ultrasonic_range_finder (
     assign z_linear_velocity = z_linear_velocity_calc;
 
     /*
-     Calculate URF distance: (time in ms/58)
+     Calculate URF distance: (time in us/58)
      
      Calculation in 32 bits from 18 bit  source data (reduces calculation error)
      
