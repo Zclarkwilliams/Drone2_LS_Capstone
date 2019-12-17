@@ -197,7 +197,7 @@ module ultrasonic_range_finder (
      
      Formula:
      Velocity = distance_delta * 0.080 (Runs every 80 ms)
-     in 32 bits, binary value = 0.0001010001111011
+     in 16 bits, binary value = 0.0001010001111011
                0.0  0  0  1  0  1  0  0  0  1  1  1  1  0  1  1
       SHAMT     01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16
      Velocity = z_linear_delta>>>4 + z_linear_delta>>>6 + z_linear_delta>>>10 + z_linear_delta>>>11....
