@@ -117,6 +117,7 @@
 `define I2C_BUS_HGC_RECEIVED        1'b1         // Received General Call
 `define I2C_BUS_HGC_NORMAL          1'b0         // No General Call Received
 `define WB_SLAVE_ADDRESS            7'b10000_01  // Wishbone bus slave address
+`define ENABLE_WATCHDOG_TIMER                    // Enable watchdog timer
 
 
 

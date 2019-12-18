@@ -24,6 +24,7 @@ module i2c_module(
     input  wire is_2_byte_reg,                      // This I2C device uses 2 byte registers, boolean 1 = true, 0 = false - If yes, then MSB transmitted first, then LSB
     input  wire read_write_in,                      // Input bit that indicates whether transaction is a read or a write, should be set before "go" is asserted
     input  wire go,                                 // Input signal to i2c module to begin transaction, needs to be asserted until busy output signal is returned
+    input  force_i2c_stall_n,                       // Forced stall of I2C bus, puts master in reset
     output reg  one_byte_ready,                     // Strobed when a data byte is read, signals that data has been latched
     input  wire sys_clk,                            // master clock for module, efb, and output to higher level modules
     input  wire i2c_number,                         // I2C EFB module to use 0 = EFB1, , 1= EFB2
@@ -66,32 +67,6 @@ module i2c_module(
 
     //  Module body
     //
-    // Assign I2C EFB registers their respective values
-    task set_efb_reg_addresses;
-        begin
-            efb_registers[`I2C_CR_INDEX]    [`I2C_1_INDEX] = `I2C_1_CR   ;
-            efb_registers[`I2C_CMDR_INDEX]  [`I2C_1_INDEX] = `I2C_1_CMDR ;
-            efb_registers[`I2C_BR0_INDEX]   [`I2C_1_INDEX] = `I2C_1_BR0  ;
-            efb_registers[`I2C_BR1_INDEX]   [`I2C_1_INDEX] = `I2C_1_BR1  ;
-            efb_registers[`I2C_TXDR_INDEX]  [`I2C_1_INDEX] = `I2C_1_TXDR ;
-            efb_registers[`I2C_SR_INDEX]    [`I2C_1_INDEX] = `I2C_1_SR   ;
-            efb_registers[`I2C_GCDR_INDEX]  [`I2C_1_INDEX] = `I2C_1_GCDR ;
-            efb_registers[`I2C_RXDR_INDEX]  [`I2C_1_INDEX] = `I2C_1_RXDR ;
-            efb_registers[`I2C_IRQ_INDEX]   [`I2C_1_INDEX] = `I2C_1_IRQ  ;
-            efb_registers[`I2C_IRQEN_INDEX] [`I2C_1_INDEX] = `I2C_1_IRQEN;
-            efb_registers[`I2C_CR_INDEX]    [`I2C_2_INDEX] = `I2C_2_CR;
-            efb_registers[`I2C_CMDR_INDEX]  [`I2C_2_INDEX] = `I2C_2_CMDR ;
-            efb_registers[`I2C_BR0_INDEX]   [`I2C_2_INDEX] = `I2C_2_BR0  ;
-            efb_registers[`I2C_BR1_INDEX]   [`I2C_2_INDEX] = `I2C_2_BR1  ;
-            efb_registers[`I2C_TXDR_INDEX]  [`I2C_2_INDEX] = `I2C_2_TXDR ;
-            efb_registers[`I2C_SR_INDEX]    [`I2C_2_INDEX] = `I2C_2_SR   ;
-            efb_registers[`I2C_GCDR_INDEX]  [`I2C_2_INDEX] = `I2C_2_GCDR ;
-            efb_registers[`I2C_RXDR_INDEX]  [`I2C_2_INDEX] = `I2C_2_RXDR ;
-            efb_registers[`I2C_IRQ_INDEX]   [`I2C_2_INDEX] = `I2C_2_IRQ  ;
-            efb_registers[`I2C_IRQEN_INDEX] [`I2C_2_INDEX] = `I2C_2_IRQEN;
-        end
-    endtask
-    
     
     assign i2c_top_debug = {2'b00, i2c_cmd_state};
 
@@ -138,7 +113,7 @@ module i2c_module(
             wd_event_active <= `FALSE;
         end
         else if ( (clear_watchdog  == `CLEAR_WD_TIMER) || (~resetn_imu) ) begin // If IMU is being rest keep WD from running
-            count_wd_delay <= (`WAIT_MS_DIVIDER*60);
+            count_wd_delay <= (`WAIT_MS_DIVIDER*100);
             wd_event_active <= `FALSE;
         end
         else if( count_wd_delay != 32'hFFFFFFFF  ) begin
@@ -152,8 +127,8 @@ module i2c_module(
     end
 
     // Advance state and next values at each positive clock edge
-    always@(posedge sys_clk, negedge resetn) begin
-        if( ~(resetn) ) begin
+    always@(posedge sys_clk, negedge resetn, negedge force_i2c_stall_n) begin
+        if( (~resetn) || (~force_i2c_stall_n) ) begin
             we             <= `FALSE;
             stb            <= `FALSE;
             addr           <= `BYTE_ALL_ZERO;
@@ -164,7 +139,27 @@ module i2c_module(
             one_byte_ready <= `FALSE;
             wd_event_count <= `BYTE_ALL_ZERO;
             byte_wr_left   <= 2'd0;
-            set_efb_reg_addresses();
+            // Set EFB register values
+            efb_registers[`I2C_CR_INDEX]    [`I2C_1_INDEX] = `I2C_1_CR   ;
+            efb_registers[`I2C_CMDR_INDEX]  [`I2C_1_INDEX] = `I2C_1_CMDR ;
+            efb_registers[`I2C_BR0_INDEX]   [`I2C_1_INDEX] = `I2C_1_BR0  ;
+            efb_registers[`I2C_BR1_INDEX]   [`I2C_1_INDEX] = `I2C_1_BR1  ;
+            efb_registers[`I2C_TXDR_INDEX]  [`I2C_1_INDEX] = `I2C_1_TXDR ;
+            efb_registers[`I2C_SR_INDEX]    [`I2C_1_INDEX] = `I2C_1_SR   ;
+            efb_registers[`I2C_GCDR_INDEX]  [`I2C_1_INDEX] = `I2C_1_GCDR ;
+            efb_registers[`I2C_RXDR_INDEX]  [`I2C_1_INDEX] = `I2C_1_RXDR ;
+            efb_registers[`I2C_IRQ_INDEX]   [`I2C_1_INDEX] = `I2C_1_IRQ  ;
+            efb_registers[`I2C_IRQEN_INDEX] [`I2C_1_INDEX] = `I2C_1_IRQEN;
+            efb_registers[`I2C_CR_INDEX]    [`I2C_2_INDEX] = `I2C_2_CR;
+            efb_registers[`I2C_CMDR_INDEX]  [`I2C_2_INDEX] = `I2C_2_CMDR ;
+            efb_registers[`I2C_BR0_INDEX]   [`I2C_2_INDEX] = `I2C_2_BR0  ;
+            efb_registers[`I2C_BR1_INDEX]   [`I2C_2_INDEX] = `I2C_2_BR1  ;
+            efb_registers[`I2C_TXDR_INDEX]  [`I2C_2_INDEX] = `I2C_2_TXDR ;
+            efb_registers[`I2C_SR_INDEX]    [`I2C_2_INDEX] = `I2C_2_SR   ;
+            efb_registers[`I2C_GCDR_INDEX]  [`I2C_2_INDEX] = `I2C_2_GCDR ;
+            efb_registers[`I2C_RXDR_INDEX]  [`I2C_2_INDEX] = `I2C_2_RXDR ;
+            efb_registers[`I2C_IRQ_INDEX]   [`I2C_2_INDEX] = `I2C_2_IRQ  ;
+            efb_registers[`I2C_IRQEN_INDEX] [`I2C_2_INDEX] = `I2C_2_IRQEN;
         end
         else begin
             addr           <= next_addr;
@@ -177,7 +172,6 @@ module i2c_module(
             one_byte_ready <= next_one_byte_ready;
             wd_event_count <= next_wd_event_count;
             byte_wr_left   <= next_byte_wr_left;
-            set_efb_reg_addresses();
         end
     end
 
@@ -251,6 +245,19 @@ module i2c_module(
             next_wd_event_count = 0;
             next_byte_wr_left   = 2'd0;
         end
+        else if (~force_i2c_stall_n) begin // I2C forced into stall mode - Do nothing while force_i2c_stall_n input is low
+            resetn_local        = `LOW; // Trigger manual reset of EFB I2C module
+            clear_waiting_us    = `CLEAR_US_TIMER;
+            clear_watchdog      = `CLEAR_WD_TIMER;
+            next_data_latch     = `FALSE;
+            busy                = `HIGH;
+            resetn_imu          = `HIGH; // Don't reset IMU - Allows external master to poll IMU settings
+            clear_byte_rd_left  = `HIGH;
+            next_i2c_cmd_state  = `I2C_STATE_RESET;
+            next_wd_event_count = 0;
+            next_byte_wr_left   = 2'd0;
+        end
+`ifdef ENABLE_WATCHDOG_TIMER
         else if (wd_event_active) begin // Handle watchdog timer wrap around, reset IMU and EFB
             resetn_local        = `LOW;
             clear_waiting_us    = `RUN_US_TIMER;
@@ -264,6 +271,7 @@ module i2c_module(
             if(wd_event_count[7] != 1'b1) // If this counter already hit 128, just stop, prevent wrap around and masking issue
                 next_wd_event_count = wd_event_count + 1'b1; // Increment event counter
         end
+`endif
         else begin
             case(i2c_cmd_state)
 //++++++++++++++++++++++++++++++++++++++++++++++++//
@@ -297,7 +305,7 @@ module i2c_module(
                         next_we            = `WB_WE_WRITE;
                         next_stb           = `WB_CMD_START;
                         next_addr          = efb_registers[`I2C_BR0_INDEX][i2c_number];
-                        //next_data_tx       = 8'd190; // Prescaler value for a 38.00 MHz clock to 400kHz i2c rate
+                        //next_data_tx       = 8'd190; // Prescaler value for a 38.00 MHz clock to 50kHz i2c rate
                         next_data_tx       = 8'd23; // Prescaler value for a 38.00 MHz clock to 400kHz i2c rate
                         next_ack_flag      = `TRUE;
                         resetn_imu         = `LOW;
@@ -768,6 +776,7 @@ module i2c_module(
                         next_ack_flag      = `FALSE;
                         next_i2c_cmd_state = `I2C_STATE_R_READ_SR2;
                         if(data_rx && (data_rx[`I2C_SR_RARC] == `I2C_BUS_RARC ) && (data_rx[`I2C_SR_TRRDY] == `I2C_BUS_TRRDY_READY)) begin
+                        //if(data_rx && (data_rx[`I2C_SR_TRRDY] == `I2C_BUS_TRRDY_READY)) begin
                             if(byte_wr_left == 2'd0)
                                 next_i2c_cmd_state = `I2C_STATE_R_SET_RD_MODE;
                             else
@@ -868,6 +877,7 @@ module i2c_module(
                         next_data_latch    = `FALSE;
                         next_i2c_cmd_state = `I2C_STATE_R_READ_SR3;
                         if(data_rx && (data_rx[`I2C_SR_RARC] == `I2C_BUS_RARC ) && (data_rx[`I2C_SR_TRRDY] == `I2C_BUS_TRRDY_READY)) begin
+                        //if(data_rx && (data_rx[`I2C_SR_TRRDY] == `I2C_BUS_TRRDY_READY)) begin
                             next_i2c_cmd_state = `I2C_STATE_R_READ_DATA1;
                         end
                     end

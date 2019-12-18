@@ -46,7 +46,6 @@ module drone2 (
     output wire motor_3_pwm,
     output wire motor_4_pwm,
     output wire resetn_imu,
-    //output wire resetn_lidar,
     output wire resetn_lidar,
     output reg  [7:0] led_data_out,
     // Inputs
@@ -58,6 +57,7 @@ module drone2 (
     input wire aux2_pwm,
     input wire swa_swb_pwm,
     input wire machxo3_switch_reset_n,
+    input wire force_i2c_stall_input_n,
     // Serial IO
     inout wire sda_1,
     inout wire sda_2,
@@ -91,7 +91,7 @@ module drone2 (
         yaac_complete,
         yaac_enable_n;
 
-    //---------------- IMU Wires ------------------//
+    //---------------- I2C Wires ------------------//
 
     wire [`IMU_VAL_BIT_WIDTH-1:0]
         next_x_rotation_angle,
@@ -162,7 +162,10 @@ module drone2 (
     wire ac_active;
     reg  imu_good;
     wire next_imu_good;
+    reg  lidar_good;
+    wire next_lidar_good;
     reg  imu_data_valid;
+    reg  force_i2c_stall_n;
     wire next_imu_data_valid;
     
     
@@ -287,10 +290,12 @@ module drone2 (
     i2c_device_driver #(
                         //.INIT_INTERVAL(16'd10_000),
                         .INIT_INTERVAL(16'd1_000),
-                        .POLL_INTERVAL(16'd20))
+                        .POLL_INTERVAL(16'd20)
+                        )
         I2C_Devices(
         // Outputs
         .imu_good(next_imu_good),
+        .lidar_good(next_lidar_good),
         .accel_rate_x(next_accel_rate_x),
         .accel_rate_y(next_accel_rate_y),
         .accel_rate_z(next_accel_rate_z),
@@ -320,6 +325,8 @@ module drone2 (
         .VL53L1X_range_mm(next_VL53L1X_range_mm),
         .VL53L1X_firm_rdy(next_VL53L1X_firm_rdy),
         .VL53L1X_data_rdy(next_VL53L1X_data_rdy),
+        .resetn_imu(resetn_imu),
+        .resetn_lidar(resetn_lidar),
         // DEBUG WIRE
         .led_data_out(next_i2c_driver_debug),
         .i2c_top_debug(next_i2c_top_debug),
@@ -331,9 +338,7 @@ module drone2 (
         // Inputs
         .resetn(resetn),
         .sys_clk(sys_clk),
-        .resetn_imu(resetn_imu),
-        //.resetn_lidar(trash),
-        .resetn_lidar(resetn_lidar),
+        .force_i2c_stall_n(force_i2c_stall_n),
         .next_mod_active(throttle_controller_active)
     );
 
@@ -527,13 +532,14 @@ module drone2 (
         .debug_11_in_16_bits({8'd0, aux1_val}),
         .debug_12_in_16_bits({8'd0, aux2_val}),
         .debug_13_in_16_bits({8'd0, swa_swb_val}),
-        .debug_14_in_16_bits({11'd0, switch_b, switch_a}),
-        .debug_15_in_16_bits(yaac_yaw_angle_target),
+        //.debug_14_in_16_bits({11'd0, switch_b, switch_a}),
+        .debug_14_in_16_bits({8'd0, i2c_driver_debug}),
+        //.debug_15_in_16_bits(yaac_yaw_angle_target),
+        //.debug_15_in_16_bits(VL53L1X_chip_id),
+        .debug_15_in_16_bits({8'd0, i2c_top_debug}),
+        //.debug_16_in_16_bits({8'd0, i2c_driver_debug}),
         .debug_16_in_16_bits(VL53L1X_chip_id),
-        //.debug_16_in_16_bits({8'd0, VL53L1X_firm_rdy}),
-        //.debug_16_in_16_bits({8'd0, VL53L1X_data_rdy}),
-        .debug_17_in_16_bits({8'd0, i2c_driver_debug}),
-        //.debug_18_in_16_bits({8'd0, VL53L1X_firm_rdy}),
+        .debug_17_in_16_bits({8'd0, VL53L1X_firm_rdy}),
         .debug_18_in_16_bits({8'd0, VL53L1X_data_rdy}),
         .debug_19_in_16_bits(VL53L1X_range_mm)
         //.debug_19_in_16_bits({8'd0, i2c_top_debug})
@@ -542,9 +548,10 @@ module drone2 (
 //*/
 
 
-    // Synchronously latc reset signal - Make this input not a clock resource
+    // Synchronously latc reset/force_i2c_stall_input_n signals - Make these input not clock resources
     always@(posedge sys_clk) begin
-        resetn <= machxo3_switch_reset_n;
+        resetn            <= machxo3_switch_reset_n;
+        force_i2c_stall_n <=force_i2c_stall_input_n;
     end
     
     // Synchronously latch IMU values, prevent timing issue with large asynchronous paths
@@ -580,6 +587,7 @@ module drone2 (
             VL53L1X_data_rdy  <= 'd0;
             imu_data_valid    <= `FALSE;
             imu_good          <= `FALSE;
+            lidar_good        <= `FALSE;
             i2c_driver_debug  <= 'd0;
             i2c_top_debug     <= 'd0;
         end
@@ -614,6 +622,7 @@ module drone2 (
             VL53L1X_data_rdy  <= next_VL53L1X_data_rdy;
             imu_data_valid    <= next_imu_data_valid;
             imu_good          <= next_imu_good;
+            lidar_good        <= next_lidar_good;
             i2c_driver_debug  <= next_i2c_driver_debug;
             i2c_top_debug     <= next_i2c_top_debug;
         end
@@ -626,8 +635,7 @@ module drone2 (
     //assign tc_enable_n   = `LOW_ACTIVE_DISABLE; // Disable TC
     //assign soft_reset_n  = `LOW_ACTIVE_DISABLE; // Disable this reset for now, connect if soft reset is needed and remove this line
         
-    
-    //assign resetn_lidar = 1;
+
     /**
      * The section below is for use with Debug LEDs
      */

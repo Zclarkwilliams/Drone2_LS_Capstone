@@ -161,10 +161,10 @@
 
 
 `define VL53L1X_INIT_VAL_PAD_I2C_HV_CONFIG                                      8'h00  // set bit 2 and 5 to 1 for fast plus mode (1MHz I2C) or 0x00 for regular (400 KHz or 50 KHz) 
-`define VL53L1X_INIT_VAL_PAD_I2C_HV_EXTSUP_CONFIG                               8'h00  // bit 0 if I2C pulled up at 1.8V, else set bit 0 to 1 (pull up at AVDD) 
-`define VL53L1X_INIT_VAL_GPIO_HV_PAD_CTRL                                       8'h00  // bit 0 if GPIO pulled up at 1.8V, else set bit 0 to 1 (pull up at AVDD)  
-`define VL53L1X_INIT_VAL_GPIO_HV_MUX_CTRL                                       8'h11  // set bit 4 to 0 for active high interrupt and 1 for active low (bits 3:0 must be 0x1) 
-`define VL53L1X_INIT_VAL_GPIO_TIO_HV_STATUS                                     8'h02  // bit 1 high = interrupt depending on the polarity
+`define VL53L1X_INIT_VAL_PAD_I2C_HV_EXTSUP_CONFIG                               8'h01  // bit 0 if I2C pulled up at 1.8V, else set bit 0 to 1 (pull up at AVDD) 
+`define VL53L1X_INIT_VAL_GPIO_HV_PAD_CTRL                                       8'h01  // bit 0 if GPIO pulled up at 1.8V, else set bit 0 to 1 (pull up at AVDD)  
+`define VL53L1X_INIT_VAL_GPIO_HV_MUX_CTRL                                       8'h01  // set bit 4 to 0 for active high interrupt and 1 for active low (bits 3:0 must be 0x1) 
+`define VL53L1X_INIT_VAL_GPIO_TIO_HV_STATUS                                     8'h02  // bit 0 high = interrupt depending on the polarity, bit 1 "fresh out of reset"
 `define VL53L1X_INIT_VAL_GPIO_FIO_HV_STATUS                                     8'h00 
 `define VL53L1X_INIT_VAL_ANA_CONFIG_SPAD_SEL_PSWIDTH                            8'h02 
 `define VL53L1X_INIT_VAL_ANA_CONFIG_VCSEL_PULSE_WIDTH_OFFSET                    8'h08 
@@ -179,7 +179,7 @@
 `define VL53L1X_INIT_VAL_ALGO_RANGE_IGNORE_THRESHOLD_MCPS_LO                    8'h00 
 `define VL53L1X_INIT_VAL_ALGO_RANGE_IGNORE_VALID_HEIGHT_MM                      8'hFF 
 `define VL53L1X_INIT_VAL_ALGO_RANGE_MIN_CLIP                                    8'h00 
-`define VL53L1X_INIT_VAL_ALGO_CONSISTENCY_CHECK_TOLERANCE                       8'h02//8'h0F 
+`define VL53L1X_INIT_VAL_ALGO_CONSISTENCY_CHECK_TOLERANCE                       8'h0F 
 `define VL53L1X_INIT_VAL_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_2                8'h00 
 `define VL53L1X_INIT_VAL_SD_CONFIG_RESET_STAGES_MSB                             8'h00 
 `define VL53L1X_INIT_VAL_SD_CONFIG_RESET_STAGES_LSB                             8'h00 
@@ -192,41 +192,41 @@
 `define VL53L1X_INIT_VAL_GLOBAL_CONFIG_VCSEL_WIDTH                              8'h02 
 `define VL53L1X_INIT_VAL_PHASECAL_CONFIG_TIMEOUT_MACROP                         8'h0A 
 `define VL53L1X_INIT_VAL_PHASECAL_CONFIG_TARGET                                 8'h21 
-`define VL53L1X_INIT_VAL_PHASECAL_CONFIG_OVERRIDE                               8'h01//8'h00 
+`define VL53L1X_INIT_VAL_PHASECAL_CONFIG_OVERRIDE                               8'h00 
 `define VL53L1X_INIT_VAL_UNNAMED_REG_0x004E                                     8'h00  
-`define VL53L1X_INIT_VAL_DSS_CONFIG_ROI_MODE_CONTROL                            8'h02//8'h05 
+`define VL53L1X_INIT_VAL_DSS_CONFIG_ROI_MODE_CONTROL                            8'h05 
 `define VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_HIGH_HI                             8'h00 
 `define VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_HIGH_LO                             8'h00 
 `define VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_LOW_HI                              8'h00 
 `define VL53L1X_INIT_VAL_SYSTEM_THRESH_RATE_LOW_LO                              8'h00 
-`define VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_HI            8'h0C//8'hC8 
-`define VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_LO            8'h65//8'h00 
+`define VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_HI            8'hC8 
+`define VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_LO            8'h00 
 `define VL53L1X_INIT_VAL_DSS_CONFIG_MANUAL_BLOCK_SELECT                         8'h00 
 `define VL53L1X_INIT_VAL_DSS_CONFIG_APERTURE_ATTENUATION                        8'h38 
 `define VL53L1X_INIT_VAL_DSS_CONFIG_MAX_SPADS_LIMIT                             8'hFF 
 `define VL53L1X_INIT_VAL_DSS_CONFIG_MIN_SPADS_LIMIT                             8'h01 
 `define VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_A_HI                          8'h00 
-`define VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_A_LO                          8'h00//8'h08 
+`define VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_A_LO                          8'h08 
 `define VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_B_HI                          8'h00 
 `define VL53L1X_INIT_VAL_MM_CONFIG_TIMEOUT_MACROP_B_LO                          8'h00 
 `define VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_A_HI                       8'h01 
-`define VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_A_LO                       9'hE8//8'hDB 
+`define VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_A_LO                       8'hDB 
 `define VL53L1X_INIT_VAL_RANGE_CONFIG_VCSEL_PERIOD_A                            8'h0F 
 `define VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_B_HI                       8'h01 
-`define VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_B_LO                       8'h85//8'hF1 
+`define VL53L1X_INIT_VAL_RANGE_CONFIG_TIMEOUT_MACROP_B_LO                       8'hF1 
 `define VL53L1X_INIT_VAL_RANGE_CONFIG_VCSEL_PERIOD_B                            8'h0D 
 `define VL53L1X_INIT_VAL_RANGE_CONFIG_SIGMA_THRESH_HI                           8'h01  // Sigma threshold MSB (mm in 14.2 format for MSB+LSB), default value 90 mm  
 `define VL53L1X_INIT_VAL_RANGE_CONFIG_SIGMA_THRESH_LO                           8'h68  // Sigma threshold LSB  
 `define VL53L1X_INIT_VAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_HI          8'h00  // Min count Rate MSB (MCPS in 9.7 format for MSB+LSB) 
-`define VL53L1X_INIT_VAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_LO          8'hC0//8'h80  // Min count Rate LSB  
+`define VL53L1X_INIT_VAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_LO          8'h80  // Min count Rate LSB  
 `define VL53L1X_INIT_VAL_RANGE_CONFIG_VALID_PHASE_LOW                           8'h08 
 `define VL53L1X_INIT_VAL_RANGE_CONFIG_VALID_PHASE_HIGH                          8'hB8 
 `define VL53L1X_INIT_VAL_UNNAMED_REG_0x006A                                     8'h00 
 `define VL53L1X_INIT_VAL_UNNAMED_REG_0x006B                                     8'h00 
 `define VL53L1X_INIT_VAL_SYSTEM_INTERMEASUREMENT_PERIOD_3                       8'h00  // Intermeasurement period MSB, 32 bits register  
 `define VL53L1X_INIT_VAL_SYSTEM_INTERMEASUREMENT_PERIOD_2                       8'h00  // Intermeasurement period  
-`define VL53L1X_INIT_VAL_SYSTEM_INTERMEASUREMENT_PERIOD_1                       8'h07//8'h0F  // Intermeasurement period  
-`define VL53L1X_INIT_VAL_SYSTEM_INTERMEASUREMENT_PERIOD_0                       8'h3A//8'h89  // Intermeasurement period LSB  
+`define VL53L1X_INIT_VAL_SYSTEM_INTERMEASUREMENT_PERIOD_1                       8'h0F  // Intermeasurement period  
+`define VL53L1X_INIT_VAL_SYSTEM_INTERMEASUREMENT_PERIOD_0                       8'h89  // Intermeasurement period LSB  
 `define VL53L1X_INIT_VAL_SYSTEM_FRACTIONAL_ENABLE                               8'h00 
 `define VL53L1X_INIT_VAL_SYSTEM_GROUPED_PARAMETER_HOLD_0                        8'h00 
 `define VL53L1X_INIT_VAL_SYSTEM_THRESH_HIGH_HI                                  8'h00  // distance threshold high MSB (in mm, MSB+LSB) 
@@ -244,105 +244,14 @@
 `define VL53L1X_INIT_VAL_SD_CONFIG_QUANTIFIER                                   8'h02 
 `define VL53L1X_INIT_VAL_ROI_CONFIG_USER_ROI_CENTRE_SPAD                        8'hC7  // ROI center 
 `define VL53L1X_INIT_VAL_ROI_CONFIG_USER_ROI_REQUESTED_GLOBAL_XY_SIZE           8'hFF  // XY ROI (X=Width, Y=Height) 
-`define VL53L1X_INIT_VAL_SYSTEM_SEQUENCE_CONFIG                                 8'h8B//8'h9B 
+`define VL53L1X_INIT_VAL_SYSTEM_SEQUENCE_CONFIG                                 8'h9B 
 `define VL53L1X_INIT_VAL_SYSTEM_GROUPED_PARAMETER_HOLD                          8'h00 
 `define VL53L1X_INIT_VAL_POWER_MANAGEMENT_GO1_POWER_FORCE                       8'h01  // POWER_MANAGEMENT_GO1_POWER_FORCE enable   
 `define VL53L1X_INIT_VAL_SYSTEM_STREAM_COUNT_CTRL                               8'h00 
 `define VL53L1X_INIT_VAL_FIRMWARE_ENABLE                                        8'h01 
-`define VL53L1X_INIT_VAL_SYSTEM_INTERRUPT_CLEAR                                 8'h01  // clear interrupt, write 0x01 here
+`define VL53L1X_INIT_VAL_SYSTEM_INTERRUPT_CLEAR                                 8'h03  // clear interrupt, write 0x01 here, clear error 0x02
 `define VL53L1X_INIT_VAL_SYSTEM_MODE_START                                      8'h00  // start/stop ranging 0x40 starts and 0x00 stops
 
-`define VL53L1X_CAL_PAD_I2C_HV_CONFIG_INDEX                                     'd22
-`define VL53L1X_CAL_PAD_I2C_HV_EXTSUP_CONFIG_INDEX                              'd23
-`define VL53L1X_CAL_GPIO_HV_PAD_CTRL_INDEX                                      'd24
-`define VL53L1X_CAL_GPIO_HV_MUX_CTRL_INDEX                                      'd25
-`define VL53L1X_CAL_GPIO_TIO_HV_STATUS_INDEX                                    'd26
-`define VL53L1X_CAL_GPIO_FIO_HV_STATUS_INDEX                                    'd27
-`define VL53L1X_CAL_ANA_CONFIG_SPAD_SEL_PSWIDTH_INDEX                           'd28
-`define VL53L1X_CAL_ANA_CONFIG_VCSEL_PULSE_WIDTH_OFFSET_INDEX                   'd29
-`define VL53L1X_CAL_ANA_CONFIG_FAST_OSC_CONFIG_CTRL_INDEX                       'd30
-`define VL53L1X_CAL_SIGMA_ESTIMATOR_EFFECTIVE_PULSE_WIDTH_NS_INDEX              'd31
-`define VL53L1X_CAL_SIGMA_ESTIMATOR_EFFECTIVE_AMBIENT_WIDTH_NS_INDEX            'd32
-`define VL53L1X_CAL_SIGMA_ESTIMATOR_SIGMA_REF_MM_INDEX                          'd33
-`define VL53L1X_CAL_ALGO_CROSSTALK_COMPENSATION_VALID_HEIGHT_MM_INDEX           'd34
-`define VL53L1X_CAL_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_0_INDEX               'd35
-`define VL53L1X_CAL_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_1_INDEX               'd36
-`define VL53L1X_CAL_ALGO_RANGE_IGNORE_THRESHOLD_MCPS_HI_INDEX                   'd37
-`define VL53L1X_CAL_ALGO_RANGE_IGNORE_THRESHOLD_MCPS_LO_INDEX                   'd38
-`define VL53L1X_CAL_ALGO_RANGE_IGNORE_VALID_HEIGHT_MM_INDEX                     'd39
-`define VL53L1X_CAL_ALGO_RANGE_MIN_CLIP_INDEX                                   'd40
-`define VL53L1X_CAL_ALGO_CONSISTENCY_CHECK_TOLERANCE_INDEX                      'd41
-`define VL53L1X_CAL_SPARE_HOST_CONFIG_STATIC_CONFIG_SPARE_2_INDEX               'd42
-`define VL53L1X_CAL_SD_CONFIG_RESET_STAGES_MSB_INDEX                            'd43
-`define VL53L1X_CAL_SD_CONFIG_RESET_STAGES_LSB_INDEX                            'd44
-`define VL53L1X_CAL_GPH_CONFIG_STREAM_COUNT_UPDATE_VALUE_INDEX                  'd45
-`define VL53L1X_CAL_GLOBAL_CONFIG_STREAM_DIVIDER_INDEX                          'd46
-`define VL53L1X_CAL_SYSTEM_INTERRUPT_CONFIG_GPIO_INDEX                          'd47
-`define VL53L1X_CAL_CAL_CONFIG_VCSEL_START_INDEX                                'd48
-`define VL53L1X_CAL_CAL_CONFIG_REPEAT_RATE_INDEX                                'd49
-`define VL53L1X_CAL_CAL_CONFIG_REPEAT_RATE_HI_INDEX                             'd50
-`define VL53L1X_CAL_CAL_CONFIG_REPEAT_RATE_LO_INDEX                             'd51
-`define VL53L1X_CAL_GLOBAL_CONFIG_VCSEL_WIDTH_INDEX                             'd52
-`define VL53L1X_CAL_PHASECAL_CONFIG_TIMEOUT_MACROP_INDEX                        'd53
-`define VL53L1X_CAL_PHASECAL_CONFIG_TARGET_INDEX                                'd54
-`define VL53L1X_CAL_PHASECAL_CONFIG_OVERRIDE_INDEX                              'd55
-`define VL53L1X_CAL_DSS_CONFIG_ROI_MODE_CONTROL_INDEX                           'd56
-`define VL53L1X_CAL_SYSTEM_THRESH_RATE_HIGH_HI_INDEX                            'd57
-`define VL53L1X_CAL_SYSTEM_THRESH_RATE_HIGH_LO_INDEX                            'd58
-`define VL53L1X_CAL_SYSTEM_THRESH_RATE_LOW_HI_INDEX                             'd59
-`define VL53L1X_CAL_SYSTEM_THRESH_RATE_LOW_LO_INDEX                             'd60
-`define VL53L1X_CAL_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_HI_INDEX           'd61
-`define VL53L1X_CAL_DSS_CONFIG_MANUAL_EFFECTIVE_SPADS_SELECT_LO_INDEX           'd62
-`define VL53L1X_CAL_DSS_CONFIG_MANUAL_BLOCK_SELECT_INDEX                        'd63
-`define VL53L1X_CAL_DSS_CONFIG_APERTURE_ATTENUATION_INDEX                       'd64
-`define VL53L1X_CAL_DSS_CONFIG_MAX_SPADS_LIMIT_INDEX                            'd65
-`define VL53L1X_CAL_DSS_CONFIG_MIN_SPADS_LIMIT_INDEX                            'd66
-`define VL53L1X_CAL_MM_CONFIG_TIMEOUT_MACROP_A_HI_INDEX                         'd67
-`define VL53L1X_CAL_MM_CONFIG_TIMEOUT_MACROP_A_LO_INDEX                         'd68
-`define VL53L1X_CAL_MM_CONFIG_TIMEOUT_MACROP_B_HI_INDEX                         'd69
-`define VL53L1X_CAL_MM_CONFIG_TIMEOUT_MACROP_B_LO_INDEX                         'd70
-`define VL53L1X_CAL_RANGE_CONFIG_TIMEOUT_MACROP_A_HI_INDEX                      'd71
-`define VL53L1X_CAL_RANGE_CONFIG_TIMEOUT_MACROP_A_LO_INDEX                      'd72
-`define VL53L1X_CAL_RANGE_CONFIG_VCSEL_PERIOD_A_INDEX                           'd73
-`define VL53L1X_CAL_RANGE_CONFIG_TIMEOUT_MACROP_B_HI_INDEX                      'd74
-`define VL53L1X_CAL_RANGE_CONFIG_TIMEOUT_MACROP_B_LO_INDEX                      'd75
-`define VL53L1X_CAL_RANGE_CONFIG_VCSEL_PERIOD_B_INDEX                           'd76
-`define VL53L1X_CAL_RANGE_CONFIG_SIGMA_THRESH_HI_INDEX                          'd77
-`define VL53L1X_CAL_RANGE_CONFIG_SIGMA_THRESH_LO_INDEX                          'd78
-`define VL53L1X_CAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_HI_INDEX         'd79
-`define VL53L1X_CAL_RANGE_CONFIG_MIN_COUNT_RATE_RTN_LIMIT_MCPS_LO_INDEX         'd80
-`define VL53L1X_CAL_RANGE_CONFIG_VALID_PHASE_LOW_INDEX                          'd81
-`define VL53L1X_CAL_RANGE_CONFIG_VALID_PHASE_HIGH_INDEX                         'd82
-`define VL53L1X_CAL_UNNAMED_REG_0x006A_INDEX                                    'd83
-`define VL53L1X_CAL_UNNAMED_REG_0x006B_INDEX                                    'd84
-`define VL53L1X_CAL_SYSTEM_INTERMEASUREMENT_PERIOD_3_INDEX                      'd85
-`define VL53L1X_CAL_SYSTEM_INTERMEASUREMENT_PERIOD_2_INDEX                      'd86
-`define VL53L1X_CAL_SYSTEM_INTERMEASUREMENT_PERIOD_1_INDEX                      'd87
-`define VL53L1X_CAL_SYSTEM_INTERMEASUREMENT_PERIOD_0_INDEX                      'd88
-`define VL53L1X_CAL_SYSTEM_FRACTIONAL_ENABLE_INDEX                              'd89
-`define VL53L1X_CAL_SYSTEM_GROUPED_PARAMETER_HOLD_0_INDEX                       'd90
-`define VL53L1X_CAL_SYSTEM_THRESH_HIGH_HI_INDEX                                 'd91
-`define VL53L1X_CAL_SYSTEM_THRESH_HIGH_LO_INDEX                                 'd92
-`define VL53L1X_CAL_SYSTEM_THRESH_LOW_HI_INDEX                                  'd93
-`define VL53L1X_CAL_SYSTEM_THRESH_LOW_LO_INDEX                                  'd94
-`define VL53L1X_CAL_SYSTEM_ENABLE_XTALK_PER_QUADRANT_INDEX                      'd95
-`define VL53L1X_CAL_SYSTEM_SEED_CONFIG_INDEX                                    'd96
-`define VL53L1X_CAL_SD_CONFIG_WOI_SD0_INDEX                                     'd97
-`define VL53L1X_CAL_SD_CONFIG_WOI_SD1_INDEX                                     'd98
-`define VL53L1X_CAL_SD_CONFIG_INITIAL_PHASE_SD0_INDEX                           'd99
-`define VL53L1X_CAL_SD_CONFIG_INITIAL_PHASE_SD1_INDEX                           'd100
-`define VL53L1X_CAL_SYSTEM_GROUPED_PARAMETER_HOLD_1_INDEX                       'd101
-`define VL53L1X_CAL_SD_CONFIG_FIRST_ORDER_SELECT_INDEX                          'd102
-`define VL53L1X_CAL_SD_CONFIG_QUANTIFIER_INDEX                                  'd103
-`define VL53L1X_CAL_ROI_CONFIG_USER_ROI_CENTRE_SPAD_INDEX                       'd104
-`define VL53L1X_CAL_ROI_CONFIG_USER_ROI_REQUESTED_GLOBAL_XY_SIZE_INDEX          'd105
-`define VL53L1X_CAL_SYSTEM_SEQUENCE_CONFIG_INDEX                                'd106
-`define VL53L1X_CAL_SYSTEM_GROUPED_PARAMETER_HOLD_INDEX                         'd107
-`define VL53L1X_CAL_POWER_MANAGEMENT_GO1_POWER_FORCE_INDEX                      'd108
-`define VL53L1X_CAL_SYSTEM_STREAM_COUNT_CTRL_INDEX                              'd109
-`define VL53L1X_CAL_FIRMWARE_ENABLE_INDEX                                       'd110
-`define VL53L1X_CAL_SYSTEM_INTERRUPT_CLEAR_INDEX                                'd111
-`define VL53L1X_CAL_SYSTEM_MODE_START_INDEX                                     'd112
 
 
 // Location of received data in the data_rx_reg array

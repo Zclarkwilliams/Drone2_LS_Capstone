@@ -16,6 +16,7 @@ module i2c_device_driver_tb();
     reg go;
     reg read_write_in = 1;
     reg next_mod_active_cmd;
+    reg force_i2c_stall_n = 1;
     
     
     parameter SLAVE_ADDR_VL53l1X = 7'h29;
@@ -34,6 +35,7 @@ module i2c_device_driver_tb();
     wire resetn_imu;
     wire resetn_lidar;
     wire imu_good;
+    wire lidar_good;
     wire valid_strobe;
     wire [15:0]accel_rate_x;
     wire [15:0]accel_rate_y;
@@ -75,7 +77,12 @@ module i2c_device_driver_tb();
                     .SEDSTDBY());
 
 
-    i2c_device_driver #(10) DUT(
+    i2c_device_driver #(
+                        //.INIT_INTERVAL(16'd1_000),
+                        .INIT_INTERVAL(16'd1),
+                        .POLL_INTERVAL(16'd2)
+                        )
+        DUT(
         .scl_1(scl_1),
         .sda_1(sda_1),
         .scl_2(scl_2),
@@ -87,7 +94,9 @@ module i2c_device_driver_tb();
         .next_mod_active(next_mod_active),
         .resetn_imu(resetn_imu),
         .resetn_lidar(resetn_lidar),
+        .force_i2c_stall_n(force_i2c_stall_n),
         .imu_good(imu_good),
+        .lidar_good(lidar_good),
         .valid_strobe(valid_strobe),
         .accel_rate_x(accel_rate_x),
         .accel_rate_y(accel_rate_y),
@@ -177,6 +186,7 @@ module i2c_device_driver_tb();
     // Test cases
     initial begin
         resetn = 1;
+        force_i2c_stall_n = 1;
         #10 resetn = 0;
         #10 resetn = 1;
         read_write_in = 0;
@@ -185,6 +195,17 @@ module i2c_device_driver_tb();
         //        $display("%t: efb_registers %1d EFB#%1d = %h", $time, i[4:0], (j[4:0]+1), bno055.i2c.efb_registers[i][j]);
         //    end
         //end
+        @(posedge resetn_lidar);
+        @(posedge lidar_good);
+        force_i2c_stall_n = 0;
+        @(posedge sys_clk);
+        @(posedge sys_clk);
+        @(posedge sys_clk);
+        @(posedge sys_clk);
+        force_i2c_stall_n = 1;
+        @(posedge sys_clk);
+        @(posedge sys_clk);
+        $stop;
         #500_000_000;
         $stop;
         end

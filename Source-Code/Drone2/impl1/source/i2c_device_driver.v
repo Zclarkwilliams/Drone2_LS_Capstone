@@ -72,14 +72,15 @@ module i2c_device_driver #(
     inout  wire sda_1,
     inout  wire sda_2,
     input  wire resetn,
-//    output reg  [7:0]led_data_out,
     output wire [7:0]led_data_out,
     output wire [7:0]i2c_top_debug,                         //  Debug signals for I2C top
     input  wire sys_clk,
     input  wire next_mod_active,
+    input  wire force_i2c_stall_n,
     output wire resetn_imu,
-    output wire resetn_lidar,
+    output reg  resetn_lidar,
     output reg  imu_good,
+    output reg  lidar_good,
     output reg  valid_strobe,
     output reg [15:0]accel_rate_x,
     output reg [15:0]accel_rate_y,
@@ -116,7 +117,11 @@ module i2c_device_driver #(
     reg  next_go_flag;                                //  Next value of the i2c module GO flag
     wire one_byte_ready;                              //  Flag from i2c module indicating that a byte has been received, data_rx is valid
     reg  previous_one_byte_ready;                     //  Value of one_byte_ready at previous clock tick
+    reg  posedge_one_byte_ready_BNO055;               //  Positive edge of one_byte_ready for BNO055  detected
+    reg  posedge_one_byte_ready_VL53L1X;              //  Positive edge of one_byte_ready for VL53L1X detected
     wire busy;                                        //  Flag from i2c module indicating that a transaction is in progress
+    reg  next_resetn_lidar;                           //  Next value of resetn_lidar
+    reg  next_lidar_good;                             //  Next value of lidar_good
     reg  [6:0]slave_address;                          //  Slave address of device being accessed
     reg  [6:0]next_slave_address;                     //  Next value of slave address of device being accessed
     reg  [15:0]data_reg;                              //  Register address of device being accessed
@@ -124,6 +129,7 @@ module i2c_device_driver #(
     reg  [7:0]data_tx;                                //  Data written to register of device being accessed
     reg  [7:0]next_data_tx;                           //  Next value of data written to register of device being accessed
     wire [7:0]data_rx;                                //  Receives an RX data byte from i2c module
+    reg  [7:0]data_rx_latched;                        //  Latched value of received RX data byte
     reg  [`I2C_DRV_STATE_BITS-1:0]i2c_state;          //  State for i2c command sequence FSM
     reg  [`I2C_DRV_STATE_BITS-1:0]next_i2c_state;     //  Next FSM state
     reg  [`I2C_DRV_STATE_BITS-1:0]return_state;       //  FSM return state from i2c sub state
@@ -148,16 +154,19 @@ module i2c_device_driver #(
     reg  [2:0]measurement_period_tx_index;            //  Pointer to byte of VL53L1X_measurement_period to transmit
     reg  [2:0]next_measurement_period_tx_index;       //  Next value of pointer to byte of VL53L1X_measurement_period to transmit
     reg  VL53L1X_high_byte_bool;                      //  Indicates whether the next byte received from VL53L1X is a high byte or a low byte
-    reg  setn_BNO055_buffer;                          //  Negedge clears received measurement buffer
-    reg  next_setn_BNO055_buffer;                     //  Negedge clears received measurement buffer
-    reg  setn_VL53L1X_buffer;                         //  Negedge clears received measurement buffer
-    reg  next_setn_VL53L1X_buffer;                    //  Negedge clears received measurement buffer
+    reg  next_VL53L1X_high_byte_bool;                 //  Indicates whether the next byte received from VL53L1X is a high byte or a low byte
+    reg  setn_BNO055_buff;                            //  Negedge clears received measurement buffer
+    reg  next_setn_BNO055_buff;                       //  Negedge clears received measurement buffer
+    reg  clrn_VL53L1X_firm;                           //  Negedge clears VL53L1X firmware status buffer
+    reg  next_clrn_VL53L1X_firm;                      //  Negedge clears VL53L1X firmware status buffer
+    reg  clrn_VL53L1X_data;                           //  Negedge clears VL53L1X data ready status buffer
+    reg  next_clrn_VL53L1X_data;                      //  Negedge clears VL53L1X data ready status buffer
     reg  next_imu_good;                               //  Next value of module imu_good bit
     reg  i2c_number;                                  //  The i2c module to call, 0 = i2c EFB #1, 1 = i2c EFB #2
     reg  rx_from_VL53L1X;                             //  Receiving from VL53L1X = 1, from BNO055 = 0
     reg  next_rx_from_VL53L1X;                        //  Receiving from VL53L1X = 1, from BNO055 = 0
-    reg [15:0]cal_reg_addr;                            //  Current IMU register address that this calibration data is destined for
-    reg [15:0]next_cal_reg_addr;                       //  Current IMU register address that this calibration data is destined for
+    reg [15:0]cal_reg_addr;                           //  Current IMU register address that this calibration data is destined for
+    reg [15:0]next_cal_reg_addr;                      //  Current IMU register address that this calibration data is destined for
     reg calibrated_once;                              //  Flag that specifies whether the calibration has been restored once yet or not, used to run calibration twice
     reg next_calibrated_once;                         //  The next value of the calibrated once flag
     reg valid_strobe_enable;                          //  Enables the valid_strobe for one or two clock cycles
@@ -176,18 +185,18 @@ module i2c_device_driver #(
     //  Module body
     //
     // Changed this from 81 to 41 since LED2 is burned out on the board I am testing with
-    //assign led_data_out = (i2c_state    <= `I2C_DRV_STATE_BOOT_WAIT ) ? 8'h41 : BNO055_data_rx_reg[led_view_index]; //  Output for calibration status LEDs OR indicates that the IMU is in reset
+    //assign led_data_out = (i2c_state    <= `I2C_DRV_STATE_INIT ) ? 8'h41 : BNO055_data_rx_reg[led_view_index]; //  Output for calibration status LEDs OR indicates that the IMU is in reset
     assign led_data_out = return_state;
     //assign led_data_out = VL53L1X_data_rx_reg_index;
 
 
-    assign i2c_top_debug = {2'b00, VL53L1X_data_rx_reg_index};
+    assign i2c_top_debug = i2c_state;
 
 
 
 
     // resetn_lidar follows resetn_imu - The ST Microelectronics VL53L1X has a low active reset 0 = shutdown, 1 = run, same as Bosch BNO055
-    assign resetn_lidar = resetn_imu;                   //Regular LiDAR reset operation
+    //assign resetn_lidar = resetn_imu;                   //Regular LiDAR reset operation
     //assign resetn_lidar = 1'd1 /*syn_force_pads = 1*/;  // Force LiDAR sensor to always active, ignore resetn input
     //assign resetn_lidar = 1'd0 /*syn_force_pads = 1*/;  // Force LiDAR sensor to always inactive, ignore resetn input
 
@@ -199,6 +208,7 @@ module i2c_device_driver #(
                     .sda_2(sda_2),
                     .resetn(resetn),
                     .resetn_imu(resetn_imu),
+                    .force_i2c_stall_n(force_i2c_stall_n),
                     .target_read_count(target_read_count),
                     .slave_address(slave_address),
                     .module_data_out(data_rx),
@@ -219,7 +229,6 @@ module i2c_device_driver #(
     //  When the count down counter wraps around the timer is triggered and stops counting
     always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin
-            //$display("nMs timer reset");
             count_ms             <= INIT_INTERVAL;
             count_sys_clk_for_ms <= `WAIT_MS_DIVIDER - 17'd1;
             delay_timer_done     <= `FALSE;
@@ -228,20 +237,17 @@ module i2c_device_driver #(
             delay_timer_at_poll  <= `FALSE;
         end
         else if( clear_waiting_ms == `CLEAR_MS_TIMER ) begin  //Timer clear asserted, set initial values
-            //$display("nMs timer cleared");
             // Set to value minus 2 because we count down to 0 and wrap around, which takes 2 additional ticks
             count_sys_clk_for_ms <= `WAIT_MS_DIVIDER - 17'd2;
             delay_timer_started  <= `FALSE;
             delay_timer_done     <= `FALSE;
             delay_timer_at_init  <= `FALSE;
             if (count_ms_init_time) begin
-                //$display("nMs timer set to init interval");
                 count_ms            <= INIT_INTERVAL - 16'd2; // Set delay to startup time (650 ms for BNO055 to initialize)
                 delay_timer_at_init <= `TRUE;
                 delay_timer_at_poll <= `FALSE;
             end
             else begin
-                //$display("nMs timer set to poll interval");
                 count_ms            <= POLL_INTERVAL - 16'd2; // Normal 20 ms interval between data polls
                 delay_timer_at_init <= `FALSE;
                 delay_timer_at_poll <= `TRUE;
@@ -252,20 +258,17 @@ module i2c_device_driver #(
             delay_timer_at_init      <= `FALSE;
             delay_timer_at_poll      <= `FALSE;
             if( ~count_ms[15]) begin               // Only count down ms timer if not wrapped around yet
-                //$display("nMs timer wrapped on sys_clk but not ms timer");
                 count_sys_clk_for_ms <= `WAIT_MS_DIVIDER - 16'd1;
                 count_ms             <= count_ms - 16'd1;
                 delay_timer_done     <= `FALSE;
             end
             else begin                             //Both counters wrapped around, we're done!
-                //$display("nMs timer wrapped on sys_clk AND ms timer");
                 count_sys_clk_for_ms <= count_sys_clk_for_ms;
                 count_ms             <= count_ms;
                 delay_timer_done     <= `TRUE;
             end
         end
         else begin
-            //$display("nMs timer decrement sys_clk counter");
             count_sys_clk_for_ms     <= count_sys_clk_for_ms - 16'd1;
             delay_timer_done         <= `FALSE;
             delay_timer_at_init      <= `FALSE;
@@ -327,57 +330,92 @@ module i2c_device_driver #(
             BNO055_data_rx_reg[`BNO055_TEMPERATURE_DATA_INDEX] <= 'd0;
             BNO055_data_rx_reg[`BNO055_CALIBRATION_DATA_INDEX] <= 'd0;
         end
-        else if(~setn_BNO055_buffer ) begin
+        // A byte has been read by I2C triggered on posedge of one_byte_ready
+        else if (posedge_one_byte_ready_BNO055) begin
+            BNO055_data_rx_reg[BNO055_data_rx_reg_index] <= data_rx_latched;
+            BNO055_data_rx_reg_index                     <= BNO055_data_rx_reg_index + 6'd1;
+        end
+        else if(~setn_BNO055_buff ) begin
             BNO055_data_rx_reg_index  <= 'd0;
         end
-        // A byte has been read by I2C triggered on posedge of one_byte_ready
-        if (one_byte_ready && (~previous_one_byte_ready)) begin
-            if (~rx_from_VL53L1X) begin  // The byte is NOT from the VL53L1X
-                // If the index is pointing to the last index in the array, then rest pointer
-                // and write this byte to the start of the array
-                if(BNO055_data_rx_reg_index == (`BNO055_DATA_RX_BYTE_REG_CNT - 'd1)) begin
-                    BNO055_data_rx_reg_index                     <= 'd0;
-                    BNO055_data_rx_reg[BNO055_data_rx_reg_index] <= data_rx;
-                end
-                //  Otherwise, just write the byte to the BNO055_data_rx_reg_index index in the byte array
-                else begin
-                    BNO055_data_rx_reg[BNO055_data_rx_reg_index] <= data_rx;
-                    BNO055_data_rx_reg_index                     <= BNO055_data_rx_reg_index + 6'd1;
-                end
-            end
+    end
+    
+    
+    always@(negedge sys_clk, negedge resetn) begin
+        if(~resetn)
+            posedge_one_byte_ready_BNO055     <= 1'b0;
+        else if(~resetn_lidar) 
+            posedge_one_byte_ready_BNO055     <= 1'b0;
+        else begin
+            if(one_byte_ready && ~previous_one_byte_ready && ~rx_from_VL53L1X)
+                posedge_one_byte_ready_BNO055 <= 1'b1;
+            else
+                posedge_one_byte_ready_BNO055 <= 1'b0;
         end
     end
 
+    
+    always@(negedge sys_clk, negedge resetn) begin
+        if(~resetn)
+            posedge_one_byte_ready_VL53L1X    <= 1'b0;
+        else if(~resetn_lidar) begin
+            posedge_one_byte_ready_VL53L1X    <= 1'b0;
+        end
+        else begin
+            if(one_byte_ready && ~previous_one_byte_ready && rx_from_VL53L1X)
+                posedge_one_byte_ready_VL53L1X <= 1'b1;
+            else
+                posedge_one_byte_ready_VL53L1X <= 1'b0;
+        end
+    end
 
-    // Set VL53L1X data rx reg index and indicate high/low byte for 2 byte reads
+    // Set VL53L1X data rx reg index and indicate high/low byte
     always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin
-            $display("%t, One VL53L1X byte ready of a one byte read", $time);
+            VL53L1X_data_rx_reg_index <= `VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX;
+            VL53L1X_high_byte_bool    <= `TRUE;
+        end
+        else if(~resetn_lidar) begin
             VL53L1X_data_rx_reg_index <= `VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX;
             VL53L1X_high_byte_bool    <= `TRUE;
         end
         else if(rx_from_VL53L1X) begin // RX byte from VL53L1X LiDAR
             VL53L1X_data_rx_reg_index <= next_VL53L1X_data_rx_reg_index;
-            // A byte has been read by I2C triggered on posedge of one_byte_ready
-            if (one_byte_ready && (~previous_one_byte_ready)) begin
-                if (target_read_count  == 'd1) begin // Single byte read
-                    $display("%t, One VL53L1X byte ready of a one byte read", $time);
-                    VL53L1X_high_byte_bool     <= `TRUE;
-                end
-                else begin                     // A byte has been read by I2C - 2 byte read
-                    $display("%t, One VL53L1X byte ready of a two byte read", $time);
-                    if(VL53L1X_high_byte_bool) // This was the first byte
-                        VL53L1X_high_byte_bool <= `FALSE;
-                    else
-                        VL53L1X_high_byte_bool <= `TRUE;
-                end
+            VL53L1X_high_byte_bool    <= next_VL53L1X_high_byte_bool;
+        end
+    end
+    
+    
+    always@(posedge sys_clk, negedge resetn) begin
+        if(~resetn) begin
+            next_VL53L1X_high_byte_bool         <= `TRUE;
+        end
+        else if(~resetn_lidar) begin
+            next_VL53L1X_high_byte_bool         <= `TRUE;
+        end
+        else if(posedge_one_byte_ready_VL53L1X) begin
+            if (target_read_count[0]  == 1'b1) begin // Single byte read
+                next_VL53L1X_high_byte_bool     <= `TRUE;
+            end
+            else begin                     // A byte has been read by I2C - 2 byte read
+                if(VL53L1X_high_byte_bool) // This was the first byte
+                    next_VL53L1X_high_byte_bool <= `FALSE;
+                else
+                    next_VL53L1X_high_byte_bool <= `TRUE;
             end
         end
+    end
+    
+    always@(posedge one_byte_ready, negedge resetn) begin
+        if(~resetn)
+            data_rx_latched = 8'd0;
+        else if(one_byte_ready)
+            data_rx_latched = data_rx;
     end
 
     //  During a read cycle increment the VL53L1X_data_rx_reg_index until it reaches the end of  VL53L1X_data_rx_reg
     //  If a byte has been read (one_byte_ready is asserted) assign it to the VL53L1X_data_rx_reg byte array at the location specified by VL53L1X_data_rx_reg_index
-    always@(posedge sys_clk, negedge setn_VL53L1X_buffer, negedge resetn) begin
+    always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin
             VL53L1X_data_rx_reg[0] <= 'd0;
             VL53L1X_data_rx_reg[1] <= 'd0;
@@ -388,16 +426,30 @@ module i2c_device_driver #(
             VL53L1X_data_rx_reg[6] <= 'd0;
             VL53L1X_data_rx_reg[7] <= 'd0;
         end
-        // A byte has been read by I2C and byte is from the VL53L1X, on posedge of one_byte_ready
-        else if (one_byte_ready && (~previous_one_byte_ready) && rx_from_VL53L1X) begin
-            if(VL53L1X_high_byte_bool)
-                VL53L1X_data_rx_reg[VL53L1X_data_rx_reg_index]       <= data_rx;
-            else
-                VL53L1X_data_rx_reg[VL53L1X_data_rx_reg_index + 'd1] <= data_rx;
+        else if(~resetn_lidar) begin
+            VL53L1X_data_rx_reg[0] <= 'd0;
+            VL53L1X_data_rx_reg[1] <= 'd0;
+            VL53L1X_data_rx_reg[2] <= 'd0;
+            VL53L1X_data_rx_reg[3] <= 'd0;
+            VL53L1X_data_rx_reg[4] <= 'd0;
+            VL53L1X_data_rx_reg[5] <= 'd0;
+            VL53L1X_data_rx_reg[6] <= 'd0;
+            VL53L1X_data_rx_reg[7] <= 'd0;
         end
-        else if(~setn_VL53L1X_buffer) begin // Clear firmware/data ready registers
-            VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_FIRMWARE_SYSTEM_STATUS_INDEX] <= 'd0;
-            VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_DATA_RDY_INDEX]               <= 'd0;
+        // A byte has been read by I2C and byte is from the VL53L1X, on posedge of one_byte_ready
+        else if (posedge_one_byte_ready_VL53L1X) begin
+            if(VL53L1X_high_byte_bool)
+                VL53L1X_data_rx_reg[VL53L1X_data_rx_reg_index]       <= data_rx_latched;
+            else
+                VL53L1X_data_rx_reg[VL53L1X_data_rx_reg_index + 'd1] <= data_rx_latched;
+        end
+        else begin
+            if(~clrn_VL53L1X_firm) begin // Clear firmware ready registers
+                VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_FIRMWARE_SYSTEM_STATUS_INDEX] <= 'd0;
+            end
+            else if(~clrn_VL53L1X_data) begin // Clear data ready registers
+                VL53L1X_data_rx_reg[`VL53L1X_DATA_RX_REG_DATA_RDY_INDEX]               <= 'd0;
+            end
         end
     end
 
@@ -538,7 +590,14 @@ module i2c_device_driver #(
     //  This block is for VL53L1X registers
     always@(posedge sys_clk, negedge resetn) begin
         if(~resetn) begin
-            VL53L1X_chip_id     <= 'd0;
+            VL53L1X_chip_id     <= 16'h00FF;
+            VL53L1X_range_mm    <= 'd0;
+            VL53L1X_data_rdy    <= 'd0;
+            VL53L1X_firm_rdy    <= 'd0;
+            VL53L1X_osc_cal_val <= 'd0;
+        end
+        else if(~resetn_lidar) begin
+            VL53L1X_chip_id     <= 16'hFFFF;
             VL53L1X_range_mm    <= 'd0;
             VL53L1X_data_rdy    <= 'd0;
             VL53L1X_firm_rdy    <= 'd0;
@@ -581,10 +640,13 @@ module i2c_device_driver #(
             cal_VL53L1X_bool    <= `FALSE;
             rx_from_VL53L1X     <= `FALSE;
             is_2_byte_reg       <= `FALSE;
+            resetn_lidar        <= `HIGH;
+            lidar_good          <= `FALSE;
             VL53L1X_measurement_period  <= 32'd0;
             measurement_period_tx_index <= 3'd4;
-            setn_BNO055_buffer          <= `HIGH;
-            setn_VL53L1X_buffer         <= `HIGH;
+            setn_BNO055_buff            <= `HIGH;
+            clrn_VL53L1X_firm           <= `HIGH;
+            clrn_VL53L1X_data           <= `HIGH;
             cal_reg_addr                <= `BNO055_ACCEL_OFFSET_X_LSB_ADDR;
         end
         else begin
@@ -602,10 +664,13 @@ module i2c_device_driver #(
             cal_VL53L1X_bool    <= next_cal_VL53L1X_bool;
             rx_from_VL53L1X     <= next_rx_from_VL53L1X;
             is_2_byte_reg       <= next_is_2_byte_reg;
+            resetn_lidar        <= next_resetn_lidar;
+            lidar_good          <= next_lidar_good;
             VL53L1X_measurement_period  <= next_VL53L1X_measurement_period;
             measurement_period_tx_index <= next_measurement_period_tx_index;
-            setn_BNO055_buffer          <= next_setn_BNO055_buffer;
-            setn_VL53L1X_buffer         <= next_setn_VL53L1X_buffer;
+            setn_BNO055_buff            <= next_setn_BNO055_buff;
+            clrn_VL53L1X_firm           <= next_clrn_VL53L1X_firm;
+            clrn_VL53L1X_data           <= next_clrn_VL53L1X_data;
             cal_reg_addr                <= next_cal_reg_addr;
         end
     end
@@ -614,113 +679,157 @@ module i2c_device_driver #(
     // IMU FSM, Determine next state of FSM and drive i2c module inputs
     always@(*) begin
         if( ~(resetn & resetn_imu) ) begin
-            next_imu_good            = `FALSE;
-            clear_waiting_ms         = `RUN_MS_TIMER;
-            count_ms_init_time       = `TRUE;
-            next_i2c_state           = `I2C_DRV_STATE_RESET;
-            next_return_state        = `I2C_DRV_STATE_RESET;
-            next_go_flag             = `NOT_GO;
-            next_data_reg            = `ALL_ZERO_2BYTE;
-            next_data_tx             = `BYTE_ALL_ZERO;
-            next_read_write_in       = `I2C_READ;
-            next_led_view_index      = `FALSE;
-            next_rx_from_VL53L1X     = `FALSE;
-            next_is_2_byte_reg       = `FALSE;
-            next_setn_BNO055_buffer  = `LOW;
-            next_setn_VL53L1X_buffer = `LOW;
-            next_target_read_count   = 'd1;
-            i2c_number               = 1'b0; // Default to i2c EFB #1
-            next_slave_address       = `BNO055_SLAVE_ADDRESS;
-            next_calibrated_once     = `FALSE;
-            next_cal_VL53L1X_bool    = `FALSE;
+            next_imu_good          = `FALSE;
+            clear_waiting_ms       = `RUN_MS_TIMER;
+            count_ms_init_time     = `TRUE;
+            next_i2c_state         = `I2C_DRV_STATE_RESET;
+            next_return_state      = `I2C_DRV_STATE_RESET;
+            next_go_flag           = `NOT_GO;
+            next_data_reg          = `ALL_ZERO_2BYTE;
+            next_data_tx           = `BYTE_ALL_ZERO;
+            next_read_write_in     = `I2C_READ;
+            next_led_view_index    = `FALSE;
+            next_rx_from_VL53L1X   = `FALSE;
+            next_is_2_byte_reg     = `FALSE;
+            next_setn_BNO055_buff  = `LOW;
+            next_clrn_VL53L1X_firm = `LOW;
+            next_clrn_VL53L1X_data = `LOW;
+            next_target_read_count = 'd1;
+            i2c_number             = 1'b0; // Default to i2c EFB #1
+            next_slave_address     = `BNO055_SLAVE_ADDRESS;
+            next_calibrated_once   = `FALSE;
+            next_cal_VL53L1X_bool  = `FALSE;
+            next_resetn_lidar      = `LOW;
+            next_lidar_good        = `FALSE;
             next_VL53L1X_data_rx_reg_index   = `VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX;
             next_VL53L1X_measurement_period  = 32'd0;
             next_measurement_period_tx_index = 3'd3;
             next_cal_reg_addr                = `BNO055_ACCEL_OFFSET_X_LSB_ADDR;
         end
-        else begin
+        else if (force_i2c_stall_n) begin  // If I2C not forced into stall state, (Low active), only used for debug
             // Default to preserve these values, can be altered in lower steps
-            next_imu_good            = imu_good;
-            clear_waiting_ms         = `RUN_MS_TIMER;
-            count_ms_init_time       = `FALSE;
-            next_go_flag             = `NOT_GO;
-            next_i2c_state           = i2c_state;
-            next_return_state        = return_state;
-            next_data_reg            = data_reg;
-            next_data_tx             = data_tx;
-            next_read_write_in       = read_write_in;
-            next_led_view_index      = led_view_index;
-            next_rx_from_VL53L1X     = rx_from_VL53L1X;
-            next_is_2_byte_reg       = is_2_byte_reg;
-            next_setn_BNO055_buffer  = `HIGH;
-            next_setn_VL53L1X_buffer = `HIGH;
-            next_target_read_count   = target_read_count;
-            i2c_number               = 1'b0; // Default to i2c EFB #1
-            next_slave_address       = slave_address;
-            next_calibrated_once     = calibrated_once;
-            next_cal_VL53L1X_bool    = cal_VL53L1X_bool;
+            next_imu_good          = imu_good;
+            clear_waiting_ms       = `RUN_MS_TIMER;
+            count_ms_init_time     = `FALSE;
+            next_go_flag           = `NOT_GO;
+            next_i2c_state         = i2c_state;
+            next_return_state      = return_state;
+            next_data_reg          = data_reg;
+            next_data_tx           = data_tx;
+            next_read_write_in     = read_write_in;
+            next_led_view_index    = led_view_index;
+            next_rx_from_VL53L1X   = rx_from_VL53L1X;
+            next_is_2_byte_reg     = is_2_byte_reg;
+            next_setn_BNO055_buff  = `HIGH;
+            next_clrn_VL53L1X_firm = `HIGH;
+            next_clrn_VL53L1X_data = `HIGH;
+            next_target_read_count = target_read_count;
+            i2c_number             = 1'b0; // Default to i2c EFB #1
+            next_slave_address     = slave_address;
+            next_calibrated_once   = calibrated_once;
+            next_cal_VL53L1X_bool  = cal_VL53L1X_bool;
+            next_resetn_lidar      = `HIGH;
+            next_lidar_good        = lidar_good;
             next_VL53L1X_data_rx_reg_index   = VL53L1X_data_rx_reg_index;
             next_VL53L1X_measurement_period  = VL53L1X_measurement_period;
             next_measurement_period_tx_index = measurement_period_tx_index;
             next_cal_reg_addr                = cal_reg_addr;
             case(i2c_state)
                 `I2C_DRV_STATE_RESET: begin
-                
-                    next_imu_good            = `FALSE;
-                    clear_waiting_ms         = `RUN_MS_TIMER;
-                    count_ms_init_time       = `TRUE;
+                    next_imu_good          = `FALSE;
+                    clear_waiting_ms       = `RUN_MS_TIMER;
+                    count_ms_init_time     = `TRUE;
                     if(~delay_timer_started) // Timer not yet started
-                        next_i2c_state       = `I2C_DRV_STATE_RESET;
+                        next_i2c_state     = `I2C_DRV_STATE_RESET;
                     else                     // Timer started (Timer count not important, this is to force a transition in next state)
-                        next_i2c_state       = `I2C_DRV_STATE_BOOT;
-                    next_return_state        = `I2C_DRV_STATE_RESET; // Not actually used here, but avoids confusion while debugging
-                    next_go_flag             = `NOT_GO;
-                    next_data_reg            = `ALL_ZERO_2BYTE;
-                    next_data_tx             = `BYTE_ALL_ZERO;
-                    next_read_write_in       = `I2C_READ;
-                    next_led_view_index      = `FALSE;
-                    next_rx_from_VL53L1X     = `FALSE;
-                    next_is_2_byte_reg       = `FALSE;
-                    next_setn_BNO055_buffer  = `LOW;
-                    next_setn_VL53L1X_buffer = `LOW;
-                    next_target_read_count   = 'd1;
-                    i2c_number               = 1'b0; // Default to i2c EFB #1
-                    next_slave_address       = `BNO055_SLAVE_ADDRESS;
-                    next_calibrated_once     = `FALSE;
-                    next_cal_VL53L1X_bool    = `FALSE;
-                    next_VL53L1X_data_rx_reg_index   = `VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX;
+                        next_i2c_state     = `I2C_DRV_STATE_INIT;
+                    next_return_state      = `I2C_DRV_STATE_RESET; // Not actually used here, but avoids confusion while debugging
+                    next_go_flag           = `NOT_GO;
+                    next_data_reg          = `ALL_ZERO_2BYTE;
+                    next_data_tx           = `BYTE_ALL_ZERO;
+                    next_read_write_in     = `I2C_READ;
+                    next_led_view_index    = `FALSE;
+                    next_rx_from_VL53L1X   = `FALSE;
+                    next_is_2_byte_reg     = `FALSE;
+                    next_setn_BNO055_buff  = `HIGH;
+                    next_clrn_VL53L1X_firm = `HIGH;
+                    next_clrn_VL53L1X_data = `HIGH;
+                    next_target_read_count = 'd1;
+                    i2c_number             = 1'b0; // Default to i2c EFB #1
+                    next_slave_address     = `BNO055_SLAVE_ADDRESS;
+                    next_calibrated_once   = `FALSE;
+                    next_cal_VL53L1X_bool  = `FALSE;
+                    next_resetn_lidar      = `HIGH; // Clear reset of LiDAR
+                    next_lidar_good        = `FALSE;
                     next_VL53L1X_measurement_period  = 32'd0;
                     next_measurement_period_tx_index = 3'd3;
                     next_cal_reg_addr                = `BNO055_ACCEL_OFFSET_X_LSB_ADDR;
                 end
-                `I2C_DRV_STATE_BOOT: begin
+                `I2C_DRV_STATE_INIT: begin
                     next_imu_good      = `FALSE;
+                    next_lidar_good    = `FALSE;
+                    next_go_flag       = `NOT_GO;
                     clear_waiting_ms   = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
                     count_ms_init_time = `TRUE;
+                    next_resetn_lidar  = `LOW; // Reset LiDAR
                     // Wait for I2C to boot then start wait for IMU
-                    // Also wait for timer to initialize to INIT_INTERVAL
-                    if(~busy && delay_timer_at_init)
-                        next_i2c_state = `I2C_DRV_STATE_BOOT_WAIT;
+                    // Also wait for timer to initialize to INIT_INTERVAL and resetn_lidar to go LOW
+                    if(~busy && delay_timer_at_init && ~resetn_lidar)
+                        next_i2c_state = `I2C_DRV_STATE_VL53L1X_RESET_WAIT;
                     else
-                        next_i2c_state = `I2C_DRV_STATE_BOOT;
-                    next_return_state  = `I2C_DRV_STATE_BOOT; // Not actually used here, but avoids confusion while debugging
-                    next_setn_BNO055_buffer  = `LOW; // Clear BNO055 RX data buffer index
-                    next_setn_VL53L1X_buffer = `LOW; // Clear VL53L1X data and firmware ready
+                        next_i2c_state = `I2C_DRV_STATE_INIT;
+                    next_return_state  = `I2C_DRV_STATE_INIT; // Not actually used here, but avoids confusion while debugging
+                    next_setn_BNO055_buff  = `LOW; // Clear BNO055 RX data buffer index
+                    next_clrn_VL53L1X_firm = `LOW; // Clear VL53L1X firmware ready
+                    next_clrn_VL53L1X_data = `LOW; // Clear VL53L1X data ready
                 end
-                `I2C_DRV_STATE_BOOT_WAIT: begin
+                `I2C_DRV_STATE_VL53L1X_RESET_WAIT: begin
                     next_imu_good      = `FALSE;
+                    next_lidar_good    = `FALSE;
+                    next_go_flag       = `NOT_GO;
                     clear_waiting_ms   = `RUN_MS_TIMER;
                     count_ms_init_time = `FALSE;
-                    next_setn_VL53L1X_buffer = `HIGH;
+                    next_resetn_lidar  = `HIGH; //Keep LiDAR in reset
+                    // Wait for I2C to be not busy and delay timer done
+                    if(~busy && delay_timer_done)
+                        next_i2c_state = `I2C_DRV_STATE_VL53L1X_BOOT_START;
+                    else
+                        next_i2c_state = `I2C_DRV_STATE_VL53L1X_RESET_WAIT;
+                    next_return_state  = `I2C_DRV_STATE_VL53L1X_RESET_WAIT; // Not actually used here, but avoids confusion while debugging
+                end
+                `I2C_DRV_STATE_VL53L1X_BOOT_START: begin
+                    next_imu_good      = `FALSE;
+                    next_lidar_good    = `FALSE;
+                    next_go_flag       = `NOT_GO;
+                    clear_waiting_ms   = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
+                    count_ms_init_time = `FALSE;          // Setup poll timer interval
+                    next_resetn_lidar  = `HIGH;           //Take LiDAR out of reset
+                    // Wait for I2C to boot then start wait for IMU
+                    // Also wait for timer to initialize to POLL_INTERVAL and resetn_lidar to go HIGH
+                    if(~busy && delay_timer_at_poll && resetn_lidar)
+                        next_i2c_state = `I2C_DRV_STATE_VL53L1X_BOOT_WAIT;
+                    else
+                        next_i2c_state = `I2C_DRV_STATE_VL53L1X_BOOT_START;
+                    next_return_state  = `I2C_DRV_STATE_VL53L1X_BOOT_START; // Not actually used here, but avoids confusion while debugging
+                end
+                `I2C_DRV_STATE_VL53L1X_BOOT_WAIT: begin
+                    next_imu_good      = `FALSE;
+                    next_lidar_good    = `FALSE;
+                    next_go_flag       = `NOT_GO;
+                    clear_waiting_ms   = `RUN_MS_TIMER;
+                    count_ms_init_time = `FALSE;
                     // Wait for I2C to be not busy and delay timer done
                     if(~busy && delay_timer_done)
                         next_i2c_state = `I2C_VL53L1X_STATE_READ_CHIP_ID;
                     else
-                        next_i2c_state = `I2C_DRV_STATE_BOOT_WAIT;
-                    next_return_state  = `I2C_DRV_STATE_BOOT_WAIT; // Not actually used here, but avoids confusion while debugging
+                        next_i2c_state = `I2C_DRV_STATE_VL53L1X_BOOT_WAIT;
+                    next_return_state  = `I2C_DRV_STATE_VL53L1X_BOOT_WAIT; // Not actually used here, but avoids confusion while debugging
+                    next_rx_from_VL53L1X           = `TRUE;
+                    next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX;
                 end
                 `I2C_VL53L1X_STATE_READ_CHIP_ID: begin
                     next_imu_good          = `FALSE;
+                    next_lidar_good        = `FALSE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
                     next_i2c_state         = `I2C_DRV_SUB_STATE_START;
@@ -732,13 +841,15 @@ module i2c_device_driver #(
                     next_is_2_byte_reg     = `TRUE;
                     next_target_read_count = 5'd2;
                     next_led_view_index    = 1'b0;
-                    next_setn_VL53L1X_buffer       = `LOW; // Clear VL53L1X data and firmware ready
+                    next_clrn_VL53L1X_firm = `LOW; // Clear VL53L1X firmware ready
                     next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX;
                 end
                 `I2C_VL53L1X_STATE_READ_FIRMWARE_READY: begin
-                    next_imu_good          = `TRUE;
+                    next_imu_good          = `FALSE;
+                    next_lidar_good        = `FALSE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
+                    next_clrn_VL53L1X_firm = `HIGH;
                     if(VL53L1X_firm_rdy[0] == 1'b1) // If firmware ready, go to next state
                         next_i2c_state     = `I2C_BNO055_STATE_READ_CHIP_ID;
                     else
@@ -754,6 +865,7 @@ module i2c_device_driver #(
                 end
                 `I2C_BNO055_STATE_READ_CHIP_ID: begin // Page 0
                     next_imu_good          = `FALSE;
+                    next_lidar_good        = `FALSE;
                     next_slave_address     = `BNO055_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
                     next_i2c_state         = `I2C_DRV_SUB_STATE_START;
@@ -768,6 +880,7 @@ module i2c_device_driver #(
                 end
                 `I2C_BNO055_STATE_SET_UNITS: begin // Page 0
                     next_imu_good      = `FALSE;
+                    next_lidar_good    = `FALSE;
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
                     next_go_flag       = `NOT_GO;
                     next_i2c_state     = `I2C_DRV_SUB_STATE_START;
@@ -783,6 +896,7 @@ module i2c_device_driver #(
                 end
                 `I2C_BNO055_STATE_SET_POWER_MODE: begin // Page 0
                     next_imu_good      = `FALSE;
+                    next_lidar_good    = `FALSE;
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
                     clear_waiting_ms   = `RUN_MS_TIMER;
                     next_go_flag       = `NOT_GO;
@@ -802,6 +916,7 @@ module i2c_device_driver #(
                 end
                 `I2C_STATE_CAL_RESTORE_DATA: begin
                     next_imu_good      = `FALSE;
+                    next_lidar_good    = `FALSE;
                     if ((~cal_VL53L1X_bool) && (cal_reg_addr < `BNO055_MAG_RADIUS_MSB_ADDR))       // Calibration restore to BNO055
                         next_cal_VL53L1X_bool = `FALSE;
                     else if ((~cal_VL53L1X_bool) && (cal_reg_addr >= `BNO055_MAG_RADIUS_MSB_ADDR)) // Next iteration will be configure VL53L1X
@@ -859,12 +974,12 @@ module i2c_device_driver #(
                         {9'd0, `BNO055_MAG_RADIUS_LSB_ADDR}                                 :
                             next_data_tx = 8'd3;
                         {9'd0, `BNO055_MAG_RADIUS_MSB_ADDR}                                 : begin
-                            $display("I2C_STATE_CAL_RESTORE_DATA - {9'd0, `BNO055_MAG_RADIUS_MSB_ADDR}");
+                            //$display("I2C_STATE_CAL_RESTORE_DATA - {9'd0, `BNO055_MAG_RADIUS_MSB_ADDR}");
                             next_data_tx       = 8'd83;
                             next_cal_reg_addr  = `VL53L1X_PAD_I2C_HV_CONFIG_ADDR - 1; // Set to one less because it will increment once before being used
                         end
                         {1'b1, `VL53L1X_PAD_I2C_HV_CONFIG_ADDR}                             : begin
-                            $display("I2C_STATE_CAL_RESTORE_DATA - {1'b1, `VL53L1X_PAD_I2C_HV_CONFIG_ADDR}");
+                            //$display("I2C_STATE_CAL_RESTORE_DATA - {1'b1, `VL53L1X_PAD_I2C_HV_CONFIG_ADDR}");
                             next_slave_address = `VL53L1X_SLAVE_ADDRESS;
                             next_data_tx       = `VL53L1X_INIT_VAL_PAD_I2C_HV_CONFIG;
                         end
@@ -1049,16 +1164,19 @@ module i2c_device_driver #(
                         {1'b1, `VL53L1X_SYSTEM_MODE_START_ADDR}                             :
                             next_data_tx = `VL53L1X_INIT_VAL_SYSTEM_MODE_START;
                         default                                                     : begin
-                            next_i2c_state = `I2C_DRV_STATE_RESET; // Error, reinitialize
-                            $display("\n\n\n%t: ERROR in I2C_STATE_CAL_RESTORE_DATA - Re-initializing", $time);
-                            $display("\tcal_VL53L1X_bool=%b, cal_reg_addr=%h", cal_VL53L1X_bool, cal_reg_addr);
-                            $display("\n\n\n");
-                            $stop;
+                            next_data_tx    = 0;
+                            next_i2c_state  = `I2C_STATE_CAL_RESTORE_NEXT; //Do nothing, go to next
+                            //next_i2c_state = `I2C_DRV_STATE_RESET; // Error, reinitialize
+                            //$display("\n\n\n%t: ERROR in I2C_STATE_CAL_RESTORE_DATA - Re-initializing", $time);
+                            //$display("\tcal_VL53L1X_bool=%b, cal_reg_addr=%h", cal_VL53L1X_bool, cal_reg_addr);
+                            //$display("\n\n\n");
+                            //$stop;
                         end
                     endcase
                 end
                 `I2C_STATE_CAL_RESTORE_NEXT: begin // See if this was the last, loop around if more, otherwise, exit loop
                     next_imu_good      = `FALSE;
+                    next_lidar_good    = `FALSE;
                     next_go_flag       = `NOT_GO;
                     next_data_reg      = data_reg;
                     next_data_tx       = data_tx;
@@ -1072,6 +1190,7 @@ module i2c_device_driver #(
                 end
                 `I2C_STATE_CAL_RESTORE_AGAIN: begin // Restore calibration two times, to ensure that one calibration parameter doesn't need to be written before another.
                     next_imu_good         = `FALSE;
+                    next_lidar_good       = `FALSE;
                     next_go_flag          = `NOT_GO;
                     next_calibrated_once  = `TRUE;
                     if(calibrated_once) begin
@@ -1087,6 +1206,7 @@ module i2c_device_driver #(
                 end
                 `I2C_BNO055_STATE_SET_EXT_CRYSTAL: begin // Has to be done after calibration restore, for some odd reason not documented in IMU docs
                     next_imu_good      = `FALSE;
+                    next_lidar_good    = `FALSE;
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
                     next_go_flag       = `NOT_GO;
                     next_i2c_state     = `I2C_DRV_SUB_STATE_START;
@@ -1097,6 +1217,7 @@ module i2c_device_driver #(
                 end
                 `I2C_BNO055_STATE_SET_RUN_MODE: begin // Change to run mode, changing run mode takes 7 to 19 ms depending on modes
                     next_imu_good      = `FALSE;
+                    next_lidar_good    = `FALSE;
                     next_slave_address = `BNO055_SLAVE_ADDRESS;
                     next_go_flag       = `NOT_GO;
                     clear_waiting_ms   = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
@@ -1112,6 +1233,7 @@ module i2c_device_driver #(
                 end
                 `I2C_VL53L1X_STATE_INIT_WAIT_POLL_TIME_1: begin
                     next_imu_good      = `FALSE;
+                    next_lidar_good    = `FALSE;
                     clear_waiting_ms   = `RUN_MS_TIMER;
                     next_data_reg      = `ALL_ZERO_2BYTE;
                     next_data_tx       = `BYTE_ALL_ZERO;
@@ -1124,6 +1246,7 @@ module i2c_device_driver #(
                 end
                 `I2C_VL53L1X_STATE_INIT_START_MEASURE: begin
                     next_imu_good      = `TRUE;
+                    next_lidar_good    = `FALSE;
                     next_slave_address = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag       = `NOT_GO;
                     next_i2c_state     = `I2C_DRV_SUB_STATE_START;
@@ -1132,14 +1255,15 @@ module i2c_device_driver #(
                     next_data_tx       = 8'h40;
                     next_read_write_in = `I2C_WRITE;
                     next_is_2_byte_reg = `TRUE;
-                    next_setn_VL53L1X_buffer = `LOW; // Clear VL53L1X data and firmware ready
+                    next_clrn_VL53L1X_data = `LOW; // Clear VL53L1X data ready
                 end
                 `I2C_VL53L1X_STATE_INIT_POLL_DATA_READY: begin
                     next_imu_good          = `TRUE;
+                    next_lidar_good        = `FALSE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
                     if(VL53L1X_data_rdy[0] == 1'b1) // If measurement ready, go to next state
-                        next_i2c_state     = `I2C_VL53L1X_STATE_INIT_CLEAR_INTERRUPT;
+                        next_i2c_state     = `I2C_VL53L1X_STATE_INIT_GET_MEASUREMENT;
                     else
                         next_i2c_state     = `I2C_DRV_SUB_STATE_START;
                     next_return_state      = `I2C_VL53L1X_STATE_INIT_POLL_DATA_READY;
@@ -1151,8 +1275,24 @@ module i2c_device_driver #(
                     next_target_read_count = 5'd1;
                     next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_DATA_RDY_INDEX;
                 end
+                `I2C_VL53L1X_STATE_INIT_GET_MEASUREMENT: begin
+                    next_imu_good          = `TRUE;
+                    next_lidar_good        = `FALSE;
+                    next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
+                    next_go_flag           = `NOT_GO;
+                    next_i2c_state         = `I2C_DRV_SUB_STATE_START;
+                    next_return_state      = `I2C_VL53L1X_STATE_INIT_CLEAR_INTERRUPT;
+                    next_data_reg          = `VL53L1X_RESULT_FINAL_CROSSTALK_CORRECTED_RANGE_MM_SD0_ADDR;
+                    next_data_tx           = `BYTE_ALL_ZERO;
+                    next_read_write_in     = `I2C_READ;
+                    next_rx_from_VL53L1X   = `TRUE;
+                    next_is_2_byte_reg     = `TRUE;
+                    next_target_read_count = 5'd2;
+                    next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_RESULT_RANGE_MEASURE_MM_HI_INDEX;
+                end
                 `I2C_VL53L1X_STATE_INIT_CLEAR_INTERRUPT: begin
                     next_imu_good          = `TRUE;
+                    next_lidar_good        = `FALSE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
                     next_i2c_state         = `I2C_DRV_SUB_STATE_START;
@@ -1164,6 +1304,7 @@ module i2c_device_driver #(
                 end
                 `I2C_VL53L1X_STATE_INIT_STOP_MEASURE: begin
                     next_imu_good          = `TRUE;
+                    next_lidar_good        = `FALSE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
                     next_i2c_state         = `I2C_DRV_SUB_STATE_START;
@@ -1175,6 +1316,7 @@ module i2c_device_driver #(
                 end
                 `I2C_VL53L1X_STATE_SET_TEMPERATURE_MACRO_LOOP_BOUND: begin
                     next_imu_good          = `TRUE;
+                    next_lidar_good        = `FALSE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
                     next_i2c_state         = `I2C_DRV_SUB_STATE_START;
@@ -1186,6 +1328,7 @@ module i2c_device_driver #(
                 end
                 `I2C_VL53L1X_STATE_SET_TEMPERATURE_VHV_CONFIG_INIT: begin
                     next_imu_good          = `TRUE;
+                    next_lidar_good        = `FALSE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
                     next_i2c_state         = `I2C_DRV_SUB_STATE_START;
@@ -1197,6 +1340,7 @@ module i2c_device_driver #(
                 end
                 `I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_RX_OSC_VAL: begin
                     next_imu_good          = `TRUE;
+                    next_lidar_good        = `FALSE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
                     next_i2c_state         = `I2C_DRV_SUB_STATE_START;
@@ -1211,6 +1355,7 @@ module i2c_device_driver #(
                 end
                 `I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_CALCULATE: begin
                     next_imu_good          = `TRUE;
+                    next_lidar_good        = `FALSE;
                     next_go_flag           = `NOT_GO;
                     clear_waiting_ms       = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
                     count_ms_init_time     = `FALSE;          // Make sure this is a POLL_INTERVAL timer for upcoming WAIT_IMU_POLL_TIME state
@@ -1224,6 +1369,7 @@ module i2c_device_driver #(
                 end
                 `I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_TX_PERIOD: begin
                     next_imu_good          = `TRUE;
+                    next_lidar_good        = `FALSE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
                     next_measurement_period_tx_index = measurement_period_tx_index - 3'd1;
@@ -1235,35 +1381,38 @@ module i2c_device_driver #(
                     next_read_write_in     = `I2C_WRITE;
                     case(measurement_period_tx_index)
                         3'd3    : begin
-                            //next_data_tx  = VL53L1X_measurement_period[31:24];
-                            next_data_tx  = 8'h00;
-                            next_data_reg = `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_3_ADDR;
+                            //next_data_tx   = VL53L1X_measurement_period[31:24];
+                            next_data_tx   = 8'h00;
+                            next_data_reg  = `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_3_ADDR;
                         end
                         3'd2    : begin
-                            //next_data_tx  = VL53L1X_measurement_period[23:16];
-                            next_data_tx  = 8'h00;
-                            next_data_reg = `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_2_ADDR;
+                            //next_data_tx   = VL53L1X_measurement_period[23:16];
+                            next_data_tx   = 8'h00;
+                            next_data_reg  = `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_2_ADDR;
                         end
                         3'd1    : begin
-                            //next_data_tx  = VL53L1X_measurement_period[15:8 ];
-                            next_data_tx  = 8'h07;
-                            next_data_reg = `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_1_ADDR;
+                            //next_data_tx   = VL53L1X_measurement_period[15:8 ];
+                            next_data_tx   = 8'h07;
+                            next_data_reg  = `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_1_ADDR;
                         end
                         3'd0    : begin
-                            //next_data_tx  = VL53L1X_measurement_period[7 :0 ];
-                            next_data_tx  = 8'h3A;
-                            next_data_reg = `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_0_ADDR;
+                            //next_data_tx   = VL53L1X_measurement_period[7 :0 ];
+                            next_data_tx   = 8'h3A;
+                            next_data_reg  = `VL53L1X_SYSTEM_INTERMEASUREMENT_PERIOD_0_ADDR;
                         end
                         default :  begin
-                            next_i2c_state = `I2C_DRV_STATE_RESET; // Error, reinitialize
-                            $display("\n\n\n%t: ERROR in I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_TX_PERIOD - Re-initializing\n\n\n", $time);
-                            $stop;
+                            next_data_tx    = 0;
+                            next_i2c_state  = `I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_TX_PERIOD; //Do nothing, go to next
+                            //next_i2c_state = `I2C_DRV_STATE_RESET; // Error, reinitialize
+                            //$display("\n\n\n%t: ERROR in I2C_VL53L1X_STATE_SET_MEASUREMENT_PERIOD_TX_PERIOD - Re-initializing\n\n\n", $time);
+                            //$stop;
                         end
                     endcase
                     next_is_2_byte_reg     = `TRUE;
                 end
                 `I2C_VL53L1X_STATE_INIT_WAIT_POLL_TIME_2: begin
-                    next_imu_good      = `FALSE;
+                    next_imu_good      = `TRUE;
+                    next_lidar_good    = `FALSE;
                     clear_waiting_ms   = `RUN_MS_TIMER;
                     next_data_reg      = `ALL_ZERO_2BYTE;
                     next_data_tx       = `BYTE_ALL_ZERO;
@@ -1276,6 +1425,7 @@ module i2c_device_driver #(
                 end
                 `I2C_VL53L1X_STATE_START_MEASURE: begin
                     next_imu_good          = `TRUE;
+                    next_lidar_good        = `FALSE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
                     clear_waiting_ms       = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
@@ -1295,20 +1445,22 @@ module i2c_device_driver #(
                                 // i2c time is variable and dependent on slave
                                 // This timer starts at the beginning of the the previous state
                     next_imu_good          = `TRUE;
+                    next_lidar_good        = `TRUE;
                     clear_waiting_ms       = `RUN_MS_TIMER;
                     next_data_reg          = `ALL_ZERO_2BYTE;
                     next_data_tx           = `BYTE_ALL_ZERO;
                     next_go_flag           = `NOT_GO;
-                    if(delay_timer_done)
-                        next_i2c_state     = `I2C_VL53L1X_STATE_POLL_READY;
-                    else
-                        next_i2c_state     = `I2C_DRV_STATE_WAIT_IMU_POLL_TIME;
+                    if(delay_timer_done) begin
+                        next_i2c_state         = `I2C_VL53L1X_STATE_POLL_READY;
+                        next_clrn_VL53L1X_data = `LOW; // Clear VL53L1X data ready
+                    end
+                    else begin
+                        next_i2c_state         = `I2C_DRV_STATE_WAIT_IMU_POLL_TIME;
+                        next_clrn_VL53L1X_data = `HIGH;
+                    end
                     next_return_state      = `I2C_DRV_STATE_WAIT_IMU_POLL_TIME; // Not actually used here, but avoids confusion while debugging
-                    next_setn_BNO055_buffer  = `LOW; // Clear BNO055 RX data buffer index
-                    next_setn_VL53L1X_buffer = `LOW; // Clear VL53L1X data and firmware ready
                 end
                 `I2C_VL53L1X_STATE_POLL_READY: begin
-                    next_imu_good          = `TRUE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
                     if(VL53L1X_data_rdy[0] == 1'b1) // If measurement ready, go to next state
@@ -1325,7 +1477,6 @@ module i2c_device_driver #(
                     next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_DATA_RDY_INDEX;
                 end
                 `I2C_VL53L1X_STATE_GET_MEASUREMENT: begin
-                    next_imu_good          = `TRUE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
                     next_i2c_state         = `I2C_DRV_SUB_STATE_START;
@@ -1339,15 +1490,9 @@ module i2c_device_driver #(
                     next_VL53L1X_data_rx_reg_index = `VL53L1X_DATA_RX_REG_RESULT_RANGE_MEASURE_MM_HI_INDEX;
                 end
                 `I2C_VL53L1X_STATE_CLEAR_INTERRUPT: begin
-                    next_imu_good          = `TRUE;
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                     next_go_flag           = `NOT_GO;
-                    clear_waiting_ms       = `CLEAR_MS_TIMER; // Clear and set to wait_ms value
-                    count_ms_init_time     = `FALSE;          // Make sure this is a POLL_INTERVAL timer
-                    if(delay_timer_at_poll)
-                        next_i2c_state     = `I2C_DRV_SUB_STATE_START;
-                    else
-                        next_i2c_state     = `I2C_VL53L1X_STATE_CLEAR_INTERRUPT;
+                    next_i2c_state         = `I2C_DRV_SUB_STATE_START;
                     next_return_state      = `I2C_BNO055_STATE_READ_DATA_BURST;
                     next_data_reg          = `VL53L1X_SYSTEM_INTERRUPT_CLEAR_ADDR;
                     next_data_tx           = 8'h01;
@@ -1364,6 +1509,7 @@ module i2c_device_driver #(
                     next_data_tx           = `BYTE_ALL_ZERO;
                     next_read_write_in     = `I2C_READ;
                     next_target_read_count = `BNO055_DATA_RX_BYTE_REG_CNT;
+                    next_setn_BNO055_buff  = `LOW; // Clear BNO055 RX data buffer index
                     next_led_view_index    = (`BNO055_DATA_RX_BYTE_REG_CNT-1); // Calibration status will be in the last byte buffer, index 45
                     // Wait for I2C to be not busy and timer to be set to polling time interval (20 ms)
                     if(~busy && delay_timer_at_poll)
@@ -1412,13 +1558,42 @@ module i2c_device_driver #(
                     next_led_view_index    = `FALSE;
                     next_rx_from_VL53L1X   = `FALSE;
                     next_is_2_byte_reg     = `FALSE;
-                    next_setn_BNO055_buffer  = `LOW; // Clear BNO055 RX data buffer index
-                    next_setn_VL53L1X_buffer = `LOW; // Clear VL53L1X data and firmware ready
+                    next_setn_BNO055_buff  = `LOW; // Clear BNO055 RX data buffer index
+                    next_clrn_VL53L1X_firm = `LOW; // Clear VL53L1X firmware ready
+                    next_clrn_VL53L1X_data = `LOW; // Clear VL53L1X data ready
                     next_target_read_count = 1'b1;
                     i2c_number             = 1'b0; // Default to i2c EFB #1
                     next_slave_address     = `VL53L1X_SLAVE_ADDRESS;
                 end
             endcase
+        end
+        else begin  // I2C forced into stall mode - Do nothing while force_i2c_stall_n input is low
+            next_imu_good          = `TRUE;
+            clear_waiting_ms       = `CLEAR_MS_TIMER;
+            count_ms_init_time     = `FALSE;
+            next_i2c_state         = `I2C_DRV_STATE_RESET;
+            next_return_state      = `I2C_DRV_STATE_RESET;
+            next_go_flag           = `NOT_GO;
+            next_data_reg          = `ALL_ZERO_2BYTE;
+            next_data_tx           = `BYTE_ALL_ZERO;
+            next_read_write_in     = `I2C_READ;
+            next_led_view_index    = `FALSE;
+            next_rx_from_VL53L1X   = `FALSE;
+            next_is_2_byte_reg     = `FALSE;
+            next_setn_BNO055_buff  = `HIGH; // Don't clear any of the data buffers
+            next_clrn_VL53L1X_firm = `HIGH;
+            next_clrn_VL53L1X_data = `HIGH;
+            next_target_read_count = 'd1;
+            i2c_number             = 1'b0; // Default to i2c EFB #1
+            next_slave_address     = `BNO055_SLAVE_ADDRESS;
+            next_calibrated_once   = `FALSE;
+            next_cal_VL53L1X_bool  = `FALSE;
+            next_resetn_lidar      = `HIGH; // Don't reset LiDAR - Allows external master to poll VL53L1X settings
+            next_lidar_good        = lidar_good;
+            next_VL53L1X_data_rx_reg_index   = `VL53L1X_DATA_RX_REG_CHIP_ID_HI_INDEX;
+            next_VL53L1X_measurement_period  = 32'd0;
+            next_measurement_period_tx_index = 3'd3;
+            next_cal_reg_addr                = `BNO055_ACCEL_OFFSET_X_LSB_ADDR;
         end
     end
 endmodule

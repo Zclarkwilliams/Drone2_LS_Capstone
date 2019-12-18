@@ -1,6 +1,6 @@
 #include <Keyboard.h>
 
-#include <Sparkfun-VL53L1-Lidar-ToF-Sensor.h>
+#include <Sparkfun-VL53L1-Lidar-ToF-Sensor-OLD.h>
 
 
 #define ENABLE_XSHUT_PIN
